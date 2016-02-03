@@ -7,3 +7,4 @@ project(stereo-sgm)
 add_subdirectory(src)
 
 add_subdirectory(sample/image)
+add_subdirectory(sample/movie)
