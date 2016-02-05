@@ -29,7 +29,7 @@ limitations under the License.
 int main(int argc, char* argv[]) {
 
 	if (argc < 3) {
-		std::cerr << "usage: stereosgm left_img_fmt right_img_fmt [disp_size]" << std::endl;
+		std::cerr << "usage: stereosgm left_img_fmt right_img_fmt [disp_size] [max_frame_num]" << std::endl;
 		std::exit(EXIT_FAILURE);
 	}
 	std::string left_filename_fmt, right_filename_fmt;
@@ -48,6 +48,12 @@ int main(int argc, char* argv[]) {
 	if (argc >= 4) {
 		disp_size = atoi(argv[3]);
 	}
+
+	int max_frame = 100;
+	if(argc >= 5) {
+		max_frame = atoi(argv[4]);
+	}
+
 
 	if (left.size() != right.size() || left.type() != right.type()) {
 		std::cerr << "mismatch input image size" << std::endl;
@@ -83,7 +89,6 @@ int main(int argc, char* argv[]) {
 	uint16_t* d_output_buffer = NULL;
 
 	int frame_no = 0;
-	int max_frame = INT_MAX;
 	while (!demo.should_close()) {
 
 		glClearColor(0.0, 0.0, 0.0, 1.0);
