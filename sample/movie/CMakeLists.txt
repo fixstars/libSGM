@@ -56,4 +56,4 @@ renderer.cpp
 cuda_gl.cu
 )
 
-TARGET_LINK_LIBRARIES(stereo_movie stereosgm  ${CUDA_LIBRARIES} ${CUDA_nppi_LIBRARY} ${OpenCV_LIBS} ${GLEW_LIBRARIES} ${GLFW3_LIBRARY})
+TARGET_LINK_LIBRARIES(stereo_movie sgm  ${CUDA_LIBRARIES} ${CUDA_nppi_LIBRARY} ${OpenCV_LIBS} ${GLEW_LIBRARIES} ${GLFW3_LIBRARY})

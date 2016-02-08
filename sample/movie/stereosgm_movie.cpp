@@ -21,7 +21,7 @@ limitations under the License.
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
-#include <stereo_sgm.h>
+#include <libsgm.h>
 
 #include "demo.h"
 #include "renderer.h"

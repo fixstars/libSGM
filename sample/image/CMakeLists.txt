@@ -15,4 +15,4 @@ include_directories(../../include)
 
 CUDA_ADD_EXECUTABLE(stereo_test stereosgm_image.cpp ${CUDA_SRC})
 
-TARGET_LINK_LIBRARIES(stereo_test stereosgm ${CUDA_LIBRARIES} ${CUDA_nppi_LIBRARY} ${OpenCV_LIBS})
+TARGET_LINK_LIBRARIES(stereo_test sgm ${CUDA_LIBRARIES} ${CUDA_nppi_LIBRARY} ${OpenCV_LIBS})

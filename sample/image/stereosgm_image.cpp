@@ -21,7 +21,7 @@ limitations under the License.
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
-#include <stereo_sgm.h>
+#include <libsgm.h>
 
 int main(int argc, char* argv[]) {
 	if (argc < 3) {
