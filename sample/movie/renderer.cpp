@@ -70,7 +70,7 @@ Renderer::Renderer(int width, int height) : width_(width), height_(height) {
 		"uniform int inv_disp_size;\n"
 		"void main() {\n"
 		"	float val = texture(tex_sampler, uv_coord).r * inv_disp_size;\n"
-		"	vec4 color = clamp(vec4(2.0 - val * 4.0, 2.0 - abs(val-0.5) * 4.0, -2.0 + val * 4.0, 1.0), 0.0, 1.0);\n"
+		"	vec4 color = clamp(vec4(-2.0 + val * 4.0, 2.0 - abs(val-0.5) * 4.0, 2.0 - val * 4.0, 1.0), 0.0, 1.0);\n"
 		"	fragColor = color;\n"
 		"}\n";
 	program_cdisp_ = compile_shader_program(vert_src, cdisp_frag_src);
