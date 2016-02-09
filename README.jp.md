@@ -1,6 +1,6 @@
 # libSGM
 ---
-Semi-Global matchingをベースとしたCUDA実装です。
+Semi-Global MatchingをベースとしたCUDA実装です。
 
 ## 概要
 ---
@@ -12,7 +12,7 @@ libSGMは、Semi-Global MatchingアルゴリズムをCUDAで実装したもの�
 ---
 CUDAを使用し、高速な視差画像算出が可能
 
-## Requirement
+## Requirements
 libSGMはCUDAを必要とします。  
 また、サンプルをビルドする際には以下のライブラリが必要となります。
 - OpenCV
@@ -66,10 +66,10 @@ $ ./stereo_movie left_image_%04d.pgm right_image_%04d.pgm
 
 movie, imageサンプルは、
 http://www.6d-vision.com/scene-labeling
-にて提供されている、Daimler Urban Scene Segmantation Benchmark Datasetにて
+にて提供されている、Daimler Urban Scene Segmentation Benchmark Datasetにて
 動作確認をしています。
 
-## Author
+## Authors
 The "SGM Team": Samuel Audet, Yoriyuki Kitta, Yuta Noto, Ryo Sakamoto, Akihiro Takagi  
 [FIXSTARS](http://www.fixstars.com/)
 
