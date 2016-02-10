@@ -13,7 +13,7 @@ libSGMは、Semi-Global MatchingアルゴリズムをCUDAで実装したもの�
 CUDAを使用し、高速な視差画像算出が可能
 
 ## Requirements
-libSGMはCUDAを必要とします。  
+libSGMはCUDA (compute capabilities >= 3.0)を必要とします。  
 また、サンプルをビルドする際には以下のライブラリが必要となります。
 - OpenCV
 - OpenGL
