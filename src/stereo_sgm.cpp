@@ -18,7 +18,7 @@ limitations under the License.
 
 #include <nppi.h>
 
-#include <stereo_sgm.h>
+#include <libsgm.h>
 
 #include "internal.h"
 
