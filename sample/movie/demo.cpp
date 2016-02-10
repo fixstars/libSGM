@@ -15,7 +15,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 	}
 }
 
-SGMDemo::SGMDemo(int width, int height) : flag_(0), width_(width), height_(height) {
+SGMDemo::SGMDemo(int width, int height) : flag_(2), width_(width), height_(height) {
 
 }
 
