@@ -1,14 +1,29 @@
+/*
+Copyright 2016 fixstars
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http ://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 #pragma once
 
 /**
-* @mainpage  stereo-sgm
-*
+* @mainpage stereo-sgm
 * See sgm::StereoSGM
 */
 
 /**
 * @file libsgm.h
-* @brief stereo-sgm main header
+* stereo-sgm main header
 */
 
 namespace sgm {
@@ -16,13 +31,13 @@ namespace sgm {
 
 	/**
 	* @enum DST_TYPE
-	* @brief Indicates destination type.
+	* Indicates destination type.
 	*/
 	enum DST_TYPE {
 		/// Return host pointer. It must not free or delete.
-		DST_TYPE_HOST_PTR, 
-		/// Return cuda pointer. It must not free.
-		DST_TYPE_CUDA_PTR, 
+		DST_TYPE_HOST_PTR,
+		/// Return cuda pointer.It must not free.
+		DST_TYPE_CUDA_PTR,
 	};
 
 	/**
@@ -41,23 +56,22 @@ namespace sgm {
 		virtual ~StereoSGM();
 
 		/**
-		* @brief Execute stereo semi global matching.
-		* @param left_pixels A pointer stored input left image.
-		* @param right_pixels A pointer stored input rigth image.
-		* @param dst Output pointer. User must allocate enoght memory.
-		* @param dst_type Specify output pointer type. See #sgm::DST_TYPE.
-		* @param depth_bits bits per pixel. It must be 8 or 16.
-		* 
+		* Execute stereo semi global matching.
+		* @param left_pixels	A pointer stored input left image.
+		* @param right_pixels	A pointer stored input rigth image.
+		* @param dst	Output pointer. User must allocate enoght memory.
+		* @param dst_type	Specify output pointer type. See sgm::DST_TYPE.
+		* @param depth_bits	bits per pixel. It must be 8 or 16.
 		* @note
-		* For example, when dst_type == DST_TYPE_HOST_PTR, depth_bits == 8, allocate memory with 
-		* @code 
+		* For example, when dst_type == DST_TYPE_HOST_PTR, depth_bits == 8, allocate memory with
+		* @code
 		* uint8_t* dst = new uint8_t[image_width * image_height];
 		* @endcode
-		* @attention 
+		* @attention
 		* For performance reason, when dst_type == DST_TYPE_CUDA_PTR, depth_bits == 16, you don't have to allocate dst memory yourself. It returns internal cuda pointer. You must not free the pointer.
 		*/
 		void execute(const void* left_pixels, const void* right_pixels, void** dst, DST_TYPE dst_type, int depth_bits = 16);
-		
+
 	private:
 		StereoSGM(const StereoSGM&);
 		StereoSGM& operator=(const StereoSGM&);

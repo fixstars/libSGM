@@ -90,6 +90,8 @@ namespace {
 		}
 		__syncthreads();
 
+		// TODO can we remove this condition?
+		if (rad_v <= i && i < height - rad_v && rad_h <= j && j < width - rad_h)
 		{
 			const int ii = threadIdx.y + rad_v;
 			const int jj = threadIdx.x + rad_h;
