@@ -15,6 +15,8 @@ else()
 	find_package(OpenCV REQUIRED core highgui imgproc imgcodecs videoio) # 3.x
 endif()
 
+find_package(OpenGL REQUIRED)
+
 find_package(GLEW REQUIRED)
 
 find_package(GLFW REQUIRED)
@@ -32,4 +34,4 @@ renderer.cpp
 cuda_gl.cu
 )
 
-TARGET_LINK_LIBRARIES(stereo_movie sgm  ${CUDA_LIBRARIES} ${CUDA_nppi_LIBRARY} ${OpenCV_LIBS} ${GLEW_LIBRARIES} ${GLFW_LIBRARY})
+TARGET_LINK_LIBRARIES(stereo_movie sgm  ${CUDA_LIBRARIES} ${CUDA_nppi_LIBRARY} ${OpenCV_LIBS} ${GLEW_LIBRARIES} ${GLFW_LIBRARY} ${OPENGL_LIBRARY})
