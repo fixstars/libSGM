@@ -23,32 +23,33 @@ limitations under the License.
 
 /**
 * @file libsgm.h
-* stereo-sgm main header 
+* stereo-sgm main header
 */
-
 
 namespace sgm {
 	struct CudaStereoSGMResources;
 
 	/**
 	* @enum DST_TYPE
-	* Indicates destination type. 
+	* Indicates destination type.
 	*/
 	enum DST_TYPE {
-		/// Return host pointer. It must not free or delete. 
+		/// Return host pointer. It must not free or delete.
 		DST_TYPE_HOST_PTR,
 		/// Return cuda pointer.It must not free.
 		DST_TYPE_CUDA_PTR,
 	};
 
-	/// StereoSGM class. 
+	/**
+	* @brief StereoSGM class
+	*/
 	class StereoSGM {
 	public:
 		/**
-		* @param width	Processed image's width. It must be even.
-		* @param height	Processed image's height. It must be even.
-		* @param depth_bits	Processed image's bits per pixel. It must be 16 now.
-		* @param disparity_size	It must be 64 or 128.
+		* @param width Processed image's width. It must be even.
+		* @param height Processed image's height. It must be even.
+		* @param depth_bits Processed image's bits per pixel. It must be 16 now.
+		* @param disparity_size It must be 64 or 128.
 		*/
 		StereoSGM(int width, int height, int depth_bits, int disparity_size);
 
@@ -67,7 +68,7 @@ namespace sgm {
 		* uint8_t* dst = new uint8_t[image_width * image_height];
 		* @endcode
 		* @attention
-		* For performance reason, when dst_type == DST_TYPE_CUDA_PTR, depth_bits == 16, you don't have to allocate dst memory yourself. It returns internal cuda pointer. You must not free the pointer. 
+		* For performance reason, when dst_type == DST_TYPE_CUDA_PTR, depth_bits == 16, you don't have to allocate dst memory yourself. It returns internal cuda pointer. You must not free the pointer.
 		*/
 		void execute(const void* left_pixels, const void* right_pixels, void** dst, DST_TYPE dst_type, int depth_bits = 16);
 
@@ -77,7 +78,6 @@ namespace sgm {
 
 		void cuda_resource_allocate();
 
-		
 		CudaStereoSGMResources* cu_res_;
 
 		int width_;
