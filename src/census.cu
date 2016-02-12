@@ -53,18 +53,20 @@ namespace {
 		// 1. left-top side
 		const int ii = threadIdx.y + blockIdx.y * blockDim.y - rad_v;
 		const int jj = threadIdx.x + blockIdx.x * blockDim.x - rad_h;
-		if (ii >= 0 && ii < height && jj >= 0 && jj < width)
+		if (ii >= 0 && ii < height && jj >= 0 && jj < width) {
 			s_source[threadIdx.y*swidth + threadIdx.x] = d_source[ii*width + jj];
+		}
 
 		// 2. right side
 		// 2 * blockDim.x >= swidth
 		{
 			const int ii = threadIdx.y + blockIdx.y * blockDim.y - rad_v;
 			const int jj = threadIdx.x + blockIdx.x * blockDim.x - rad_h + blockDim.x;
-			if (threadIdx.x + blockDim.x < swidth && threadIdx.y < sheight)
-				if (ii >= 0 && ii < height && jj >= 0 && jj < width)
-					s_source[threadIdx.y*swidth + threadIdx.x + blockDim.x]
-					= d_source[ii*width + jj];
+			if (threadIdx.x + blockDim.x < swidth && threadIdx.y < sheight) {
+				if (ii >= 0 && ii < height && jj >= 0 && jj < width) {
+					s_source[threadIdx.y*swidth + threadIdx.x + blockDim.x] = d_source[ii*width + jj];
+				}
+			}
 		}
 
 		// 3. bottom side
@@ -72,10 +74,11 @@ namespace {
 		{
 			const int ii = threadIdx.y + blockIdx.y * blockDim.y - rad_v + blockDim.y;
 			const int jj = threadIdx.x + blockIdx.x * blockDim.x - rad_h;
-			if (threadIdx.x < swidth && threadIdx.y + blockDim.y < sheight)
-				if (ii >= 0 && ii < height && jj >= 0 && jj < width)
-					s_source[(threadIdx.y + blockDim.y)*swidth + threadIdx.x]
-					= d_source[ii*width + jj];
+			if (threadIdx.x < swidth && threadIdx.y + blockDim.y < sheight) {
+				if (ii >= 0 && ii < height && jj >= 0 && jj < width) {
+					s_source[(threadIdx.y + blockDim.y)*swidth + threadIdx.x] = d_source[ii*width + jj];
+				}
+			}
 		}
 
 		// 4. right-bottom side
@@ -83,10 +86,11 @@ namespace {
 		{
 			const int ii = threadIdx.y + blockIdx.y * blockDim.y - rad_v + blockDim.y;
 			const int jj = threadIdx.x + blockIdx.x * blockDim.x - rad_h + blockDim.x;
-			if (threadIdx.x + blockDim.x < swidth && threadIdx.y + blockDim.y < sheight)
-				if (ii >= 0 && ii < height && jj >= 0 && jj < width)
-					s_source[(threadIdx.y + blockDim.y)*swidth + threadIdx.x + blockDim.x]
-					= d_source[ii*width + jj];
+			if (threadIdx.x + blockDim.x < swidth && threadIdx.y + blockDim.y < sheight) {
+				if (ii >= 0 && ii < height && jj >= 0 && jj < width) {
+					s_source[(threadIdx.y + blockDim.y)*swidth + threadIdx.x + blockDim.x] = d_source[ii*width + jj];
+				}
+			}
 		}
 		__syncthreads();
 
@@ -103,13 +107,14 @@ namespace {
 			uint32_t value1 = 0, value2 = 0;
 
 	#pragma unroll
-			for (int y = -rad_v; y < 0; y++)
+			for (int y = -rad_v; y < 0; y++) {
 				for (int x = -rad_h; x <= rad_h; x++) {
 					// uint16_t result = (c - d_source[width*(i+y)+j+x])>0;
 					uint16_t result = (c - s_source[swidth*(ii + y) + jj + x]) > 0;
 					value1 <<= 1;
 					value1 += result;
 				}
+			}
 
 			int y = 0;
 	#pragma unroll
