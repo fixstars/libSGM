@@ -22,7 +22,7 @@ libSGMはCUDA (compute capabilities >= 3.0)を必要とします。
 
 ## build
 ```
-$ git clone xxx
+$ git clone https://github.com/fixstars-jp/libSGM.git
 $ cd libSGM
 $ mkdir build
 $ cd build

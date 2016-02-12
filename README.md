@@ -22,7 +22,7 @@ Moreover, to build the sample, we need the following libraries:
 
 ## Build Instructions
 ```
-$ git clone xxx
+$ git clone https://github.com/fixstars-jp/libSGM.git
 $ cd libSGM
 $ mkdir build
 $ cd build
