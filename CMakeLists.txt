@@ -8,3 +8,4 @@ add_subdirectory(src)
 
 add_subdirectory(sample/image)
 add_subdirectory(sample/movie)
+add_subdirectory(sample/zed)
