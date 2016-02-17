@@ -25,19 +25,20 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 include_directories(${GLEW_INCLUDE_DIRS})
 include_directories(${GLFW_INCLUDE_DIRS})
 
-include_directories("C:\\Program Files (x86)\\ZED SDK\\include")
+include_directories(${ZED_SDK_INCLUDE_DIR})
 
 CUDA_ADD_EXECUTABLE(zed_demo
-zed_demo.cpp
-demo.cpp
-renderer.cpp
-cuda_gl.cu
+	zed_demo.cpp
+	demo.cpp
+	renderer.cpp
+	cuda_gl.cu
 )
 
 
 TARGET_LINK_LIBRARIES(zed_demo 
-sgm 
- ${CUDA_LIBRARIES} ${CUDA_nppi_LIBRARY} ${OpenCV_LIBS} ${GLEW_LIBRARIES} ${GLFW_LIBRARY} ${OPENGL_LIBRARY}
- 
-"C:\\Program Files (x86)\\ZED SDK\\lib\\sl_zed64.lib"
+	sgm 
+	${CUDA_LIBRARIES} ${CUDA_nppi_LIBRARY} 
+	${OpenCV_LIBS} 
+	${GLEW_LIBRARIES} ${GLFW_LIBRARY} ${OPENGL_LIBRARY}
+	${ZED_SDK_LIB}
 )
