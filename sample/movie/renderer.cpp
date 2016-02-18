@@ -117,7 +117,7 @@ Renderer::~Renderer() {
 void Renderer::render_input(const uint16_t* h_input_ptr) {
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, texture_);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_R16UI, width_, height_, 0, GL_RED, GL_UNSIGNED_SHORT, h_input_ptr);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_R16UI, width_, height_, 0, GL_RED_INTEGER, GL_UNSIGNED_SHORT, h_input_ptr);
 
 	glUseProgram(program_input_);
 
