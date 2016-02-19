@@ -27,6 +27,9 @@ include_directories(${GLFW_INCLUDE_DIRS})
 
 include_directories(${ZED_SDK_INCLUDE_DIR})
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -std=c++11")
+
 CUDA_ADD_EXECUTABLE(zed_demo
 	zed_demo.cpp
 	demo.cpp
