@@ -63,7 +63,7 @@ int main(int argc, char* argv[]) {
 	int bits = 0;
 
 	switch (left.type()) {
-		// case CV_8UC1: bits = 8; break; // TODO
+	case CV_8UC1: bits = 8; break;
 	case CV_16UC1: bits = 16; break;
 	default:
 		std::cerr << "invalid input image color format" << left.type() << std::endl;

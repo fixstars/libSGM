@@ -24,8 +24,9 @@ namespace {
 
 	static const int threads_per_block = 16;
 
-	__global__ 
-		void census_kernel(int hor, int vert, uint16_t* d_source, uint64_t* d_dest, int width, int height)
+	template<typename SRC_T>
+	__global__
+		void census_kernel(int hor, int vert, SRC_T* d_source, uint64_t* d_dest, int width, int height)
 	{
 		const int i = threadIdx.y + blockIdx.y * blockDim.y;
 		const int j = threadIdx.x + blockIdx.x * blockDim.x;
@@ -36,7 +37,7 @@ namespace {
 
 		const int swidth = threads_per_block + HOR;
 		const int sheight = threads_per_block + VERT;
-		__shared__ uint16_t s_source[swidth*sheight];
+		__shared__ SRC_T s_source[swidth*sheight];
 
 		/**
 		*                  *- blockDim.x
@@ -100,44 +101,44 @@ namespace {
 			const int ii = threadIdx.y + rad_v;
 			const int jj = threadIdx.x + rad_h;
 			const int soffset = jj + ii * swidth;
-			// const uint16_t c = d_source[offset];
-			const uint16_t c = s_source[soffset];
+			// const SRC_T c = d_source[offset];
+			const SRC_T c = s_source[soffset];
 			uint64_t value = 0;
 
 			uint32_t value1 = 0, value2 = 0;
 
-	#pragma unroll
+#pragma unroll
 			for (int y = -rad_v; y < 0; y++) {
 				for (int x = -rad_h; x <= rad_h; x++) {
-					// uint16_t result = (c - d_source[width*(i+y)+j+x])>0;
-					uint16_t result = (c - s_source[swidth*(ii + y) + jj + x]) > 0;
+					// SRC_T result = (c - d_source[width*(i+y)+j+x])>0;
+					SRC_T result = (c - s_source[swidth*(ii + y) + jj + x]) > 0;
 					value1 <<= 1;
 					value1 += result;
 				}
 			}
 
 			int y = 0;
-	#pragma unroll
+#pragma unroll
 			for (int x = -rad_h; x < 0; x++) {
-				// uint16_t result = (c - d_source[width*(i+y)+j+x])>0;
-				uint16_t result = (c - s_source[swidth*(ii + y) + jj + x]) > 0;
+				// SRC_T result = (c - d_source[width*(i+y)+j+x])>0;
+				SRC_T result = (c - s_source[swidth*(ii + y) + jj + x]) > 0;
 				value1 <<= 1;
 				value1 += result;
 			}
 
-	#pragma unroll
+#pragma unroll
 			for (int x = 1; x <= rad_h; x++) {
-				// uint16_t result = (c - d_source[width*(i+y)+j+x])>0;
-				uint16_t result = (c - s_source[swidth*(ii + y) + jj + x]) > 0;
+				// SRC_T result = (c - d_source[width*(i+y)+j+x])>0;
+				SRC_T result = (c - s_source[swidth*(ii + y) + jj + x]) > 0;
 				value2 <<= 1;
 				value2 += result;
 			}
 
-	#pragma unroll
+#pragma unroll
 			for (int y = 1; y <= rad_v; y++) {
 				for (int x = -rad_h; x <= rad_h; x++) {
-					// uint16_t result = (c - d_source[width*(i+y)+j+x])>0;
-					uint16_t result = (c - s_source[swidth*(ii + y) + jj + x]) > 0;
+					// SRC_T result = (c - d_source[width*(i+y)+j+x])>0;
+					SRC_T result = (c - s_source[swidth*(ii + y) + jj + x]) > 0;
 					value2 <<= 1;
 					value2 += result;
 				}
@@ -149,7 +150,6 @@ namespace {
 			d_dest[offset] = value;
 		}
 	}
-
 }
 
 
@@ -165,15 +165,16 @@ namespace details {
 				std::cerr << "unsupported census window, only 9x7" << std::endl;
 				return;
 			}
-			if (depth_bits != 16) {
-				std::cerr << "unsupported input bits, only 16 bits" << std::endl;
-				return;
-			}
 
 			const dim3   blocks((width + threads_per_block - 1) / threads_per_block, (height + threads_per_block - 1) / threads_per_block);
 			const dim3   threads(threads_per_block, threads_per_block);
 
-			census_kernel <<<blocks, threads, 0, cuda_stream >>> (9, 7, (uint16_t*)d_src, d_dst, width, height);
+			if (depth_bits == 16) {
+				census_kernel<uint16_t> << <blocks, threads, 0, cuda_stream >> > (9, 7, (uint16_t*)d_src, d_dst, width, height);
+			}
+			else if(depth_bits == 8) {
+				census_kernel<uint8_t> << <blocks, threads, 0, cuda_stream >> > (9, 7, (uint8_t*)d_src, d_dst, width, height);
+			}
 		}
 
 	}

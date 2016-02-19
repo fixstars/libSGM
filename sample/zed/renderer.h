@@ -33,7 +33,7 @@ public:
 	Renderer(int width, int height);
 	~Renderer();
 
-	void render_input(const uint16_t* h_input_ptr);
+	void render_input(const uint8_t* h_input_ptr);
 
 	void render_disparity(const uint16_t* d_disp, int disp_size);
 
