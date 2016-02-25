@@ -52,11 +52,11 @@ int main(int argc, char* argv[]) {
 		std::exit(EXIT_FAILURE);
 	}
 
-	sgm::StereoSGM ssgm(left.cols, left.rows, bits, disp_size);
+	sgm::StereoSGM ssgm(left.cols, left.rows, disp_size, bits, 8, sgm::EXECUTE_INOUT_HOST2HOST);
 
 	cv::Mat output(cv::Size(left.cols, left.rows), CV_8UC1);
 
-	ssgm.execute(left.data, right.data, (void**)&output.data, sgm::DST_TYPE_HOST_PTR, 8);
+	ssgm.execute(left.data, right.data, (void**)&output.data);
 
 	// show image
 	cv::imshow("image", output * 256 / disp_size);

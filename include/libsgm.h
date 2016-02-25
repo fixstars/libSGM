@@ -33,11 +33,11 @@ namespace sgm {
 	* @enum DST_TYPE
 	* Indicates destination type.
 	*/
-	enum DST_TYPE {
-		/// Return host pointer. It must not free or delete.
-		DST_TYPE_HOST_PTR,
-		/// Return cuda pointer.It must not free.
-		DST_TYPE_CUDA_PTR,
+	enum EXECUTE_INOUT {
+		EXECUTE_INOUT_HOST2HOST = (0 << 1) | 0,
+		EXECUTE_INOUT_HOST2CUDA = (1 << 1) | 0,
+		EXECUTE_INOUT_CUDA2HOST = (0 << 1) | 1,
+		EXECUTE_INOUT_CUDA2CUDA = (1 << 1) | 1,
 	};
 
 	/**
@@ -51,7 +51,7 @@ namespace sgm {
 		* @param depth_bits Processed image's bits per pixel. It must be 16 now.
 		* @param disparity_size It must be 64 or 128.
 		*/
-		StereoSGM(int width, int height, int depth_bits, int disparity_size);
+		StereoSGM(int width, int height, int disparity_size, int input_depth_bits, int output_depth_bits, EXECUTE_INOUT inout_type);
 
 		virtual ~StereoSGM();
 
@@ -59,18 +59,14 @@ namespace sgm {
 		* Execute stereo semi global matching.
 		* @param left_pixels	A pointer stored input left image.
 		* @param right_pixels	A pointer stored input rigth image.
-		* @param dst	Output pointer. User must allocate enoght memory.
-		* @param dst_type	Specify output pointer type. See sgm::DST_TYPE.
-		* @param depth_bits	bits per pixel. It must be 8 or 16.
-		* @note
-		* For example, when dst_type == DST_TYPE_HOST_PTR, depth_bits == 8, allocate memory with
-		* @code
-		* uint8_t* dst = new uint8_t[image_width * image_height];
-		* @endcode
+		* @param dst	        Output pointer. User must allocate enoght memory.
+		* @param inout_type 	Specify input/output pointer type. See sgm::EXECUTE_TYPE.
+		* @param out_depth_bits Bits per pixel. It must be 8 or 16.
 		* @attention
-		* For performance reason, when dst_type == DST_TYPE_CUDA_PTR, depth_bits == 16, you don't have to allocate dst memory yourself. It returns internal cuda pointer. You must not free the pointer.
+		* For performance reason, when output is cuda pointer(EXECUTE_INOUT_**2CUDA) and output_bits == 16, 
+		* you don't have to allocate dst memory yourself. It returns internal cuda pointer. You must not free the pointer.
 		*/
-		void execute(const void* left_pixels, const void* right_pixels, void** dst, DST_TYPE dst_type, int depth_bits = 16);
+		void execute(const void* left_pixels, const void* right_pixels, void** dst);
 
 	private:
 		StereoSGM(const StereoSGM&);
@@ -82,7 +78,9 @@ namespace sgm {
 
 		int width_;
 		int height_;
-		int depth_bits_;
 		int disparity_size_;
+		int input_depth_bits_;
+		int output_depth_bits_;
+		EXECUTE_INOUT inout_type_;
 	};
 }

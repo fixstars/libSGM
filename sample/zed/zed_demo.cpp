@@ -39,13 +39,11 @@ int main(int argc, char* argv[]) {
 	
 	// init zed cam
 	auto cap = new sl::zed::Camera(sl::zed::ZEDResolution_mode::VGA);
-	cap->init(sl::zed::MODE::PERFORMANCE, 0, true);
 
 	int width = cap->getImageSize().width;
 	int height = cap->getImageSize().height;
 
-	
-	sgm::StereoSGM ssgm(width, height, bits, disp_size);
+	sgm::StereoSGM ssgm(width, height, disp_size, 8, 16, sgm::EXECUTE_INOUT_HOST2CUDA);
 
 	SGMDemo demo(width, height);
 	if (demo.init()) {
@@ -69,7 +67,7 @@ int main(int argc, char* argv[]) {
 		cv::Mat right = cv::Mat(right_zm.height, right_zm.width, CV_8UC4, right_zm.data); // sl::zed::Mat to cv::Mat
 		cv::cvtColor(right, right, CV_RGB2GRAY);
 
-		ssgm.execute(left.data, right.data, (void**)&d_output_buffer, sgm::DST_TYPE_CUDA_PTR, 16);
+		ssgm.execute(left.data, right.data, (void**)&d_output_buffer);
 
 		switch (demo.get_flag()) {
 		case 0: renderer.render_input((uint8_t*)left.data); break;
