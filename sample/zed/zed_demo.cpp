@@ -21,6 +21,8 @@ limitations under the License.
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
+#include <nppi.h>
+
 #include <zed/Camera.hpp>
 
 #include <libsgm.h>
@@ -48,7 +50,8 @@ int main(int argc, char* argv[]) {
 	int width = cap->getImageSize().width;
 	int height = cap->getImageSize().height;
 
-	sgm::StereoSGM ssgm(width, height, disp_size, 8, 16, sgm::EXECUTE_INOUT_HOST2CUDA);
+	sgm::StereoSGM ssgm(width, height, disp_size, 8, 16, sgm::EXECUTE_INOUT_CUDA2CUDA);
+
 
 	SGMDemo demo(width, height);
 	if (demo.init()) {
@@ -59,28 +62,43 @@ int main(int argc, char* argv[]) {
 	Renderer renderer(width, height);
 
 	uint16_t* d_output_buffer = NULL;
+	uint8_t* d_input_left = NULL;
+	uint8_t* d_input_right = NULL;
+	cudaMalloc((void**)&d_input_left, width * height);
+	cudaMalloc((void**)&d_input_right, width * height);
+
+	const NppiSize roi = { width, height };
+
+	cv::Mat h_input_left(height, width, CV_8UC1);
 
 	while (!demo.should_close()) {
 		cap->grab(sl::zed::SENSING_MODE::FULL, false, false);
 
-		sl::zed::Mat left_zm = cap->retrieveImage(sl::zed::SIDE::LEFT);
-		
-		cv::Mat left = cv::Mat(left_zm.height, left_zm.width, CV_8UC4, left_zm.data); // sl::zed::Mat to cv::Mat
-		cv::cvtColor(left, left, CV_RGB2GRAY);
+		sl::zed::Mat left_zm = cap->retrieveImage_gpu(sl::zed::SIDE::LEFT);
+		sl::zed::Mat right_zm = cap->retrieveImage_gpu(sl::zed::SIDE::RIGHT);
 
-		sl::zed::Mat right_zm = cap->retrieveImage(sl::zed::SIDE::RIGHT);
-		cv::Mat right = cv::Mat(right_zm.height, right_zm.width, CV_8UC4, right_zm.data); // sl::zed::Mat to cv::Mat
-		cv::cvtColor(right, right, CV_RGB2GRAY);
+		nppiRGBToGray_8u_AC4C1R(left_zm.data, width * 4, d_input_left, width, roi);
+		nppiRGBToGray_8u_AC4C1R(right_zm.data, width * 4, d_input_right, width, roi);
 
-		ssgm.execute(left.data, right.data, (void**)&d_output_buffer);
+		ssgm.execute(d_input_left, d_input_right, (void**)&d_output_buffer);
 
 		switch (demo.get_flag()) {
-		case 0: renderer.render_input((uint8_t*)left.data); break;
-		case 1: renderer.render_disparity(d_output_buffer, disp_size); break;
-		case 2: renderer.render_disparity_color(d_output_buffer, disp_size); break;
+		case 0: 
+			cudaMemcpy(h_input_left.data, d_input_left, width * height, cudaMemcpyDeviceToHost);
+			renderer.render_input((uint8_t*)h_input_left.data); 
+			break;
+		case 1: 
+			renderer.render_disparity(d_output_buffer, disp_size);
+			break;
+		case 2: 
+			renderer.render_disparity_color(d_output_buffer, disp_size);
+			break;
 		}
 
 		demo.swap_buffer();
 	}
+
+	cudaFree(d_input_left);
+	cudaFree(d_input_right);
 	delete cap;
 }
