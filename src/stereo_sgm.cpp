@@ -160,7 +160,6 @@ namespace sgm {
 			d_input_right = right_pixels;
 		}
 		else {
-			printf("%p %p %d", cu_res_->d_src_left, left_pixels, input_depth_bits_ / 8 * width_ * height_);
 			CudaSafeCall(cudaMemcpy(cu_res_->d_src_left, left_pixels, input_depth_bits_ / 8 * width_ * height_, cudaMemcpyHostToDevice));
 			CudaSafeCall(cudaMemcpy(cu_res_->d_src_right, right_pixels, input_depth_bits_ / 8 * width_ * height_, cudaMemcpyHostToDevice));
 			d_input_left = cu_res_->d_src_left;

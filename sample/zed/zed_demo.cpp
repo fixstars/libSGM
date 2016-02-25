@@ -39,6 +39,11 @@ int main(int argc, char* argv[]) {
 	
 	// init zed cam
 	auto cap = new sl::zed::Camera(sl::zed::ZEDResolution_mode::VGA);
+	sl::zed::ERRCODE err = cap->init(sl::zed::MODE::PERFORMANCE, 0, true);
+	if (err != sl::zed::ERRCODE::SUCCESS) {
+		std::cout << sl::zed::errcode2str(err) << std::endl;
+		exit(EXIT_FAILURE);
+	}
 
 	int width = cap->getImageSize().width;
 	int height = cap->getImageSize().height;
