@@ -31,7 +31,7 @@ namespace sgm {
 
 	/**
 	* @enum DST_TYPE
-	* Indicates destination type.
+	* Indicates input/output pointer type.
 	*/
 	enum EXECUTE_INOUT {
 		EXECUTE_INOUT_HOST2HOST = (0 << 1) | 0,
@@ -48,8 +48,10 @@ namespace sgm {
 		/**
 		* @param width Processed image's width. It must be even.
 		* @param height Processed image's height. It must be even.
-		* @param depth_bits Processed image's bits per pixel. It must be 16 now.
 		* @param disparity_size It must be 64 or 128.
+		* @param input_depth_bits Processed image's bits per pixel. It must be 8 or 16.
+		* @param output_depth_bits Disparity image's bits per pixel. It must be 8 or 16.
+		* @param inout_type 	Specify input/output pointer type. See sgm::EXECUTE_TYPE.
 		*/
 		StereoSGM(int width, int height, int disparity_size, int input_depth_bits, int output_depth_bits, EXECUTE_INOUT inout_type);
 
@@ -60,10 +62,8 @@ namespace sgm {
 		* @param left_pixels	A pointer stored input left image.
 		* @param right_pixels	A pointer stored input rigth image.
 		* @param dst	        Output pointer. User must allocate enoght memory.
-		* @param inout_type 	Specify input/output pointer type. See sgm::EXECUTE_TYPE.
-		* @param out_depth_bits Bits per pixel. It must be 8 or 16.
 		* @attention
-		* For performance reason, when output is cuda pointer(EXECUTE_INOUT_**2CUDA) and output_bits == 16, 
+		* For performance reason, when the instance is created with inout_type == EXECUTE_INOUT_**2CUDA, output_depth_bits == 16, 
 		* you don't have to allocate dst memory yourself. It returns internal cuda pointer. You must not free the pointer.
 		*/
 		void execute(const void* left_pixels, const void* right_pixels, void** dst);
