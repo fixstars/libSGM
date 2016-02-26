@@ -82,7 +82,7 @@ int main(int argc, char* argv[]) {
 		std::exit(EXIT_FAILURE);
 	}
 
-	sgm::StereoSGM ssgm(width, height, bits, disp_size);
+	sgm::StereoSGM ssgm(width, height, disp_size, bits, 16, sgm::EXECUTE_INOUT_HOST2CUDA);
 
 	Renderer renderer(width, height);
 	
@@ -107,7 +107,7 @@ int main(int argc, char* argv[]) {
 			continue;
 		}
 
-		ssgm.execute(left.data, right.data, (void**)&d_output_buffer, sgm::DST_TYPE_CUDA_PTR, 16);
+		ssgm.execute(left.data, right.data, (void**)&d_output_buffer); // , sgm::DST_TYPE_CUDA_PTR, 16);
 
 		switch (demo.get_flag()) {
 		case 0:
