@@ -7,11 +7,13 @@ message(STATUS ${CMAKE_MODULE_PATH})
 FIND_PACKAGE(CUDA  REQUIRED)
 
 find_package(OpenCV REQUIRED core) # dammy 
-if(OpenCV_VERSION VERSION_LESS 3.0) 
-	find_package(OpenCV REQUIRED core highgui imgproc)  # 2.x
+if(OpenCV_VERSION VERSION_LESS 3.1)
+	message(FATAL_ERROR "Zed SDK requires OpenCV 3.1")
 else()
 	find_package(OpenCV REQUIRED core highgui imgproc imgcodecs videoio) # 3.x
 endif()
+
+find_package(ZED 2.0 REQUIRED)
 
 find_package(OpenGL REQUIRED)
 
@@ -25,12 +27,14 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 include_directories(${GLEW_INCLUDE_DIRS})
 include_directories(${GLFW_INCLUDE_DIRS})
 
-include_directories(${ZED_SDK_INCLUDE_DIR})
+include_directories(${ZED_INCLUDE_DIRS})
 
 if(NOT WIN32)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-	set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -std=c++11")
 endif()
+
+link_directories(${OpenCV_LIBRARY_DIRS})
+link_directories(${ZED_LIBRARY_DIR})
 
 CUDA_ADD_EXECUTABLE(zed_demo
 	zed_demo.cpp
@@ -43,7 +47,7 @@ CUDA_ADD_EXECUTABLE(zed_demo
 TARGET_LINK_LIBRARIES(zed_demo 
 	sgm 
 	${CUDA_LIBRARIES} ${CUDA_nppi_LIBRARY} 
-	${OpenCV_LIBS} 
+	${OpenCV_LIBRARIES} 
 	${GLEW_LIBRARIES} ${GLFW_LIBRARY} ${OPENGL_LIBRARY}
-	${ZED_SDK_LIB}
+	${ZED_LIBRARIES}
 )

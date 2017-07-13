@@ -23,7 +23,7 @@ limitations under the License.
 
 #include <nppi.h>
 
-#include <zed/Camera.hpp>
+#include <sl/Camera.hpp>
 
 #include <libsgm.h>
 
@@ -40,18 +40,20 @@ int main(int argc, char* argv[]) {
 	}
 	
 	// init zed cam
-	auto cap = new sl::zed::Camera(sl::zed::ZEDResolution_mode::VGA);
-	sl::zed::ERRCODE err = cap->init(sl::zed::MODE::PERFORMANCE, 0, true);
-	if (err != sl::zed::ERRCODE::SUCCESS) {
-		std::cout << sl::zed::errcode2str(err) << std::endl;
+	sl::Camera cap;
+	sl::InitParameters init_param;
+	init_param.camera_resolution = sl::RESOLUTION::RESOLUTION_HD1080;
+	init_param.camera_fps = 15;
+	sl::ERROR_CODE err = cap.open(init_param);
+	if (err != sl::ERROR_CODE::SUCCESS) {
+		std::cout << sl::errorCode2str(err) << std::endl;
 		exit(EXIT_FAILURE);
 	}
 
-	int width = cap->getImageSize().width;
-	int height = cap->getImageSize().height;
+	int width = cap.getResolution().width;
+	int height = cap.getResolution().height;
 
 	sgm::StereoSGM ssgm(width, height, disp_size, 8, 16, sgm::EXECUTE_INOUT_CUDA2CUDA);
-
 
 	SGMDemo demo(width, height);
 	if (demo.init()) {
@@ -72,13 +74,28 @@ int main(int argc, char* argv[]) {
 	cv::Mat h_input_left(height, width, CV_8UC1);
 
 	while (!demo.should_close()) {
-		cap->grab(sl::zed::SENSING_MODE::FULL, false, false);
+		err = cap.grab({sl::SENSING_MODE::SENSING_MODE_STANDARD, false, false, false})
+		if (err != sl::ERROR_CODE::SUCCESS) {
+			std::cout << sl::errorCode2str(err) << std::endl;
+			exit(EXIT_FAILURE);
+		}
 
-		sl::zed::Mat left_zm = cap->retrieveImage_gpu(sl::zed::SIDE::LEFT);
-		sl::zed::Mat right_zm = cap->retrieveImage_gpu(sl::zed::SIDE::RIGHT);
+		sl::Mat left_zm;
+		err = cap.retrieveImage(left_zm, sl::VIEW::VIEW_LEFT, sl::MEM::MEM_GPU);
+		if (err != sl::ERROR_CODE::SUCCESS) {
+			std::cout << sl::errorCode2str(err) << std::endl;
+			exit(EXIT_FAILURE);
+		}
 
-		nppiRGBToGray_8u_AC4C1R(left_zm.data, width * 4, d_input_left, width, roi);
-		nppiRGBToGray_8u_AC4C1R(right_zm.data, width * 4, d_input_right, width, roi);
+		sl::Mat right_zm;
+		err = cap.retrieveImage(right_zm, sl::VIEW::VIEW_RIGHT, sl::MEM::MEM_GPU);
+		if (err != sl::ERROR_CODE::SUCCESS) {
+			std::cout << sl::errorCode2str(err) << std::endl;
+			exit(EXIT_FAILURE);
+		}
+
+		nppiRGBToGray_8u_AC4C1R(left_zm.getPtr<uint8_t>(sl::MEM::MEM_GPU), width * 4, d_input_left, width, roi);
+		nppiRGBToGray_8u_AC4C1R(right_zm.getPtr<uint8_t>(sl::MEM::MEM_GPU), width * 4, d_input_right, width, roi);
 
 		ssgm.execute(d_input_left, d_input_right, (void**)&d_output_buffer);
 
@@ -100,5 +117,5 @@ int main(int argc, char* argv[]) {
 
 	cudaFree(d_input_left);
 	cudaFree(d_input_right);
-	delete cap;
+	cap.close();
 }
