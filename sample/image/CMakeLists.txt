@@ -3,7 +3,7 @@ find_package(CUDA REQUIRED)
 # test apps
 find_package(OpenCV REQUIRED core) # dammy 
 if(OpenCV_VERSION VERSION_LESS 3.0) 
-	find_package(OpenCV REQUIRED core highgui imgproc)  # 2.x
+	find_package(OpenCV REQUIRED core highgui imgproc contrib)  # 2.x
 else()
 	find_package(OpenCV REQUIRED core highgui imgproc imgcodecs videoio) # 3.x
 endif()
