@@ -20,6 +20,10 @@ limitations under the License.
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/core/version.hpp>
+#if CV_MAJOR_VERSION == 2
+#include <opencv2/contrib/contrib.hpp>
+#endif
 
 #include <libsgm.h>
 
@@ -71,7 +75,9 @@ int main(int argc, char* argv[]) {
 			switch (mode) {
 			case 0:
 				{
+					#if CV_MAJOR_VERSION == 3
 					cv::setWindowTitle("image", "disparity");
+					#endif
 					cv::imshow("image", output * 256 / disp_size);
 					break;
 				}
@@ -79,13 +85,17 @@ int main(int argc, char* argv[]) {
 				{
 					cv::Mat m;
 					cv::applyColorMap(output * 256 / disp_size, m, cv::COLORMAP_JET);
+					#if CV_MAJOR_VERSION == 3
 					cv::setWindowTitle("image", "disparity color");
+					#endif
 					cv::imshow("image", m);
 					break;
 				}
 			case 2:
 				{
+					#if CV_MAJOR_VERSION == 3
 					cv::setWindowTitle("image", "input");
+					#endif
 					cv::imshow("image", left);
 					break;
 				}
