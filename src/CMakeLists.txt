@@ -16,7 +16,7 @@ SET(STEREOSRCS
 	cuda_utils.cu
 )
 
-if(BUILD_DYNAMIC_LIB)
+if(LIBSGM_SHARED)
 	CUDA_ADD_LIBRARY(sgm stereo_sgm.cpp ${STEREOSRCS} SHARED)
 	target_link_libraries(sgm ${CUDA_nppi_LIBRARY})
 else()

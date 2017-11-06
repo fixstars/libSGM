@@ -2,9 +2,9 @@ cmake_minimum_required(VERSION 2.8)
 
 set(CUDA_ARCH "-arch=sm_50" CACHE STRING "Value of the NVCC -arch option.")
 
-option(ENABLE_ZED_DEMO   "Build a Demo using ZED Camera" OFF)
-option(ENABLE_SAMPLES    "Build samples" OFF)
-option(BUILD_DYNAMIC_LIB "Build a dynamic library" OFF)
+option(ENABLE_ZED_DEMO "Build a Demo using ZED Camera" OFF)
+option(ENABLE_SAMPLES  "Build samples" OFF)
+option(LIBSGM_SHARED   "Build a shared library" OFF)
 
 if(WIN32)
   set(ZED_SDK_LIB "C:\\Program Files (x86)\\ZED SDK\\lib\\sl_zed64.lib" CACHE STRING "ZED SDK library(sl_zed**.llb) path.")
@@ -15,6 +15,10 @@ else()
 endif()
 
 project(libSGM)
+
+configure_file(${CMAKE_SOURCE_DIR}/include/config.h.in
+               ${CMAKE_SOURCE_DIR}/include/config.h
+)
 
 add_subdirectory(src)
 

@@ -1,0 +1,6 @@
+#ifndef __LIBSGM_CONFIG_H__
+#define __LIBSGM_CONFIG_H__
+
+#cmakedefine LIBSGM_SHARED
+
+#endif // __LIBSGM_CONFIG_H__

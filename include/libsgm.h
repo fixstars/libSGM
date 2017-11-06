@@ -26,14 +26,20 @@ limitations under the License.
 * stereo-sgm main header
 */
 
-#if defined(WIN32) || defined(_WIN32)
-	#if defined sgm_EXPORTS
-		#define LIBSGM_API __declspec(dllexport)
+#include "config.h"
+
+#if defined(LIBSGM_SHARED)
+	#if defined(WIN32) || defined(_WIN32)
+		#if defined sgm_EXPORTS
+			#define LIBSGM_API __declspec(dllexport)
+		#else
+			#define LIBSGM_API __declspec(dllimport)
+		#endif
 	#else
-		#define LIBSGM_API __declspec(dllimport)
+		#define LIBSGM_API __attribute__((visibility("default")))
 	#endif
 #else
-	#define LIBSGM_API __attribute__((visibility("default")))
+	#define LIBSGM_API
 #endif
 
 namespace sgm {
