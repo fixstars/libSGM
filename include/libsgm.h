@@ -26,6 +26,16 @@ limitations under the License.
 * stereo-sgm main header
 */
 
+#if defined(WIN32) || defined(_WIN32)
+	#if defined sgm_EXPORTS
+		#define LIBSGM_API __declspec(dllexport)
+	#else
+		#define LIBSGM_API __declspec(dllimport)
+	#endif
+#else
+	#define LIBSGM_API __attribute__((visibility("default")))
+#endif
+
 namespace sgm {
 	struct CudaStereoSGMResources;
 
@@ -53,9 +63,9 @@ namespace sgm {
 		* @param output_depth_bits Disparity image's bits per pixel. It must be 8 or 16.
 		* @param inout_type 	Specify input/output pointer type. See sgm::EXECUTE_TYPE.
 		*/
-		StereoSGM(int width, int height, int disparity_size, int input_depth_bits, int output_depth_bits, EXECUTE_INOUT inout_type);
+		LIBSGM_API StereoSGM(int width, int height, int disparity_size, int input_depth_bits, int output_depth_bits, EXECUTE_INOUT inout_type);
 
-		virtual ~StereoSGM();
+		LIBSGM_API virtual ~StereoSGM();
 
 		/**
 		* Execute stereo semi global matching.
@@ -66,7 +76,7 @@ namespace sgm {
 		* For performance reason, when the instance is created with inout_type == EXECUTE_INOUT_**2CUDA, output_depth_bits == 16, 
 		* you don't have to allocate dst memory yourself. It returns internal cuda pointer. You must not free the pointer.
 		*/
-		void execute(const void* left_pixels, const void* right_pixels, void** dst);
+		LIBSGM_API void execute(const void* left_pixels, const void* right_pixels, void** dst);
 
 	private:
 		StereoSGM(const StereoSGM&);
