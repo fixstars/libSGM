@@ -4,10 +4,10 @@ include_directories(../include)
 
 find_package(CUDA REQUIRED)
 
-if(CUDA_VERSION VERSION_GREATER_EQUAL "9.0")
-	set(NPP_LIBRARIES "${CUDA_nppif_LIBRARY}")
-else()
+if(CUDA_VERSION VERSION_LESS "9.0")
 	set(NPP_LIBRARIES "${CUDA_nppi_LIBRARY}")
+else()
+	set(NPP_LIBRARIES "${CUDA_nppif_LIBRARY}")
 endif()
 
 SET(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} ${CUDA_ARCH}")
