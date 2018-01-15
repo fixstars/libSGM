@@ -16,8 +16,8 @@ endif()
 
 project(libSGM)
 
-configure_file(${CMAKE_SOURCE_DIR}/include/config.h.in
-               ${CMAKE_SOURCE_DIR}/include/config.h
+configure_file(${CMAKE_SOURCE_DIR}/include/libsgm_config.h.in
+               ${CMAKE_SOURCE_DIR}/include/libsgm_config.h
 )
 
 add_subdirectory(src)
