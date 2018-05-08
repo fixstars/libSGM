@@ -71,7 +71,7 @@ are used to test the software.
 
 ## Authors
 The "SGM Team": Samuel Audet, Yoriyuki Kitta, Yuta Noto, Ryo Sakamoto, Akihiro Takagi  
-[FIXSTARS](http://www.fixstars.com/)
+[Fixstars Corporation](http://www.fixstars.com/)
 
 ## License
 Apache License 2.0
