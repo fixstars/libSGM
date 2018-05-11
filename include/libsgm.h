@@ -61,6 +61,15 @@ namespace sgm {
 	*/
 	class StereoSGM {
 	public:
+
+		struct Parameters
+		{
+			int P1;
+			int P2;
+			float uniqueness;
+			Parameters(int P1 = 20, int P2 = 100, float uniqueness = 0.95f) : P1(P1), P2(P2), uniqueness(uniqueness) {}
+		};
+
 		/**
 		* @param width Processed image's width. It must be even.
 		* @param height Processed image's height. It must be even.
@@ -69,7 +78,8 @@ namespace sgm {
 		* @param output_depth_bits Disparity image's bits per pixel. It must be 8 or 16.
 		* @param inout_type 	Specify input/output pointer type. See sgm::EXECUTE_TYPE.
 		*/
-		LIBSGM_API StereoSGM(int width, int height, int disparity_size, int input_depth_bits, int output_depth_bits, EXECUTE_INOUT inout_type);
+		LIBSGM_API StereoSGM(int width, int height, int disparity_size, int input_depth_bits, int output_depth_bits, 
+			EXECUTE_INOUT inout_type, const Parameters& param = Parameters());
 
 		LIBSGM_API virtual ~StereoSGM();
 
@@ -98,5 +108,6 @@ namespace sgm {
 		int input_depth_bits_;
 		int output_depth_bits_;
 		EXECUTE_INOUT inout_type_;
+		Parameters param_;
 	};
 }
