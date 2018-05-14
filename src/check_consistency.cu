@@ -17,8 +17,8 @@ limitations under the License.
 #include "internal.h"
 
 namespace {
-	template<typename SRC_T>
-	__global__ void check_consistency_kernel(uint16_t* d_leftDisp, const uint16_t* d_rightDisp, const SRC_T* d_left, int width, int height)  {
+	template<typename SRC_T, typename DST_T>
+	__global__ void check_consistency_kernel(DST_T* d_leftDisp, const DST_T* d_rightDisp, const SRC_T* d_left, int width, int height)  {
 
 		const int j = blockIdx.x * blockDim.x + threadIdx.x;
 		const int i = blockIdx.y * blockDim.y + threadIdx.y;
@@ -37,6 +37,20 @@ namespace {
 
 namespace sgm {
 	namespace details {
+
+		void check_consistency(uint8_t* d_left_disp, const uint8_t* d_right_disp, const void* d_src_left, int width, int height, int depth_bits) {
+
+			const dim3 blocks(width / 16, height / 16);
+			const dim3 threads(16, 16);
+			if (depth_bits == 16) {
+				check_consistency_kernel<uint16_t> << < blocks, threads >> > (d_left_disp, d_right_disp, (uint16_t*)d_src_left, width, height);
+			}
+			else if (depth_bits == 8) {
+				check_consistency_kernel<uint8_t> << < blocks, threads >> > (d_left_disp, d_right_disp, (uint8_t*)d_src_left, width, height);
+			}
+
+			CudaKernelCheck();
+		}
 
 		void check_consistency(uint16_t* d_left_disp, const uint16_t* d_right_disp, const void* d_src_left, int width, int height, int depth_bits) {
 

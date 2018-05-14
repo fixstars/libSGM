@@ -21,6 +21,16 @@ limitations under the License.
 namespace sgm {
 	namespace details {
 
+		void median_filter(const uint8_t* d_src, uint8_t* d_dst, void* median_filter_buffer, int width, int height) {
+			NppiSize roi = { width, height };
+			NppiSize mask = { 3, 3 };
+			NppiPoint anchor = { 0, 0 };
+
+			NppStatus status = nppiFilterMedian_8u_C1R(d_src, sizeof(Npp8u) * width, d_dst, sizeof(Npp8u) * width, roi, mask, anchor, (Npp8u*)median_filter_buffer);
+
+			assert(status == 0);
+		}
+
 		void median_filter(const uint16_t* d_src, uint16_t* d_dst, void* median_filter_buffer, int width, int height) {
 			NppiSize roi = { width, height };
 			NppiSize mask = { 3, 3 };

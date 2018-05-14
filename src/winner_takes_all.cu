@@ -262,6 +262,26 @@ void WinnerTakesAll<MAX_DISPARITY>::enqueue(
 		stream);
 }
 
+template <size_t MAX_DISPARITY>
+void WinnerTakesAll<MAX_DISPARITY>::enqueue(
+	output_type* left,
+	output_type* right,
+	const cost_type *src,
+	size_t width,
+	size_t height,
+	float uniqueness,
+	cudaStream_t stream)
+{
+	enqueue_winner_takes_all<MAX_DISPARITY>(
+		left,
+		right,
+		src,
+		width,
+		height,
+		uniqueness,
+		stream);
+}
+
 
 template class WinnerTakesAll< 64>;
 template class WinnerTakesAll<128>;

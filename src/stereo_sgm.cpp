@@ -235,34 +235,28 @@ namespace sgm {
 			d_input_right = cu_res_->d_src_right;
 		}
 		
-		cu_res_->sgm_engine->execute((uint8_t*)cu_res_->d_tmp_left_disp, (uint8_t*)cu_res_->d_tmp_right_disp,
+		cu_res_->sgm_engine->execute((uint8_t*)cu_res_->d_left_disp, (uint8_t*)cu_res_->d_right_disp,
 			d_input_left, d_input_right, width_, height_, param_.P1, param_.P2, param_.uniqueness);
 
-		sgm::details::cast_8bit_16bit_array((uint8_t*)cu_res_->d_tmp_left_disp, 
-			(uint16_t*)cu_res_->d_left_disp, width_ * height_);
-		sgm::details::cast_8bit_16bit_array((uint8_t*)cu_res_->d_tmp_right_disp,
-			(uint16_t*)cu_res_->d_right_disp, width_ * height_);
-
-		sgm::details::median_filter((uint16_t*)cu_res_->d_left_disp, (uint16_t*)cu_res_->d_tmp_left_disp, cu_res_->d_median_filter_buffer, width_, height_);
-		sgm::details::median_filter((uint16_t*)cu_res_->d_right_disp, (uint16_t*)cu_res_->d_tmp_right_disp, cu_res_->d_median_filter_buffer, width_, height_);
-
-		sgm::details::check_consistency((uint16_t*)cu_res_->d_tmp_left_disp, (uint16_t*)cu_res_->d_tmp_right_disp, d_input_left, width_, height_, input_depth_bits_);
+		sgm::details::median_filter((uint8_t*)cu_res_->d_left_disp, (uint8_t*)cu_res_->d_tmp_left_disp, cu_res_->d_median_filter_buffer, width_, height_);
+		sgm::details::median_filter((uint8_t*)cu_res_->d_right_disp, (uint8_t*)cu_res_->d_tmp_right_disp, cu_res_->d_median_filter_buffer, width_, height_);
+		sgm::details::check_consistency((uint8_t*)cu_res_->d_tmp_left_disp, (uint8_t*)cu_res_->d_tmp_right_disp, d_input_left, width_, height_, input_depth_bits_);
 
 		// output disparity image
 		void* disparity_image = cu_res_->d_tmp_left_disp;
 
 		if (!is_cuda_output(inout_type_) && output_depth_bits_ == 16) {
-			CudaSafeCall(cudaMemcpy(*dst, disparity_image, sizeof(uint16_t) * width_ * height_, cudaMemcpyDeviceToHost));
+			CudaSafeCall(cudaMemcpy(cu_res_->h_output_16bit_buffer, disparity_image, sizeof(uint8_t) * width_ * height_, cudaMemcpyDeviceToHost));
+			for (int i = 0; i < width_ * height_; i++) { ((uint16_t*)*dst)[i] = (uint16_t)cu_res_->h_output_16bit_buffer[i]; }
 		}
 		else if (is_cuda_output(inout_type_) && output_depth_bits_ == 16) {
-			*dst = disparity_image; // optimize! no-copy!
+			sgm::details::cast_8bit_16bit_array((const uint8_t*)disparity_image, (uint16_t*)*dst, width_ * height_);
 		}
 		else if (!is_cuda_output(inout_type_) && output_depth_bits_ == 8) {
-			CudaSafeCall(cudaMemcpy(cu_res_->h_output_16bit_buffer, disparity_image, sizeof(uint16_t) * width_ * height_, cudaMemcpyDeviceToHost));
-			for (int i = 0; i < width_ * height_; i++) { ((uint8_t*)*dst)[i] = (uint8_t)cu_res_->h_output_16bit_buffer[i]; }
+			CudaSafeCall(cudaMemcpy(*dst, disparity_image, sizeof(uint8_t) * width_ * height_, cudaMemcpyDeviceToHost));
 		}
 		else if (is_cuda_output(inout_type_) && output_depth_bits_ == 8) {
-			sgm::details::cast_16bit_8bit_array((const uint16_t*)disparity_image, (uint8_t*)*dst, width_ * height_);
+			*dst = disparity_image; // optimize! no-copy!
 		}
 		else {
 			std::cerr << "not impl" << std::endl;

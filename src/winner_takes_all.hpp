@@ -31,6 +31,15 @@ public:
 		float uniqueness,
 		cudaStream_t stream);
 
+	void enqueue(
+		output_type *left,
+		output_type *right,
+		const cost_type *src,
+		size_t width,
+		size_t height,
+		float uniqueness,
+		cudaStream_t stream);
+
 };
 
 }

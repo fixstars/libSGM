@@ -38,28 +38,10 @@ public:
 		float uniqueness,
 		cudaStream_t stream)
 	{
-		if(m_input_left.size() != width * height){
-			m_input_left = DeviceBuffer<T>(width * height);
-		}
-		if(m_input_right.size() != width * height){
-			m_input_right = DeviceBuffer<T>(width * height);
-		}
-		cudaMemcpyAsync(
-			m_input_left.data(),
-			src_left,
-			sizeof(T) * width * height,
-			cudaMemcpyDeviceToDevice,
-			stream);
-		cudaMemcpyAsync(
-			m_input_right.data(),
-			src_right,
-			sizeof(T) * width * height,
-			cudaMemcpyDeviceToDevice,
-			stream);
 		m_census_left.enqueue(
-			m_input_left.data(), width, height, stream);
+			src_left, width, height, stream);
 		m_census_right.enqueue(
-			m_input_right.data(), width, height, stream);
+			src_right, width, height, stream);
 		m_path_aggregation.enqueue(
 			m_census_left.get_output(),
 			m_census_right.get_output(),
@@ -67,20 +49,9 @@ public:
 			penalty1, penalty2,
 			stream);
 		m_winner_takes_all.enqueue(
+			dest_left, dest_right,
 			m_path_aggregation.get_output(),
 			width, height, uniqueness,
-			stream);
-		cudaMemcpyAsync(
-			dest_left,
-			m_winner_takes_all.get_left_output(),
-			sizeof(output_type) * width * height,
-			cudaMemcpyDeviceToDevice,
-			stream);
-		cudaMemcpyAsync(
-			dest_right,
-			m_winner_takes_all.get_right_output(),
-			sizeof(output_type) * width * height,
-			cudaMemcpyDeviceToDevice,
 			stream);
 	}
 
