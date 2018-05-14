@@ -76,8 +76,8 @@ namespace sgm {
 		/**
 		* Execute stereo semi global matching.
 		* @param left_pixels	A pointer stored input left image.
-		* @param right_pixels	A pointer stored input rigth image.
-		* @param dst	        Output pointer. User must allocate enoght memory.
+		* @param right_pixels	A pointer stored input right image.
+		* @param dst	        Output pointer. User must allocate enough memory.
 		* @attention
 		* For performance reason, when the instance is created with inout_type == EXECUTE_INOUT_**2CUDA, output_depth_bits == 16, 
 		* you don't have to allocate dst memory yourself. It returns internal cuda pointer. You must not free the pointer.
