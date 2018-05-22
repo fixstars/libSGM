@@ -61,7 +61,6 @@ int main(int argc, char* argv[]) {
 	cv::Mat output(cv::Size(left.cols, left.rows), CV_8UC1);
 
 	ssgm.execute(left.data, right.data, (void**)&output.data);
-
 	// show image
 	cv::imshow("image", output * 256 / disp_size);
 	
