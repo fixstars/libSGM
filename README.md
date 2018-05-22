@@ -19,6 +19,7 @@ Moreover, to build the sample, we need the following libraries:
 - OpenGL
 - GLFW3
 - GLEW
+- CMake 3.10 or later
 
 ## Build Instructions
 ```
