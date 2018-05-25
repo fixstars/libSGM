@@ -19,6 +19,7 @@ libSGMはCUDA (compute capabilities >= 3.0)を必要とします。
 - OpenGL
 - GLFW3
 - GLEW
+- CMake 3.10 以降
 
 ## build
 ```
