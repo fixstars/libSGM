@@ -15,7 +15,6 @@ limitations under the License.
 */
 
 #include "internal.h"
-#include <device_launch_parameters.h>
 
 namespace {
 
