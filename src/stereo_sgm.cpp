@@ -39,8 +39,6 @@ namespace sgm {
 
 		cudaStream_t cuda_streams[8];
 
-		void* d_median_filter_buffer;
-
 		void* d_output_16bit_buffer;
 		uint16_t* h_output_16bit_buffer;
 
@@ -102,7 +100,6 @@ namespace sgm {
 			for (int i = 0; i < 8; i++) {
 				CudaSafeCall(cudaStreamDestroy(this->cuda_streams[i]));
 			}
-			CudaSafeCall(cudaFree(this->d_median_filter_buffer));
 
 			free(h_output_16bit_buffer);
 		}
