@@ -97,7 +97,7 @@ namespace {
 	{
 		const int x = blockIdx.x * blockDim.x + threadIdx.x;
 		const int y = blockIdx.y * blockDim.y + threadIdx.y;
-		if (x < RADIUS || x >= w - RADIUS || h < RADIUS || y >= h - RADIUS)
+		if (x < RADIUS || x >= w - RADIUS || y < RADIUS || y >= h - RADIUS)
 			return;
 
 		uint8_t buf[KSIZE_SQ];
@@ -113,7 +113,7 @@ namespace {
 	{
 		const int x = blockIdx.x * blockDim.x + threadIdx.x;
 		const int y = blockIdx.y * blockDim.y + threadIdx.y;
-		if (x < RADIUS || x >= w - RADIUS || h < RADIUS || y >= h - RADIUS)
+		if (x < RADIUS || x >= w - RADIUS || y < RADIUS || y >= h - RADIUS)
 			return;
 
 		uint16_t buf[KSIZE_SQ];
@@ -130,7 +130,7 @@ namespace {
 		const int x_4 = 4 * (blockIdx.x * blockDim.x + threadIdx.x);
 		const int y = blockIdx.y * blockDim.y + threadIdx.y;
 
-		if (h < RADIUS || y >= h - RADIUS)
+		if (y < RADIUS || y >= h - RADIUS)
 			return;
 
 		uint32_t buf[KSIZE_SQ];
@@ -194,7 +194,7 @@ namespace {
 		const int x_2 = 2 * (blockIdx.x * blockDim.x + threadIdx.x);
 		const int y = blockIdx.y * blockDim.y + threadIdx.y;
 
-		if (h < RADIUS || y >= h - RADIUS)
+		if (y < RADIUS || y >= h - RADIUS)
 			return;
 
 		uint32_t buf[KSIZE_SQ];
