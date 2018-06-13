@@ -39,7 +39,6 @@ namespace sgm {
 
 		cudaStream_t cuda_streams[8];
 
-		void* d_output_16bit_buffer;
 		uint16_t* h_output_16bit_buffer;
 
 		CudaStereoSGMResources(int width_, int height_, int disparity_size_, int input_depth_bits_, int output_depth_bits_, EXECUTE_INOUT inout_type_) {
