@@ -16,8 +16,6 @@ limitations under the License.
 
 #include <iostream>
 
-#include <nppi.h>
-
 #include <libsgm.h>
 
 #include "internal.h"
@@ -93,10 +91,6 @@ namespace sgm {
 
 		cudaStream_t cuda_streams[8];
 
-		Npp32u median_buffer_size;
-		void* d_median_filter_buffer;
-
-		void* d_output_16bit_buffer;
 		uint16_t* h_output_16bit_buffer;
 
 		SemiGlobalMatchingBase* sgm_engine;
@@ -136,19 +130,12 @@ namespace sgm {
 
 			CudaSafeCall(cudaMalloc(&this->d_tmp_left_disp, sizeof(uint16_t) * width_ * height_));
 			CudaSafeCall(cudaMalloc(&this->d_tmp_right_disp, sizeof(uint16_t) * width_ * height_));
+			CudaSafeCall(cudaMemset(&this->d_tmp_left_disp, 0, sizeof(uint16_t) * width_ * height_));
+			CudaSafeCall(cudaMemset(&this->d_tmp_right_disp, 0, sizeof(uint16_t) * width_ * height_));
 
 			for (int i = 0; i < 8; i++) {
 				CudaSafeCall(cudaStreamCreate(&this->cuda_streams[i]));
 			}
-
-			NppiSize roi = { width_, height_ };
-			NppiSize mask = { 3, 3 }; // width, height
-			NppStatus status;
-			status = nppiFilterMedianGetBufferSize_16u_C1R(roi, mask, &this->median_buffer_size);
-			if (status != 0) {
-				throw std::runtime_error("nppi error");
-			}
-			CudaSafeCall(cudaMalloc(&this->d_median_filter_buffer, this->median_buffer_size));
 
 			// create temporary buffer when dst type is 8bit host pointer
 			if (!is_cuda_output(inout_type_) && output_depth_bits_ == 8) {
@@ -179,7 +166,6 @@ namespace sgm {
 			for (int i = 0; i < 8; i++) {
 				CudaSafeCall(cudaStreamDestroy(this->cuda_streams[i]));
 			}
-			CudaSafeCall(cudaFree(this->d_median_filter_buffer));
 
 			free(h_output_16bit_buffer);
 
@@ -238,8 +224,8 @@ namespace sgm {
 		cu_res_->sgm_engine->execute((uint8_t*)cu_res_->d_left_disp, (uint8_t*)cu_res_->d_right_disp,
 			d_input_left, d_input_right, width_, height_, param_.P1, param_.P2, param_.uniqueness);
 
-		sgm::details::median_filter((uint8_t*)cu_res_->d_left_disp, (uint8_t*)cu_res_->d_tmp_left_disp, cu_res_->d_median_filter_buffer, width_, height_);
-		sgm::details::median_filter((uint8_t*)cu_res_->d_right_disp, (uint8_t*)cu_res_->d_tmp_right_disp, cu_res_->d_median_filter_buffer, width_, height_);
+		sgm::details::median_filter((uint8_t*)cu_res_->d_left_disp, (uint8_t*)cu_res_->d_tmp_left_disp, width_, height_);
+		sgm::details::median_filter((uint8_t*)cu_res_->d_right_disp, (uint8_t*)cu_res_->d_tmp_right_disp, width_, height_);
 		sgm::details::check_consistency((uint8_t*)cu_res_->d_tmp_left_disp, (uint8_t*)cu_res_->d_tmp_right_disp, d_input_left, width_, height_, input_depth_bits_);
 
 		// output disparity image

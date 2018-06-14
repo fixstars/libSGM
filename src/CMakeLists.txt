@@ -4,11 +4,6 @@ include_directories(../include)
 
 find_package(CUDA REQUIRED)
 
-if(CUDA_VERSION VERSION_LESS "9.0")
-	set(NPP_LIBRARIES "${CUDA_nppi_LIBRARY}")
-else()
-	set(NPP_LIBRARIES "${CUDA_nppif_LIBRARY}")
-endif()
 
 SET(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} ${CUDA_ARCH}")
 
@@ -16,7 +11,7 @@ file(GLOB STEREOSRCS "*.cu" "*.cpp")
 
 if(LIBSGM_SHARED)
 	CUDA_ADD_LIBRARY(sgm stereo_sgm.cpp ${STEREOSRCS} SHARED)
-	target_link_libraries(sgm ${CUDA_LIBRARIES} ${NPP_LIBRARIES})
+	target_link_libraries(sgm ${CUDA_LIBRARIES})
 else()
 	CUDA_ADD_LIBRARY(sgm stereo_sgm.cpp ${STEREOSRCS} STATIC)
 endif()
