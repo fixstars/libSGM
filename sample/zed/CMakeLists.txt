@@ -32,11 +32,6 @@ if(NOT WIN32)
 	set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -std=c++11")
 endif()
 
-if(CUDA_VERSION VERSION_LESS "9.0")
-	set(NPP_LIBRARIES "${CUDA_nppi_LIBRARY}")
-else()
-	set(NPP_LIBRARIES "${CUDA_nppif_LIBRARY}")
-endif()
 
 CUDA_ADD_EXECUTABLE(zed_demo
 	zed_demo.cpp
@@ -52,5 +47,4 @@ TARGET_LINK_LIBRARIES(zed_demo
 	${OpenCV_LIBS} 
 	${GLEW_LIBRARIES} ${GLFW_LIBRARY} ${OPENGL_LIBRARY}
 	${ZED_SDK_LIB}
-	${NPP_LIBRARIES}
 )
