@@ -234,8 +234,9 @@ namespace sgm {
 		void* disparity_image = cu_res_->d_tmp_left_disp;
 
 		if (!is_cuda_output(inout_type_) && output_depth_bits_ == 16) {
-			CudaSafeCall(cudaMemcpy(cu_res_->h_output_16bit_buffer, disparity_image, sizeof(uint8_t) * width_ * height_, cudaMemcpyDeviceToHost));
-			for (int i = 0; i < width_ * height_; i++) { ((uint16_t*)*dst)[i] = (uint16_t)cu_res_->h_output_16bit_buffer[i]; }
+			void* disparity_image_16 = cu_res_->d_left_disp;
+			sgm::details::cast_8bit_16bit_array((const uint8_t*)disparity_image, (uint16_t*)disparity_image_16, width_ * height_);
+			CudaSafeCall(cudaMemcpy(*dst, disparity_image_16, sizeof(uint16_t) * width_ * height_, cudaMemcpyDeviceToHost));
 		}
 		else if (is_cuda_output(inout_type_) && output_depth_bits_ == 16) {
 			sgm::details::cast_8bit_16bit_array((const uint8_t*)disparity_image, (uint16_t*)*dst, width_ * height_);
