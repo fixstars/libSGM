@@ -30,6 +30,8 @@ namespace sgm {
 		using output_type = uint8_t;
 		virtual void execute(output_type* dst_L, output_type* dst_R, const void* src_L, const void* src_R, 
 			size_t w, size_t h, unsigned int P1, unsigned int P2, float uniqueness) = 0;
+
+		virtual ~SemiGlobalMatchingBase();
 	};
 
 	class SemiGlobalMatching_8_64 : public SemiGlobalMatchingBase {
@@ -175,14 +177,14 @@ namespace sgm {
 
 	StereoSGM::StereoSGM(int width, int height, int disparity_size, int input_depth_bits, int output_depth_bits, 
 		EXECUTE_INOUT inout_type, const Parameters& param) :
+		cu_res_(NULL),
 		width_(width),
 		height_(height),
 		disparity_size_(disparity_size),
 		input_depth_bits_(input_depth_bits),
 		output_depth_bits_(output_depth_bits),
 		inout_type_(inout_type),
-		param_(param),
-		cu_res_(NULL)
+		param_(param)
 	{
 		// check values
 		if (width_ % 2 != 0 || height_ % 2 != 0) {
