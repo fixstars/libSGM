@@ -31,7 +31,7 @@ namespace sgm {
 		virtual void execute(output_type* dst_L, output_type* dst_R, const void* src_L, const void* src_R, 
 			size_t w, size_t h, unsigned int P1, unsigned int P2, float uniqueness) = 0;
 
-		virtual ~SemiGlobalMatchingBase();
+		virtual ~SemiGlobalMatchingBase() {}
 	};
 
 	class SemiGlobalMatching_8_64 : public SemiGlobalMatchingBase {
