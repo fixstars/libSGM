@@ -1,0 +1,46 @@
+image: nvidia/cuda:9.2-devel-ubuntu18.04
+
+before_script:
+  - &general_before_script export DEBIAN_FRONTEND=noninteractive && apt-get update && apt-get install -y build-essential cmake libopencv-dev
+
+stages:
+  - build
+
+.build_template: &build_definition
+  stage: build
+  tags:
+    - docker
+  script:
+    - cmake . -DENABLE_SAMPLES=${build_samples} -DLIBSGM_SHARED=${build_shared}
+    - make
+
+.build_sample_template: &build_sample_definition
+  before_script:
+    - *general_before_script
+    - apt-get install -y libxinerama-dev libxcursor-dev libxi-dev libglew-dev libglfw3-dev
+
+build:samples_on:shared:
+  variables:
+    build_samples: "ON"
+    build_shared: "ON"
+  <<: *build_definition
+  <<: *build_sample_definition
+
+build:samples_on:static:
+  variables:
+    build_samples: "ON"
+    build_shared: "OFF"
+  <<: *build_definition
+  <<: *build_sample_definition
+
+build:samples_off:shared:
+  variables:
+    build_samples: "OFF"
+    build_shared: "ON"
+  <<: *build_definition
+
+build:samples_off:static:
+  variables:
+    build_samples: "OFF"
+    build_shared: "OFF"
+  <<: *build_definition
