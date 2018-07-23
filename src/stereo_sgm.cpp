@@ -81,19 +81,10 @@ namespace sgm {
 	struct CudaStereoSGMResources {
 		void* d_src_left;
 		void* d_src_right;
-		void* d_left;
-		void* d_right;
-		void* d_scost;
-		void* d_matching_cost;
 		void* d_left_disp;
 		void* d_right_disp;
-
 		void* d_tmp_left_disp;
 		void* d_tmp_right_disp;
-
-		cudaStream_t cuda_streams[8];
-
-		uint16_t* h_output_16bit_buffer;
 
 		SemiGlobalMatchingBase* sgm_engine;
 
@@ -119,14 +110,6 @@ namespace sgm {
 				CudaSafeCall(cudaMalloc(&this->d_src_right, input_depth_bits_ / 8 * width_ * height_));
 			}
 			
-
-			CudaSafeCall(cudaMalloc(&this->d_left, sizeof(uint64_t) * width_ * height_));
-			CudaSafeCall(cudaMalloc(&this->d_right, sizeof(uint64_t) * width_ * height_));
-
-			CudaSafeCall(cudaMalloc(&this->d_matching_cost, sizeof(uint8_t) * width_ * height_ * disparity_size_));
-
-			CudaSafeCall(cudaMalloc(&this->d_scost, sizeof(uint16_t) * width_ * height_ * disparity_size_));
-
 			CudaSafeCall(cudaMalloc(&this->d_left_disp, sizeof(uint16_t) * width_ * height_));
 			CudaSafeCall(cudaMalloc(&this->d_right_disp, sizeof(uint16_t) * width_ * height_));
 
@@ -134,42 +117,17 @@ namespace sgm {
 			CudaSafeCall(cudaMalloc(&this->d_tmp_right_disp, sizeof(uint16_t) * width_ * height_));
 			CudaSafeCall(cudaMemset(this->d_tmp_left_disp, 0, sizeof(uint16_t) * width_ * height_));
 			CudaSafeCall(cudaMemset(this->d_tmp_right_disp, 0, sizeof(uint16_t) * width_ * height_));
-
-			for (int i = 0; i < 8; i++) {
-				CudaSafeCall(cudaStreamCreate(&this->cuda_streams[i]));
-			}
-
-			// create temporary buffer when dst type is 8bit host pointer
-			if (!is_cuda_output(inout_type_) && output_depth_bits_ == 8) {
-				this->h_output_16bit_buffer = (uint16_t*)malloc(sizeof(uint16_t) * width_ * height_);
-			}
-			else {
-				this->h_output_16bit_buffer = NULL;
-			}
 		}
 
 		~CudaStereoSGMResources() {
 			CudaSafeCall(cudaFree(this->d_src_left));
 			CudaSafeCall(cudaFree(this->d_src_right));
 
-			CudaSafeCall(cudaFree(this->d_left));
-			CudaSafeCall(cudaFree(this->d_right));
-
-			CudaSafeCall(cudaFree(this->d_matching_cost));
-
-			CudaSafeCall(cudaFree(this->d_scost));
-
 			CudaSafeCall(cudaFree(this->d_left_disp));
 			CudaSafeCall(cudaFree(this->d_right_disp));
 
 			CudaSafeCall(cudaFree(this->d_tmp_left_disp));
 			CudaSafeCall(cudaFree(this->d_tmp_right_disp));
-
-			for (int i = 0; i < 8; i++) {
-				CudaSafeCall(cudaStreamDestroy(this->cuda_streams[i]));
-			}
-
-			free(h_output_16bit_buffer);
 
 			delete sgm_engine;
 		}
