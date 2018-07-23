@@ -99,7 +99,7 @@ namespace sgm {
 			else if (input_depth_bits_ == 16 && disparity_size_ == 128)
 				sgm_engine = new SemiGlobalMatching_16_128();
 			else
-				abort();
+				throw std::logic_error("depth bits must be 8 or 16, and disparity size must be 64 or 128");
 
 			if (is_cuda_input(inout_type_)) {
 				this->d_src_left = NULL;
@@ -147,15 +147,15 @@ namespace sgm {
 		// check values
 		if (width_ % 2 != 0 || height_ % 2 != 0) {
 			width_ = height_ = input_depth_bits_ = output_depth_bits_ = disparity_size_ = 0;
-			throw std::runtime_error("width and height must be even");
+			throw std::logic_error("width and height must be even");
 		}
 		if (input_depth_bits_ != 8 && input_depth_bits_ != 16 && output_depth_bits_ != 8 && output_depth_bits_ != 16) {
 			width_ = height_ = input_depth_bits_ = output_depth_bits_ = disparity_size_ = 0;
-			throw std::runtime_error("depth bits must be 8 or 16");
+			throw std::logic_error("depth bits must be 8 or 16");
 		}
 		if (disparity_size_ != 64 && disparity_size_ != 128) {
 			width_ = height_ = input_depth_bits_ = output_depth_bits_ = disparity_size_ = 0;
-			throw std::runtime_error("disparity size must be 64 or 128");
+			throw std::logic_error("disparity size must be 64 or 128");
 		}
 
 		cu_res_ = new CudaStereoSGMResources(width_, height_, disparity_size_, input_depth_bits_, output_depth_bits_, inout_type_);
