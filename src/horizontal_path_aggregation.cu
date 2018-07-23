@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 #include <cstdio>
-#include "vertical_path_aggregation.hpp"
+#include "horizontal_path_aggregation.hpp"
 #include "path_aggregation_common.hpp"
 
 namespace sgm {
