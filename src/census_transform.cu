@@ -128,56 +128,6 @@ void enqueue_census_transform(
 	census_transform_kernel<<<gdim, bdim, 0, stream>>>(dest, src, width, height);
 }
 
-/*
-static constexpr int BLOCK_WIDTH  = 32;
-static constexpr int BLOCK_HEIGHT =  8;
-
-template <typename T>
-__global__ void census_transform_kernel(
-	feature_type *dest,
-	const T *src,
-	unsigned int width,
-	unsigned int height)
-{
-	const int half_kw = WINDOW_WIDTH  / 2;
-	const int half_kh = WINDOW_HEIGHT / 2;
-
-	const int x = threadIdx.x + blockIdx.x * BLOCK_WIDTH;
-	const int y = threadIdx.y + blockIdx.y * BLOCK_HEIGHT;
-	if(x >= width || y >= height){
-		return;
-	}
-	if(x < half_kw || width - half_kw <= x || y < half_kh || height - half_kh <= y){
-		dest[x + y * width] = 0;
-		return;
-	}
-
-	const auto center = src[x + y * width];
-	uint64_t result = 0;
-	for(int i = -half_kh; i <= half_kh; ++i){
-		for(int j = -half_kw; j <= half_kw; ++j){
-			const auto value = src[(x + j) + (y + i) * width];
-			result = (result << 1) | (center > value);
-		}
-	}
-	dest[x + y * width] = result;
-}
-
-template <typename T>
-void enqueue_census_transform(
-	feature_type *dest,
-	const T *src,
-	size_t width,
-	size_t height,
-	cudaStream_t stream)
-{
-	const dim3 gdim(
-		(width  + BLOCK_WIDTH  - 1) / BLOCK_WIDTH,
-		(height + BLOCK_HEIGHT - 1) / BLOCK_HEIGHT);
-	const dim3 bdim(BLOCK_WIDTH, BLOCK_HEIGHT);
-	census_transform_kernel<<<gdim, bdim, 0, stream>>>(dest, src, width, height);
-}
-*/
 }
 
 
