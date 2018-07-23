@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.0)
 
 set(CUDA_ARCH "-arch=sm_50" CACHE STRING "Value of the NVCC -arch option.")
 
@@ -14,7 +14,7 @@ else()
   set(ZED_SDK_INCLUDE_DIR "/usr/local/zed/include" CACHE STRING "ZED SDK include path.")
 endif()
 
-project(libSGM)
+project(libSGM VERSION 1.0.0)
 
 configure_file(${CMAKE_SOURCE_DIR}/include/libsgm_config.h.in
                ${CMAKE_SOURCE_DIR}/include/libsgm_config.h
