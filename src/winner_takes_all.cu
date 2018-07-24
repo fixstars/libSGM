@@ -14,243 +14,299 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-#include "internal.h"
+#include <cstdio>
+#include "winner_takes_all.hpp"
+#include "utility.hpp"
 
-static const int WTA_PIXEL_IN_BLOCK = 8;
+namespace sgm {
 
 namespace {
 
-	__device__ inline int min_warp(int val) {
-		val = min(val, __shfl_xor(val, 16));
-		val = min(val, __shfl_xor(val, 8));
-		val = min(val, __shfl_xor(val, 4));
-		val = min(val, __shfl_xor(val, 2));
-		val = min(val, __shfl_xor(val, 1));
-		return __shfl(val, 0);
+static constexpr unsigned int NUM_PATHS = 8u;
+
+static constexpr unsigned int WARPS_PER_BLOCK = 8u;
+static constexpr unsigned int BLOCK_SIZE = WARPS_PER_BLOCK * WARP_SIZE;
+
+
+__device__ inline void update_top2(uint32_t& v0, uint32_t& v1, uint32_t x){
+	const uint32_t y = max(x, v0);
+	v0 = min(x, v0);
+	v1 = min(y, v1);
+}
+
+struct Top2 {
+	uint32_t values[2];
+
+	__device__ void initialize(){
+		values[0] = 0xffffffffu;
+		values[1] = 0xffffffffu;
 	}
 
-	__global__ void winner_takes_all_kernel64(uint16_t* leftDisp, uint16_t* rightDisp, const uint16_t* __restrict__ d_cost, int width, int height)
-	{
-		const float uniqueness = 0.95f;
-		const int DISP_SIZE = 64;
-		int idx = threadIdx.x;
-		int x = blockIdx.x * WTA_PIXEL_IN_BLOCK + threadIdx.y;
-		int y = blockIdx.y;
+	__device__ void push(uint32_t x){
+		update_top2(values[0], values[1], x);
+	}
+};
 
-		const size_t cost_offset = DISP_SIZE * (y * width + x);
-		const uint16_t* current_cost = d_cost + cost_offset;
-		__shared__ uint16_t tmp_costs_block[DISP_SIZE * WTA_PIXEL_IN_BLOCK];
-		uint16_t* tmp_costs = &tmp_costs_block[DISP_SIZE * threadIdx.y];
+template <unsigned int GROUP_SIZE, unsigned int STEP>
+struct subgroup_merge_top2_impl {
+	static __device__ Top2 call(Top2 x){
+#if CUDA_VERSION >= 9000
+		const uint32_t a = __shfl_xor_sync(0xffffffffu, x.values[0], STEP / 2, GROUP_SIZE);
+		const uint32_t b = __shfl_xor_sync(0xffffffffu, x.values[1], STEP / 2, GROUP_SIZE);
+#else
+		const uint32_t a = __shfl_xor(x.values[0], STEP / 2, GROUP_SIZE);
+		const uint32_t b = __shfl_xor(x.values[1], STEP / 2, GROUP_SIZE);
+#endif
+		x.push(a);
+		x.push(b);
+		return subgroup_merge_top2_impl<GROUP_SIZE, STEP / 2>::call(x);
+	}
+};
 
-		uint32_t tmp_cL1, tmp_cL2;
-		uint32_t tmp_cR1, tmp_cR2;
+template <unsigned int GROUP_SIZE>
+struct subgroup_merge_top2_impl<GROUP_SIZE, 1u> {
+	static __device__ Top2 call(Top2 x){
+		return x;
+	}
+};
 
-		// right (1)
-		tmp_costs[idx] = ((x + idx) >= width) ? 0xffff : *(d_cost + DISP_SIZE * (y * width + (x + idx)) + idx);
-		tmp_costs[idx + 32] = ((x + (idx + 32)) >= width) ? 0xffff : *(d_cost + DISP_SIZE * (y * width + (x + idx + 32)) + idx + 32);
+template <unsigned int GROUP_SIZE>
+__device__ inline Top2 subgroup_merge_top2(Top2 x){
+	return subgroup_merge_top2_impl<GROUP_SIZE, GROUP_SIZE>::call(x);
+}
 
-		tmp_cL1 = current_cost[idx];
-		tmp_cL2 = current_cost[idx + 32];
-		tmp_cR1 = tmp_costs[idx];
-		tmp_cR2 = tmp_costs[idx + 32];
+__device__ inline uint32_t pack_cost_index(uint32_t cost, uint32_t index){
+	union {
+		uint32_t uint32;
+		ushort2 uint16x2;
+	} u;
+	u.uint16x2.x = static_cast<uint16_t>(index);
+	u.uint16x2.y = static_cast<uint16_t>(cost);
+	return u.uint32;
+}
 
-		tmp_cL1 = (tmp_cL1 << 16) + idx;
-		tmp_cL2 = (tmp_cL2 << 16) + idx + 32;
-		tmp_cR1 = (tmp_cR1 << 16) + idx;
-		tmp_cR2 = (tmp_cR2 << 16) + idx + 32;
-		//////////////////////////////////////
+__device__ uint32_t unpack_cost(uint32_t packed){
+	return packed >> 16;
+}
 
-		int valL1 = min(tmp_cL1, tmp_cL2);
-		int minTempL1 = min_warp(valL1);
+__device__ uint32_t unpack_index(uint32_t packed){
+	return packed & 0xffffu;
+}
 
-		int minCostL1 = (minTempL1 >> 16);
-		int minDispL1 = minTempL1 & 0xffff;
-		//////////////////////////////////////
+__device__ inline uint32_t compute_disparity(Top2 t2, float uniqueness){
+	const float cost0 = static_cast<float>(unpack_cost(t2.values[0]));
+	const float cost1 = static_cast<float>(unpack_cost(t2.values[1]));
+	const int disp0 = static_cast<int>(unpack_index(t2.values[0]));
+	const int disp1 = static_cast<int>(unpack_index(t2.values[1]));
+	if(static_cast<float>(cost1) * uniqueness >= static_cast<float>(cost0)){
+		return static_cast<uint32_t>(disp0);
+	}else if(abs(disp1 - disp0) <= 1){
+		return static_cast<uint32_t>(disp0);
+	}else{
+		return 0;
+	}
+}
 
-		if (idx + x >= width || idx == minDispL1) { tmp_cL1 = 0x7fffffff; }
-		if (idx + 32 + x >= width || idx + 32 == minDispL1) { tmp_cL2 = 0x7fffffff; }
+template <unsigned int MAX_DISPARITY>
+__global__ void winner_takes_all_kernel(
+	output_type *left_dest,
+	output_type *right_dest,
+	const cost_type *src,
+	unsigned int width,
+	unsigned int height,
+	float uniqueness)
+{
+	static const unsigned int ACCUMULATION_PER_THREAD = 16u;
+	static const unsigned int REDUCTION_PER_THREAD = MAX_DISPARITY / WARP_SIZE;
+	static const unsigned int ACCUMULATION_INTERVAL = ACCUMULATION_PER_THREAD / REDUCTION_PER_THREAD;
+	static const unsigned int UNROLL_DEPTH = 
+		(REDUCTION_PER_THREAD > ACCUMULATION_INTERVAL)
+			? REDUCTION_PER_THREAD
+			: ACCUMULATION_INTERVAL;
 
-		int valL2 = min(tmp_cL1, tmp_cL2);
-		int minTempL2 = min_warp(valL2);
-		int minCostL2 = (minTempL2 >> 16);
-		int minDispL2 = minTempL2 & 0xffff;
-		minDispL2 = minDispL2 == 0xffff ? -1 : minDispL2;
-		//////////////////////////////////////
+	const unsigned int cost_step = MAX_DISPARITY * width * height;
+	const unsigned int warp_id = threadIdx.x / WARP_SIZE;
+	const unsigned int lane_id = threadIdx.x % WARP_SIZE;
 
-		if (idx + x >= width) { tmp_cR1 = 0x7fffffff; }
-		if (idx + 32 + x >= width) { tmp_cR2 = 0x7fffffff; }
+	const unsigned int y = blockIdx.x * WARPS_PER_BLOCK + warp_id;
+	src += y * MAX_DISPARITY * width;
+	left_dest  += y * width;
+	right_dest += y * width;
 
-		int valR1 = min(tmp_cR1, tmp_cR2);
-		int minTempR1 = min_warp(valR1);
+	if(y >= height){
+		return;
+	}
 
-		int minCostR1 = (minTempR1 >> 16);
-		int minDispR1 = minTempR1 & 0xffff;
-		if (minDispR1 == 0xffff) { minDispR1 = -1; }
+	__shared__ uint16_t smem_cost_sum[WARPS_PER_BLOCK][ACCUMULATION_INTERVAL][MAX_DISPARITY];
 
-		///////////////////////////////////////////////////////////////////////////////////
-		// right (2)
-		tmp_costs[idx] = (idx == minDispR1 || (x + idx) >= width) ? 0xffff : tmp_costs[idx];
-		tmp_costs[idx + 32] = ((idx + 32) == minDispR1 || (x + (idx + 32)) >= width) ? 0xffff : tmp_costs[idx + 32];
+	Top2 right_top2[REDUCTION_PER_THREAD];
+	for(unsigned int i = 0; i < REDUCTION_PER_THREAD; ++i){
+		right_top2[i].initialize();
+	}
 
-		tmp_cR1 = tmp_costs[idx];
-		tmp_cR1 = (tmp_cR1 << 16) + idx;
-
-		tmp_cR2 = tmp_costs[idx + 32];
-		tmp_cR2 = (tmp_cR2 << 16) + idx + 32;
-
-		if (idx + x >= width || idx == minDispR1) { tmp_cR1 = 0x7fffffff; }
-		if (idx + 32 + x >= width || idx + 32 == minDispR1) { tmp_cR2 = 0x7fffffff; }
-
-		int valR2 = min(tmp_cR1, tmp_cR2); // DS == 64
-		int minTempR2 = min_warp(valR2);
-		int minCostR2 = (minTempR2 >> 16);
-		int minDispR2 = minTempR2 & 0xffff;
-		if (minDispR2 == 0xffff) { minDispR2 = -1; }
-		///////////////////////////////////////////////////////////////////////////////////
-
-		if (idx == 0) {
-			float lhv = minCostL2 * uniqueness;
-			leftDisp[y * width + x] = (lhv < minCostL1 && abs(minDispL1 - minDispL2) > 1) ? 0 : minDispL1 + 1; // add "+1" 
-			float rhv = minCostR2 * uniqueness;
-			rightDisp[y * width + x] = (rhv < minCostR1 && abs(minDispR1 - minDispR2) > 1) ? 0 : minDispR1 + 1; // add "+1" 
+	for(unsigned int x0 = 0; x0 < width; x0 += UNROLL_DEPTH){
+#pragma unroll
+		for(unsigned int x1 = 0; x1 < UNROLL_DEPTH; ++x1){
+			if(x1 % ACCUMULATION_INTERVAL == 0){
+				const unsigned int k = lane_id * ACCUMULATION_PER_THREAD;
+				const unsigned int k_hi = k / MAX_DISPARITY;
+				const unsigned int k_lo = k % MAX_DISPARITY;
+				const unsigned int x = x0 + x1 + k_hi;
+				if(x < width){
+					const unsigned int offset = x * MAX_DISPARITY + k_lo;
+					uint32_t sum[ACCUMULATION_PER_THREAD];
+					for(unsigned int i = 0; i < ACCUMULATION_PER_THREAD; ++i){
+						sum[i] = 0;
+					}
+					for(unsigned int p = 0; p < NUM_PATHS; ++p){
+						uint32_t load_buffer[ACCUMULATION_PER_THREAD];
+						load_uint8_vector<ACCUMULATION_PER_THREAD>(
+							load_buffer, &src[p * cost_step + offset]);
+						for(unsigned int i = 0; i < ACCUMULATION_PER_THREAD; ++i){
+							sum[i] += load_buffer[i];
+						}
+					}
+					store_uint16_vector<ACCUMULATION_PER_THREAD>(
+						&smem_cost_sum[warp_id][k_hi][k_lo], sum);
+				}
+#if CUDA_VERSION >= 9000
+				__syncwarp();
+#else
+				__threadfence_block();
+#endif
+			}
+			const unsigned int x = x0 + x1;
+			if(x < width){
+				// Load sum of costs
+				const unsigned int smem_x = x1 % ACCUMULATION_INTERVAL;
+				const unsigned int k0 = lane_id * REDUCTION_PER_THREAD;
+				uint32_t local_cost_sum[REDUCTION_PER_THREAD];
+				load_uint16_vector<REDUCTION_PER_THREAD>(
+					local_cost_sum, &smem_cost_sum[warp_id][smem_x][k0]);
+				// Pack sum of costs and dispairty
+				uint32_t local_packed_cost[REDUCTION_PER_THREAD];
+				for(unsigned int i = 0; i < REDUCTION_PER_THREAD; ++i){
+					local_packed_cost[i] = pack_cost_index(local_cost_sum[i], k0 + i);
+				}
+				// Update left
+				Top2 left_top2;
+				left_top2.initialize();
+				for(unsigned int i = 0; i < REDUCTION_PER_THREAD; ++i){
+					left_top2.push(local_packed_cost[i]);
+				}
+				left_top2 = subgroup_merge_top2<WARP_SIZE>(left_top2);
+				if(lane_id == 0){
+					left_dest[x] = compute_disparity(left_top2, uniqueness);
+				}
+				// Update right
+#pragma unroll
+				for(unsigned int i = 0; i < REDUCTION_PER_THREAD; ++i){
+					const unsigned int k = lane_id * REDUCTION_PER_THREAD + i;
+					const int p = static_cast<int>(((x - k) & ~(MAX_DISPARITY - 1)) + k);
+					const unsigned int d = static_cast<unsigned int>(x - p);
+#if CUDA_VERSION >= 9000
+					const uint32_t recv = __shfl_sync(0xffffffffu,
+						local_packed_cost[(REDUCTION_PER_THREAD - i + x1) % REDUCTION_PER_THREAD],
+						d / REDUCTION_PER_THREAD,
+						WARP_SIZE);
+#else
+					const uint32_t recv = __shfl(
+						local_packed_cost[(REDUCTION_PER_THREAD - i + x1) % REDUCTION_PER_THREAD],
+						d / REDUCTION_PER_THREAD,
+						WARP_SIZE);
+#endif
+					right_top2[i].push(recv);
+					if(d == MAX_DISPARITY - 1){
+						if(0 <= p){
+							right_dest[p] = compute_disparity(right_top2[i], uniqueness);
+						}
+						right_top2[i].initialize();
+					}
+				}
+			}
 		}
 	}
-
-	__global__ void winner_takes_all_kernel128(uint16_t* leftDisp, uint16_t* rightDisp, const uint16_t* __restrict__ d_cost, int width, int height)
-	{
-		const int DISP_SIZE = 128;
-		const float uniqueness = 0.95f;
-
-		int idx = threadIdx.x;
-		int x = blockIdx.x * WTA_PIXEL_IN_BLOCK + threadIdx.y;
-		int y = blockIdx.y;
-
-		const size_t cost_offset = DISP_SIZE * (y * width + x);
-		const uint16_t* current_cost = d_cost + cost_offset;
-		__shared__ uint16_t tmp_costs_block[DISP_SIZE * WTA_PIXEL_IN_BLOCK];
-		uint16_t* tmp_costs = &tmp_costs_block[DISP_SIZE * threadIdx.y];
-
-		uint32_t tmp_cL1, tmp_cL2; uint32_t tmp_cL3, tmp_cL4;
-		uint32_t tmp_cR1, tmp_cR2; uint32_t tmp_cR3, tmp_cR4;
-
-		// right (1)
-		const int idx_1 = idx * 4 + 0;
-		const int idx_2 = idx * 4 + 1;
-		const int idx_3 = idx * 4 + 2;
-		const int idx_4 = idx * 4 + 3;
-
-		// TODO optimize global memory loads
-		tmp_costs[idx_1] = ((x + (idx_1)) >= width) ? 0xffff : d_cost[DISP_SIZE * (y * width + (x + idx_1)) + idx_1]; // d_cost[y][x + idx0][idx0]
-		tmp_costs[idx_2] = ((x + (idx_2)) >= width) ? 0xffff : d_cost[DISP_SIZE * (y * width + (x + idx_2)) + idx_2];
-		tmp_costs[idx_3] = ((x + (idx_3)) >= width) ? 0xffff : d_cost[DISP_SIZE * (y * width + (x + idx_3)) + idx_3];
-		tmp_costs[idx_4] = ((x + (idx_4)) >= width) ? 0xffff : d_cost[DISP_SIZE * (y * width + (x + idx_4)) + idx_4];
-
-		uint2 tmp_vcL1 = *reinterpret_cast<const uint2*>(&current_cost[idx_1]);
-		const uint2 idx_v = make_uint2((idx_2 << 16) | idx_1, (idx_4 << 16) | idx_3);
-
-		tmp_cR1 = tmp_costs[idx_1];
-		tmp_cR2 = tmp_costs[idx_2];
-		tmp_cR3 = tmp_costs[idx_3];
-		tmp_cR4 = tmp_costs[idx_4];
-
-		tmp_cL1 = __byte_perm(idx_v.x, tmp_vcL1.x, 0x5410);
-		tmp_cL2 = __byte_perm(idx_v.x, tmp_vcL1.x, 0x7632);
-		tmp_cL3 = __byte_perm(idx_v.y, tmp_vcL1.y, 0x5410);
-		tmp_cL4 = __byte_perm(idx_v.y, tmp_vcL1.y, 0x7632);
-
-		tmp_cR1 = (tmp_cR1 << 16) + idx_1;
-		tmp_cR2 = (tmp_cR2 << 16) + idx_2;
-		tmp_cR3 = (tmp_cR3 << 16) + idx_3;
-		tmp_cR4 = (tmp_cR4 << 16) + idx_4;
-		//////////////////////////////////////
-
-		int valL1 = min(min(tmp_cL1, tmp_cL2), min(tmp_cL3, tmp_cL4));
-		int minTempL1 = min_warp(valL1);
-
-		int minCostL1 = (minTempL1 >> 16);
-		int minDispL1 = minTempL1 & 0xffff;
-		//////////////////////////////////////
-		if (idx_1 + x >= width || idx_1 == minDispL1) { tmp_cL1 = 0x7fffffff; }
-		if (idx_2 + x >= width || idx_2 == minDispL1) { tmp_cL2 = 0x7fffffff; }
-		if (idx_3 + x >= width || idx_3 == minDispL1) { tmp_cL3 = 0x7fffffff; }
-		if (idx_4 + x >= width || idx_4 == minDispL1) { tmp_cL4 = 0x7fffffff; }
-
-		int valL2 = min(min(tmp_cL1, tmp_cL2), min(tmp_cL3, tmp_cL4));
-		int minTempL2 = min_warp(valL2);
-		int minCostL2 = (minTempL2 >> 16);
-		int minDispL2 = minTempL2 & 0xffff;
-		minDispL2 = minDispL2 == 0xffff ? -1 : minDispL2;
-		//////////////////////////////////////
-
-		if (idx_1 + x >= width) { tmp_cR1 = 0x7fffffff; }
-		if (idx_2 + x >= width) { tmp_cR2 = 0x7fffffff; }
-		if (idx_3 + x >= width) { tmp_cR3 = 0x7fffffff; }
-		if (idx_4 + x >= width) { tmp_cR4 = 0x7fffffff; }
-
-		int valR1 = min(min(tmp_cR1, tmp_cR2), min(tmp_cR3, tmp_cR4));
-		int minTempR1 = min_warp(valR1);
-
-		int minCostR1 = (minTempR1 >> 16);
-		int minDispR1 = minTempR1 & 0xffff;
-		if (minDispR1 == 0xffff) { minDispR1 = -1; }
-		///////////////////////////////////////////////////////////////////////////////////
-		// right (2)
-		tmp_costs[idx_1] = ((idx_1) == minDispR1 || (x + (idx_1)) >= width) ? 0xffff : tmp_costs[idx_1];
-		tmp_costs[idx_2] = ((idx_2) == minDispR1 || (x + (idx_2)) >= width) ? 0xffff : tmp_costs[idx_2];
-		tmp_costs[idx_3] = ((idx_3) == minDispR1 || (x + (idx_3)) >= width) ? 0xffff : tmp_costs[idx_3];
-		tmp_costs[idx_4] = ((idx_4) == minDispR1 || (x + (idx_4)) >= width) ? 0xffff : tmp_costs[idx_4];
-
-		tmp_cR1 = tmp_costs[idx_1];
-		tmp_cR1 = (tmp_cR1 << 16) + idx_1;
-
-		tmp_cR2 = tmp_costs[idx_2];
-		tmp_cR2 = (tmp_cR2 << 16) + idx_2;
-
-		tmp_cR3 = tmp_costs[idx_3];
-		tmp_cR3 = (tmp_cR3 << 16) + idx_3;
-
-		tmp_cR4 = tmp_costs[idx_4];
-		tmp_cR4 = (tmp_cR4 << 16) + idx_4;
-
-		if (idx_1 + x >= width || idx_1 == minDispR1) { tmp_cR1 = 0x7fffffff; }
-		if (idx_2 + x >= width || idx_2 == minDispR1) { tmp_cR2 = 0x7fffffff; }
-		if (idx_3 + x >= width || idx_3 == minDispR1) { tmp_cR3 = 0x7fffffff; }
-		if (idx_4 + x >= width || idx_4 == minDispR1) { tmp_cR4 = 0x7fffffff; }
-
-		int valR2 = min(min(tmp_cR1, tmp_cR2), min(tmp_cR3, tmp_cR4));
-		int minTempR2 = min_warp(valR2);
-		int minCostR2 = (minTempR2 >> 16);
-		int minDispR2 = minTempR2 & 0xffff;
-		if (minDispR2 == 0xffff) { minDispR2 = -1; }
-		///////////////////////////////////////////////////////////////////////////////////
-
-		if (idx == 0) {
-			float lhv = minCostL2 * uniqueness;
-			leftDisp[y * width + x] = (lhv < minCostL1 && abs(minDispL1 - minDispL2) > 1) ? 0 : minDispL1 + 1; // add "+1" 
-			float rhv = minCostR2 * uniqueness;
-			rightDisp[y * width + x] = (rhv < minCostR1 && abs(minDispR1 - minDispR2) > 1) ? 0 : minDispR1 + 1; // add "+1" 
+	for(unsigned int i = 0; i < REDUCTION_PER_THREAD; ++i){
+		const unsigned int k = lane_id * REDUCTION_PER_THREAD + i;
+		const int p = static_cast<int>(((width - k) & ~(MAX_DISPARITY - 1)) + k);
+		if(p < width){
+			right_dest[p] = compute_disparity(right_top2[i], uniqueness);
 		}
 	}
+}
+
+template <size_t MAX_DISPARITY>
+void enqueue_winner_takes_all(
+	output_type *left_dest,
+	output_type *right_dest,
+	const cost_type *src,
+	unsigned int width,
+	unsigned int height,
+	float uniqueness,
+	cudaStream_t stream)
+{
+	const unsigned int gdim =
+		(height + WARPS_PER_BLOCK - 1) / WARPS_PER_BLOCK;
+	const unsigned int bdim = BLOCK_SIZE;
+	winner_takes_all_kernel<MAX_DISPARITY><<<gdim, bdim, 0, stream>>>(
+		left_dest, right_dest, src, width, height, uniqueness);
+}
 
 }
 
 
+template <size_t MAX_DISPARITY>
+WinnerTakesAll<MAX_DISPARITY>::WinnerTakesAll()
+	: m_left_buffer()
+	, m_right_buffer()
+{ }
 
-namespace sgm {
-	namespace details {
-
-		void winner_takes_all(const uint16_t* d_scost, uint16_t* d_left_disp, uint16_t* d_right_disp, int width, int height, int disp_size) {
-			if (disp_size == 64) {
-				dim3 blocks(width / WTA_PIXEL_IN_BLOCK, height);
-				dim3 threads(32, WTA_PIXEL_IN_BLOCK);
-				winner_takes_all_kernel64 << < blocks, threads >> > (d_left_disp, d_right_disp, d_scost, width, height);
-			}
-			else if (disp_size == 128) {
-				dim3 blocks(width / WTA_PIXEL_IN_BLOCK, height);
-				dim3 threads(32, WTA_PIXEL_IN_BLOCK);
-				winner_takes_all_kernel128 << < blocks, threads >> > (d_left_disp, d_right_disp, d_scost, width, height);
-			}
-		}
-
+template <size_t MAX_DISPARITY>
+void WinnerTakesAll<MAX_DISPARITY>::enqueue(
+	const cost_type *src,
+	size_t width,
+	size_t height,
+	float uniqueness,
+	cudaStream_t stream)
+{
+	if(m_left_buffer.size() != width * height){
+		m_left_buffer = DeviceBuffer<output_type>(width * height);
 	}
+	if(m_right_buffer.size() != width * height){
+		m_right_buffer = DeviceBuffer<output_type>(width * height);
+	}
+	enqueue_winner_takes_all<MAX_DISPARITY>(
+		m_left_buffer.data(),
+		m_right_buffer.data(),
+		src,
+		width,
+		height,
+		uniqueness,
+		stream);
+}
+
+template <size_t MAX_DISPARITY>
+void WinnerTakesAll<MAX_DISPARITY>::enqueue(
+	output_type* left,
+	output_type* right,
+	const cost_type *src,
+	size_t width,
+	size_t height,
+	float uniqueness,
+	cudaStream_t stream)
+{
+	enqueue_winner_takes_all<MAX_DISPARITY>(
+		left,
+		right,
+		src,
+		width,
+		height,
+		uniqueness,
+		stream);
+}
+
+
+template class WinnerTakesAll< 64>;
+template class WinnerTakesAll<128>;
+
 }

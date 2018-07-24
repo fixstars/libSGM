@@ -33,20 +33,14 @@ limitations under the License.
 namespace sgm {
 	namespace details {
 
-		void census(const void* d_src, uint64_t* d_dst, int window_width, int window_height, int width, int height, int depth_bits, cudaStream_t cuda_stream);
-
-		void matching_cost(const uint64_t* d_left, const uint64_t* d_right, uint8_t* d_matching_cost, int width, int height, int disp_size);
-
-		void scan_scost(const uint8_t* d_matching_cost, uint16_t* d_scost, int width, int height, int disp_size, cudaStream_t cuda_streams[]);
-
-		void winner_takes_all(const uint16_t* d_scost, uint16_t* d_left_disp, uint16_t* d_right_disp, int width, int height, int disp_size);
-		
 		void median_filter(const uint8_t* d_src, uint8_t* d_dst, int width, int height);
 		void median_filter(const uint16_t* d_src, uint16_t* d_dst, int width, int height);
 
+		void check_consistency(uint8_t* d_left_disp, const uint8_t* d_right_disp, const void* d_src_left, int width, int height, int depth_bits);
 		void check_consistency(uint16_t* d_left_disp, const uint16_t* d_right_disp, const void* d_src_left, int width, int height, int depth_bits);
 
 		void cast_16bit_8bit_array(const uint16_t* arr16bits, uint8_t* arr8bits, int num_elements);
+		void cast_8bit_16bit_array(const uint8_t* arr8bits, uint16_t* arr16bits, int num_elements);
 
 		inline void cuda_safe_call(cudaError error, const char *file, const int line)
 		{

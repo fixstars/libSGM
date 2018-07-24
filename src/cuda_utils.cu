@@ -23,6 +23,11 @@ namespace {
 		arr8bits[i] = (uint8_t)arr16bits[i];
 	}
 
+	__global__ void cast_8bit_16bit_array_kernel(const uint8_t* arr8bits, uint16_t* arr16bits, int num_elements) {
+		int i = blockIdx.x * blockDim.x + threadIdx.x;
+		arr16bits[i] = (uint16_t)arr8bits[i];
+	}
+
 }
 
 namespace sgm {
@@ -32,6 +37,15 @@ namespace sgm {
 			for (int mod = 1024; mod != 0; mod >>= 1) {
 				if (num_elements % mod == 0) {
 					cast_16bit_8bit_array_kernel << <num_elements / mod, mod >> >(arr16bits, arr8bits, num_elements);
+					break;
+				}
+			}
+		}
+
+		void cast_8bit_16bit_array(const uint8_t* arr8bits, uint16_t* arr16bits, int num_elements) {
+			for (int mod = 1024; mod != 0; mod >>= 1) {
+				if (num_elements % mod == 0) {
+					cast_8bit_16bit_array_kernel << <num_elements / mod, mod >> >(arr8bits, arr16bits, num_elements);
 					break;
 				}
 			}
