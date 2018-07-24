@@ -204,10 +204,17 @@ __global__ void winner_takes_all_kernel(
 					const unsigned int k = lane_id * REDUCTION_PER_THREAD + i;
 					const int p = static_cast<int>(((x - k) & ~(MAX_DISPARITY - 1)) + k);
 					const unsigned int d = static_cast<unsigned int>(x - p);
+#if CUDA_VERSION >= 9000
+					const uint32_t recv = __shfl_sync(0xffffffffu,
+						local_packed_cost[(REDUCTION_PER_THREAD - i + x1) % REDUCTION_PER_THREAD],
+						d / REDUCTION_PER_THREAD,
+						WARP_SIZE);
+#else
 					const uint32_t recv = __shfl(
 						local_packed_cost[(REDUCTION_PER_THREAD - i + x1) % REDUCTION_PER_THREAD],
 						d / REDUCTION_PER_THREAD,
 						WARP_SIZE);
+#endif
 					right_top2[i].push(recv);
 					if(d == MAX_DISPARITY - 1){
 						if(0 <= p){

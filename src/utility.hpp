@@ -17,6 +17,8 @@ limitations under the License.
 #ifndef SGM_UTILITY_HPP
 #define SGM_UTILITY_HPP
 
+#include <cuda.h>
+
 namespace sgm {
 
 static constexpr unsigned int WARP_SIZE = 32u;
