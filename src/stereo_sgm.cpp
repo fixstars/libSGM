@@ -145,10 +145,6 @@ namespace sgm {
 		param_(param)
 	{
 		// check values
-		if (width_ % 2 != 0 || height_ % 2 != 0) {
-			width_ = height_ = input_depth_bits_ = output_depth_bits_ = disparity_size_ = 0;
-			throw std::logic_error("width and height must be even");
-		}
 		if (input_depth_bits_ != 8 && input_depth_bits_ != 16 && output_depth_bits_ != 8 && output_depth_bits_ != 16) {
 			width_ = height_ = input_depth_bits_ = output_depth_bits_ = disparity_size_ = 0;
 			throw std::logic_error("depth bits must be 8 or 16");
