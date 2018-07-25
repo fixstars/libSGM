@@ -87,6 +87,7 @@ int main(int argc, char* argv[]) {
 	Renderer renderer(width, height);
 	
 	uint16_t* d_output_buffer = NULL;
+	cudaMalloc((void**)&d_output_buffer, sizeof(uint16_t) * width * height);
 
 	int frame_no = 0;
 	while (!demo.should_close()) {
@@ -107,7 +108,7 @@ int main(int argc, char* argv[]) {
 			continue;
 		}
 
-		ssgm.execute(left.data, right.data, (void**)&d_output_buffer); // , sgm::DST_TYPE_CUDA_PTR, 16);
+		ssgm.execute(left.data, right.data, d_output_buffer);
 
 		switch (demo.get_flag()) {
 		case 0:
@@ -126,4 +127,6 @@ int main(int argc, char* argv[]) {
 		demo.swap_buffer();
 		frame_no++;
 	}
+
+	cudaFree(d_output_buffer);
 }
