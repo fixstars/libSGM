@@ -88,11 +88,8 @@ namespace sgm {
 		* @param left_pixels	A pointer stored input left image.
 		* @param right_pixels	A pointer stored input right image.
 		* @param dst	        Output pointer. User must allocate enough memory.
-		* @attention
-		* For performance reason, when the instance is created with inout_type == EXECUTE_INOUT_**2CUDA, output_depth_bits == 16, 
-		* you don't have to allocate dst memory yourself. It returns internal cuda pointer. You must not free the pointer.
 		*/
-		LIBSGM_API void execute(const void* left_pixels, const void* right_pixels, void** dst);
+		LIBSGM_API void execute(const void* left_pixels, const void* right_pixels, void* dst);
 
 	private:
 		StereoSGM(const StereoSGM&);

@@ -115,6 +115,9 @@ namespace sgm {
 
 			CudaSafeCall(cudaMalloc(&this->d_tmp_left_disp, sizeof(uint16_t) * width_ * height_));
 			CudaSafeCall(cudaMalloc(&this->d_tmp_right_disp, sizeof(uint16_t) * width_ * height_));
+
+			CudaSafeCall(cudaMemset(this->d_src_left, 0, sizeof(uint16_t) * width_ * height_));
+			CudaSafeCall(cudaMemset(this->d_src_right, 0, sizeof(uint16_t) * width_ * height_));
 			CudaSafeCall(cudaMemset(this->d_tmp_left_disp, 0, sizeof(uint16_t) * width_ * height_));
 			CudaSafeCall(cudaMemset(this->d_tmp_right_disp, 0, sizeof(uint16_t) * width_ * height_));
 		}
@@ -166,7 +169,7 @@ namespace sgm {
 	}
 
 	
-	void StereoSGM::execute(const void* left_pixels, const void* right_pixels, void** dst) {
+	void StereoSGM::execute(const void* left_pixels, const void* right_pixels, void* dst) {
 
 		const void *d_input_left, *d_input_right;
 
@@ -180,30 +183,35 @@ namespace sgm {
 			d_input_left = cu_res_->d_src_left;
 			d_input_right = cu_res_->d_src_right;
 		}
+
+		void* d_tmp_left_disp = cu_res_->d_tmp_left_disp;
+		void* d_tmp_right_disp = cu_res_->d_tmp_right_disp;
+		void* d_left_disp = cu_res_->d_left_disp;
+		void* d_right_disp = cu_res_->d_right_disp;
+
+		if (is_cuda_output(inout_type_) && output_depth_bits_ == 8)
+			d_left_disp = dst; // when threre is no device-host copy or type conversion, use passed buffer
 		
-		cu_res_->sgm_engine->execute((uint8_t*)cu_res_->d_left_disp, (uint8_t*)cu_res_->d_right_disp,
+		cu_res_->sgm_engine->execute((uint8_t*)d_tmp_left_disp, (uint8_t*)d_tmp_right_disp,
 			d_input_left, d_input_right, width_, height_, param_.P1, param_.P2, param_.uniqueness);
 
-		sgm::details::median_filter((uint8_t*)cu_res_->d_left_disp, (uint8_t*)cu_res_->d_tmp_left_disp, width_, height_);
-		sgm::details::median_filter((uint8_t*)cu_res_->d_right_disp, (uint8_t*)cu_res_->d_tmp_right_disp, width_, height_);
-		sgm::details::check_consistency((uint8_t*)cu_res_->d_tmp_left_disp, (uint8_t*)cu_res_->d_tmp_right_disp, d_input_left, width_, height_, input_depth_bits_);
-
-		// output disparity image
-		void* disparity_image = cu_res_->d_tmp_left_disp;
+		sgm::details::median_filter((uint8_t*)d_tmp_left_disp, (uint8_t*)d_left_disp, width_, height_);
+		sgm::details::median_filter((uint8_t*)d_tmp_right_disp, (uint8_t*)d_right_disp, width_, height_);
+		sgm::details::check_consistency((uint8_t*)d_left_disp, (uint8_t*)d_right_disp, d_input_left, width_, height_, input_depth_bits_);
 
 		if (!is_cuda_output(inout_type_) && output_depth_bits_ == 16) {
 			void* disparity_image_16 = cu_res_->d_left_disp;
-			sgm::details::cast_8bit_16bit_array((const uint8_t*)disparity_image, (uint16_t*)disparity_image_16, width_ * height_);
-			CudaSafeCall(cudaMemcpy(*dst, disparity_image_16, sizeof(uint16_t) * width_ * height_, cudaMemcpyDeviceToHost));
+			sgm::details::cast_8bit_16bit_array((const uint8_t*)d_left_disp, (uint16_t*)d_tmp_left_disp, width_ * height_);
+			CudaSafeCall(cudaMemcpy(dst, d_tmp_left_disp, sizeof(uint16_t) * width_ * height_, cudaMemcpyDeviceToHost));
 		}
 		else if (is_cuda_output(inout_type_) && output_depth_bits_ == 16) {
-			sgm::details::cast_8bit_16bit_array((const uint8_t*)disparity_image, (uint16_t*)*dst, width_ * height_);
+			sgm::details::cast_8bit_16bit_array((const uint8_t*)d_left_disp, (uint16_t*)dst, width_ * height_);
 		}
 		else if (!is_cuda_output(inout_type_) && output_depth_bits_ == 8) {
-			CudaSafeCall(cudaMemcpy(*dst, disparity_image, sizeof(uint8_t) * width_ * height_, cudaMemcpyDeviceToHost));
+			CudaSafeCall(cudaMemcpy(dst, d_left_disp, sizeof(uint8_t) * width_ * height_, cudaMemcpyDeviceToHost));
 		}
 		else if (is_cuda_output(inout_type_) && output_depth_bits_ == 8) {
-			*dst = disparity_image; // optimize! no-copy!
+			// optimize! no-copy!
 		}
 		else {
 			std::cerr << "not impl" << std::endl;
