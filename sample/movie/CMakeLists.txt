@@ -1,5 +1,9 @@
 cmake_minimum_required(VERSION 3.0)
 
+if (CMAKE_COMPILER_IS_GNUCXX)
+	set(CMAKE_CXX_FLAGS "-std=c++11 -O3 -Wall")
+endif()
+
 project(sgm_demo)
 
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)

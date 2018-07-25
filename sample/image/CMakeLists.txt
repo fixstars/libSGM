@@ -1,5 +1,9 @@
 find_package(CUDA REQUIRED)
 
+if (CMAKE_COMPILER_IS_GNUCXX)
+	set(CMAKE_CXX_FLAGS "-std=c++11 -O3 -Wall")
+endif()
+
 # test apps
 find_package(OpenCV REQUIRED core) # dammy
 if(OpenCV_VERSION VERSION_LESS 3.0)
