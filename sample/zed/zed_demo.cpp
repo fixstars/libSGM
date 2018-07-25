@@ -66,6 +66,7 @@ int main(int argc, char* argv[]) {
 	uint8_t* d_input_right = NULL;
 	cudaMalloc((void**)&d_input_left, width * height);
 	cudaMalloc((void**)&d_input_right, width * height);
+	cudaMalloc((void**)&d_output_buffer, sizeof(uint16_t) * width * height);
 
 	const NppiSize roi = { width, height };
 
@@ -80,7 +81,7 @@ int main(int argc, char* argv[]) {
 		nppiRGBToGray_8u_AC4C1R(left_zm.data, width * 4, d_input_left, width, roi);
 		nppiRGBToGray_8u_AC4C1R(right_zm.data, width * 4, d_input_right, width, roi);
 
-		ssgm.execute(d_input_left, d_input_right, (void**)&d_output_buffer);
+		ssgm.execute(d_input_left, d_input_right, d_output_buffer);
 
 		switch (demo.get_flag()) {
 		case 0: 
@@ -100,5 +101,6 @@ int main(int argc, char* argv[]) {
 
 	cudaFree(d_input_left);
 	cudaFree(d_input_right);
+	cudaFree(d_output_buffer);
 	delete cap;
 }
