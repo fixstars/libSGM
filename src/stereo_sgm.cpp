@@ -116,8 +116,8 @@ namespace sgm {
 			CudaSafeCall(cudaMalloc(&this->d_tmp_left_disp, sizeof(uint16_t) * width_ * height_));
 			CudaSafeCall(cudaMalloc(&this->d_tmp_right_disp, sizeof(uint16_t) * width_ * height_));
 
-			CudaSafeCall(cudaMemset(this->d_src_left, 0, sizeof(uint16_t) * width_ * height_));
-			CudaSafeCall(cudaMemset(this->d_src_right, 0, sizeof(uint16_t) * width_ * height_));
+			CudaSafeCall(cudaMemset(this->d_left_disp, 0, sizeof(uint16_t) * width_ * height_));
+			CudaSafeCall(cudaMemset(this->d_right_disp, 0, sizeof(uint16_t) * width_ * height_));
 			CudaSafeCall(cudaMemset(this->d_tmp_left_disp, 0, sizeof(uint16_t) * width_ * height_));
 			CudaSafeCall(cudaMemset(this->d_tmp_right_disp, 0, sizeof(uint16_t) * width_ * height_));
 		}
