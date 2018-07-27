@@ -62,7 +62,7 @@ __global__ void census_transform_kernel(
 			// Load to smem
 			const int x = x0 + tid, y = y0 + half_kh + i + 1;
 			pixel_type value = 0;
-			if(0 <= x && x <= width && 0 <= y && y < height){
+			if(0 <= x && x < width && 0 <= y && y < height){
 				value = src[x + y * width];
 			}
 			const int smem_x = tid;

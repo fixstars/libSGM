@@ -52,6 +52,8 @@ __global__ void aggregate_vertical_path_kernel(
 	const unsigned int warp_id  = threadIdx.x / WARP_SIZE;
 	const unsigned int group_id = threadIdx.x % WARP_SIZE / SUBGROUP_SIZE;
 	const unsigned int lane_id  = threadIdx.x % SUBGROUP_SIZE;
+	const unsigned int shfl_mask =
+		((1u << SUBGROUP_SIZE) - 1u) << (group_id * SUBGROUP_SIZE);
 
 	const unsigned int x =
 		blockIdx.x * PATHS_PER_BLOCK +
@@ -84,7 +86,9 @@ __global__ void aggregate_vertical_path_kernel(
 				const unsigned int lo = i % DP_BLOCK_SIZE;
 				const unsigned int hi = i / DP_BLOCK_SIZE;
 				right_buffer[lo][hi] = right_value;
-				right_buffer[lo + DP_BLOCK_SIZE][hi - 1] = right_value;
+				if(hi > 0){
+					right_buffer[lo + DP_BLOCK_SIZE][hi - 1] = right_value;
+				}
 			}
 		}
 		__syncthreads();
@@ -98,7 +102,7 @@ __global__ void aggregate_vertical_path_kernel(
 			for(unsigned int j = 0; j < DP_BLOCK_SIZE; ++j){
 				local_costs[j] = __popcll(left_value ^ right_values[j]);
 			}
-			dp.update(local_costs, p1, p2);
+			dp.update(local_costs, p1, p2, shfl_mask);
 			store_uint8_vector<DP_BLOCK_SIZE>(
 				&dest[dp_offset + x * MAX_DISPARITY + y * MAX_DISPARITY * width],
 				dp.dp);
