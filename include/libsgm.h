@@ -88,6 +88,9 @@ namespace sgm {
 		* @param left_pixels	A pointer stored input left image.
 		* @param right_pixels	A pointer stored input right image.
 		* @param dst	        Output pointer. User must allocate enough memory.
+		* @attention
+		* You need to allocate dst memory at least width x height x sizeof(element_type) bytes.
+		* The element_type is uint8_t for output_depth_bits == 8 and uint16_t for output_depth_bits == 16.
 		*/
 		LIBSGM_API void execute(const void* left_pixels, const void* right_pixels, void* dst);
 
