@@ -56,6 +56,8 @@ __global__ void aggregate_horizontal_path_kernel(
 	const unsigned int warp_id  = threadIdx.x / WARP_SIZE;
 	const unsigned int group_id = threadIdx.x % WARP_SIZE / SUBGROUP_SIZE;
 	const unsigned int lane_id  = threadIdx.x % SUBGROUP_SIZE;
+	const unsigned int shfl_mask =
+		((1u << SUBGROUP_SIZE) - 1u) << (group_id * SUBGROUP_SIZE);
 
 	const unsigned int y0 =
 		PATHS_PER_BLOCK * blockIdx.x +
@@ -110,7 +112,7 @@ __global__ void aggregate_horizontal_path_kernel(
 						right_buffer[j][k] = right_buffer[j][k - 1];
 					}
 #if CUDA_VERSION >= 9000
-					right_buffer[j][0] = __shfl_up_sync(0xffffffffu, t, 1, SUBGROUP_SIZE);
+					right_buffer[j][0] = __shfl_up_sync(shfl_mask, t, 1, SUBGROUP_SIZE);
 #else
 					right_buffer[j][0] = __shfl_up(t, 1, SUBGROUP_SIZE);
 #endif
@@ -125,7 +127,7 @@ __global__ void aggregate_horizontal_path_kernel(
 					}
 #if CUDA_VERSION >= 9000
 					right_buffer[j][DP_BLOCK_SIZE - 1] =
-						__shfl_down_sync(0xffffffffu, t, 1, SUBGROUP_SIZE);
+						__shfl_down_sync(shfl_mask, t, 1, SUBGROUP_SIZE);
 #else
 					right_buffer[j][DP_BLOCK_SIZE - 1] = __shfl_down(t, 1, SUBGROUP_SIZE);
 #endif
@@ -142,7 +144,7 @@ __global__ void aggregate_horizontal_path_kernel(
 				for(unsigned int k = 0; k < DP_BLOCK_SIZE; ++k){
 					local_costs[k] = __popcll(left_value ^ right_buffer[j][k]);
 				}
-				dp[j].update(local_costs, p1, p2);
+				dp[j].update(local_costs, p1, p2, shfl_mask);
 				store_uint8_vector<DP_BLOCK_SIZE>(
 					&dest[j * dest_step + x * MAX_DISPARITY + dp_offset],
 					dp[j].dp);

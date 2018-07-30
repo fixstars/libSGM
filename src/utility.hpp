@@ -26,26 +26,26 @@ static constexpr unsigned int WARP_SIZE = 32u;
 namespace detail {
 	template <typename T, unsigned int GROUP_SIZE, unsigned int STEP>
 	struct subgroup_min_impl {
-		static __device__ T call(T x){
+		static __device__ T call(T x, uint32_t mask){
 #if CUDA_VERSION >= 9000
-			x = min(x, __shfl_xor_sync(0xffffffffu, x, STEP / 2, GROUP_SIZE));
+			x = min(x, __shfl_xor_sync(mask, x, STEP / 2, GROUP_SIZE));
 #else
 			x = min(x, __shfl_xor(x, STEP / 2, GROUP_SIZE));
 #endif
-			return subgroup_min_impl<T, GROUP_SIZE, STEP / 2>::call(x);
+			return subgroup_min_impl<T, GROUP_SIZE, STEP / 2>::call(x, mask);
 		}
 	};
 	template <typename T, unsigned int GROUP_SIZE>
 	struct subgroup_min_impl<T, GROUP_SIZE, 1u> {
-		static __device__ T call(T x){
+		static __device__ T call(T x, uint32_t){
 			return x;
 		}
 	};
 }
 
 template <unsigned int GROUP_SIZE, typename T>
-__device__ inline T subgroup_min(T x){
-	return detail::subgroup_min_impl<T, GROUP_SIZE, GROUP_SIZE>::call(x);
+__device__ inline T subgroup_min(T x, uint32_t mask){
+	return detail::subgroup_min_impl<T, GROUP_SIZE, GROUP_SIZE>::call(x, mask);
 }
 
 

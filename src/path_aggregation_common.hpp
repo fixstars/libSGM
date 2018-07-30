@@ -18,6 +18,7 @@ limitations under the License.
 #define SGM_PATH_AGGREGATION_COMMON_HPP
 
 #include <cstdint>
+#include <cuda.h>
 #include "utility.hpp"
 
 namespace sgm {
@@ -43,7 +44,9 @@ struct DynamicProgramming {
 		for(unsigned int i = 0; i < DP_BLOCK_SIZE; ++i){ dp[i] = 0; }
 	}
 
-	__device__ void update(uint32_t *local_costs, uint32_t p1, uint32_t p2){
+	__device__ void update(
+		uint32_t *local_costs, uint32_t p1, uint32_t p2, uint32_t mask)
+	{
 		const unsigned int lane_id = threadIdx.x % SUBGROUP_SIZE;
 
 		const auto dp0 = dp[0];
@@ -52,7 +55,7 @@ struct DynamicProgramming {
 			const unsigned int k = 0;
 #if CUDA_VERSION >= 9000
 			const uint32_t prev =
-				__shfl_up_sync(0xffffffffu, dp[DP_BLOCK_SIZE - 1], 1);
+				__shfl_up_sync(mask, dp[DP_BLOCK_SIZE - 1], 1);
 #else
 			const uint32_t prev = __shfl_up(dp[DP_BLOCK_SIZE - 1], 1);
 #endif
@@ -72,7 +75,7 @@ struct DynamicProgramming {
 		{
 			const unsigned int k = DP_BLOCK_SIZE - 1;
 #if CUDA_VERSION >= 9000
-			const uint32_t next = __shfl_down_sync(0xffffffffu, dp0, 1);
+			const uint32_t next = __shfl_down_sync(mask, dp0, 1);
 #else
 			const uint32_t next = __shfl_down(dp0, 1);
 #endif
@@ -85,7 +88,7 @@ struct DynamicProgramming {
 			dp[k] = out + local_costs[k];
 			local_min = min(local_min, dp[k]);
 		}
-		last_min = subgroup_min<SUBGROUP_SIZE>(local_min);
+		last_min = subgroup_min<SUBGROUP_SIZE>(local_min, mask);
 	}
 };
 
