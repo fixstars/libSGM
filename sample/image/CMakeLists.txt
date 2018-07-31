@@ -1,3 +1,5 @@
+cmake_minimum_required(VERSION 3.1)
+
 find_package(CUDA REQUIRED)
 
 if (CMAKE_COMPILER_IS_GNUCXX)
