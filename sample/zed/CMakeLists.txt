@@ -6,7 +6,7 @@ message(STATUS ${CMAKE_MODULE_PATH})
 
 find_package(CUDA REQUIRED)
 
-find_package(OpenCV REQUIRED core) # dammy 
+find_package(OpenCV REQUIRED core) # dummy
 if(OpenCV_VERSION VERSION_LESS 3.0) 
 	find_package(OpenCV REQUIRED core highgui imgproc)  # 2.x
 else()
