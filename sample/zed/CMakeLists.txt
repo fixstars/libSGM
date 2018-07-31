@@ -4,7 +4,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../movie/cmake)
 
 message(STATUS ${CMAKE_MODULE_PATH})
 
-FIND_PACKAGE(CUDA  REQUIRED)
+find_package(CUDA REQUIRED)
 
 find_package(OpenCV REQUIRED core) # dammy 
 if(OpenCV_VERSION VERSION_LESS 3.0) 
