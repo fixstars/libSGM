@@ -28,7 +28,6 @@ include_directories(${GLFW_INCLUDE_DIRS})
 include_directories(${ZED_SDK_INCLUDE_DIR})
 
 if(NOT WIN32)
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 	set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -std=c++11")
 endif()
 
