@@ -76,35 +76,26 @@ __global__ void census_transform_kernel(
 			if(half_kw <= x && x < width - half_kw && half_kh <= y && y < height - half_kh){
 				const int smem_x = tid;
 				const int smem_y = (half_kh + i) % SMEM_BUFFER_SIZE;
-				const pixel_type c = smem_lines[smem_y][smem_x];
-				uint32_t lo = 0, hi = 0;
+				feature_type f = 0;
 				for(int dy = -half_kh; dy < 0; ++dy){
+					const int smem_y1 = (smem_y + dy + SMEM_BUFFER_SIZE) % SMEM_BUFFER_SIZE;
+					const int smem_y2 = (smem_y - dy + SMEM_BUFFER_SIZE) % SMEM_BUFFER_SIZE;
 					for(int dx = -half_kw; dx <= half_kw; ++dx){
-						const int smem_y2 =
-							(smem_y + dy + SMEM_BUFFER_SIZE) % SMEM_BUFFER_SIZE;
-						lo = (lo << 1) | (c > smem_lines[smem_y2][smem_x + dx]);
+						const int smem_x1 = smem_x + dx;
+						const int smem_x2 = smem_x - dx;
+						const auto a = smem_lines[smem_y1][smem_x1];
+						const auto b = smem_lines[smem_y2][smem_x2];
+						f = (f << 1) | (a > b);
 					}
 				}
 				for(int dx = -half_kw; dx < 0; ++dx){
-					lo = (lo << 1) | (c > smem_lines[smem_y][smem_x + dx]);
+					const int smem_x1 = smem_x + dx;
+					const int smem_x2 = smem_x - dx;
+					const auto a = smem_lines[smem_y][smem_x1];
+					const auto b = smem_lines[smem_y][smem_x2];
+					f = (f << 1) | (a > b);
 				}
-				for(int dx = 1; dx <= half_kw; ++dx){
-					hi = (hi << 1) | (c > smem_lines[smem_y][smem_x + dx]);
-				}
-				for(int dy = 1; dy <= half_kh; ++dy){
-					for(int dx = -half_kw; dx <= half_kw; ++dx){
-						const int smem_y2 =
-							(smem_y + dy + SMEM_BUFFER_SIZE) % SMEM_BUFFER_SIZE;
-						hi = (hi << 1) | (c > smem_lines[smem_y2][smem_x + dx]);
-					}
-				}
-				union {
-					uint64_t uint64;
-					uint2 uint32x2;
-				} u;
-				u.uint32x2.x = hi;
-				u.uint32x2.y = lo;
-				dest[x + y * width] = u.uint64;
+				dest[x + y * width] = f;
 			}
 		}
 		__syncthreads();
