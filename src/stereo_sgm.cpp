@@ -196,7 +196,6 @@ namespace sgm {
 		sgm::details::check_consistency((uint8_t*)d_left_disp, (uint8_t*)d_right_disp, d_input_left, width_, height_, input_depth_bits_);
 
 		if (!is_cuda_output(inout_type_) && output_depth_bits_ == 16) {
-			void* disparity_image_16 = cu_res_->d_left_disp;
 			sgm::details::cast_8bit_16bit_array((const uint8_t*)d_left_disp, (uint16_t*)d_tmp_left_disp, width_ * height_);
 			CudaSafeCall(cudaMemcpy(dst, d_tmp_left_disp, sizeof(uint16_t) * width_ * height_, cudaMemcpyDeviceToHost));
 		}
