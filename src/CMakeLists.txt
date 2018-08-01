@@ -1,3 +1,5 @@
+cmake_minimum_required(VERSION 3.1)
+
 find_package(CUDA REQUIRED)
 
 include_directories(../include)
@@ -5,7 +7,8 @@ include_directories(../include)
 find_package(CUDA REQUIRED)
 
 if (CMAKE_COMPILER_IS_GNUCXX)
-	set(CMAKE_CXX_FLAGS "-std=c++11 -O3 -Wall")
+	set(CMAKE_CXX_FLAGS "-O3 -Wall")
+	set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -std=c++11")
 endif()
 
 SET(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} ${CUDA_ARCH}")

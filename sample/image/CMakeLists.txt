@@ -1,11 +1,13 @@
+cmake_minimum_required(VERSION 3.1)
+
 find_package(CUDA REQUIRED)
 
 if (CMAKE_COMPILER_IS_GNUCXX)
-	set(CMAKE_CXX_FLAGS "-std=c++11 -O3 -Wall")
+	set(CMAKE_CXX_FLAGS "-O3 -Wall")
 endif()
 
 # test apps
-find_package(OpenCV REQUIRED core) # dammy
+find_package(OpenCV REQUIRED core) # dummy
 if(OpenCV_VERSION VERSION_LESS 3.0)
 	find_package(OpenCV REQUIRED core highgui imgproc contrib)  # 2.x
 else()
