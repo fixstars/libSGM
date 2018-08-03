@@ -100,7 +100,7 @@ __global__ void aggregate_vertical_path_kernel(
 			}
 			uint32_t local_costs[DP_BLOCK_SIZE];
 			for(unsigned int j = 0; j < DP_BLOCK_SIZE; ++j){
-				local_costs[j] = __popcll(left_value ^ right_values[j]);
+				local_costs[j] = __popc(left_value ^ right_values[j]);
 			}
 			dp.update(local_costs, p1, p2, shfl_mask);
 			store_uint8_vector<DP_BLOCK_SIZE>(

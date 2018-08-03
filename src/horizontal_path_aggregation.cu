@@ -50,7 +50,7 @@ __global__ void aggregate_horizontal_path_kernel(
 		return;
 	}
 
-	uint64_t right_buffer[DP_BLOCKS_PER_THREAD][DP_BLOCK_SIZE];
+	feature_type right_buffer[DP_BLOCKS_PER_THREAD][DP_BLOCK_SIZE];
 	DynamicProgramming<DP_BLOCK_SIZE, SUBGROUP_SIZE> dp[DP_BLOCKS_PER_THREAD];
 
 	const unsigned int warp_id  = threadIdx.x / WARP_SIZE;
@@ -105,9 +105,9 @@ __global__ void aggregate_horizontal_path_kernel(
 				if(y >= height){
 					continue;
 				}
-				const uint64_t left_value = __ldg(&left[j * feature_step + x]);
+				const feature_type left_value = __ldg(&left[j * feature_step + x]);
 				if(DIRECTION > 0){
-					const uint64_t t = right_buffer[j][DP_BLOCK_SIZE - 1];
+					const feature_type t = right_buffer[j][DP_BLOCK_SIZE - 1];
 					for(unsigned int k = DP_BLOCK_SIZE - 1; k > 0; --k){
 						right_buffer[j][k] = right_buffer[j][k - 1];
 					}
@@ -121,7 +121,7 @@ __global__ void aggregate_horizontal_path_kernel(
 							__ldg(&right[j * feature_step + x - dp_offset]);
 					}
 				}else{
-					const uint64_t t = right_buffer[j][0];
+					const feature_type t = right_buffer[j][0];
 					for(unsigned int k = 1; k < DP_BLOCK_SIZE; ++k){
 						right_buffer[j][k - 1] = right_buffer[j][k];
 					}
@@ -142,7 +142,7 @@ __global__ void aggregate_horizontal_path_kernel(
 				}
 				uint32_t local_costs[DP_BLOCK_SIZE];
 				for(unsigned int k = 0; k < DP_BLOCK_SIZE; ++k){
-					local_costs[k] = __popcll(left_value ^ right_buffer[j][k]);
+					local_costs[k] = __popc(left_value ^ right_buffer[j][k]);
 				}
 				dp[j].update(local_costs, p1, p2, shfl_mask);
 				store_uint8_vector<DP_BLOCK_SIZE>(
