@@ -17,7 +17,7 @@ else()
   set(ZED_SDK_INCLUDE_DIR "/usr/local/zed/include" CACHE STRING "ZED SDK include path.")
 endif()
 
-project(libSGM VERSION 1.0.0)
+project(libSGM VERSION 2.0.0)
 
 configure_file(${CMAKE_SOURCE_DIR}/include/libsgm_config.h.in
                ${CMAKE_SOURCE_DIR}/include/libsgm_config.h
