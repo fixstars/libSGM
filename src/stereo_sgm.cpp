@@ -34,48 +34,16 @@ namespace sgm {
 		virtual ~SemiGlobalMatchingBase() {}
 	};
 
-	class SemiGlobalMatching_8_64 : public SemiGlobalMatchingBase {
+	template <typename input_type, int DISP_SIZE>
+	class SemiGlobalMatchingImpl : public SemiGlobalMatchingBase {
 	public:
 		void execute(output_type* dst_L, output_type* dst_R, const void* src_L, const void* src_R,
 			size_t w, size_t h, unsigned int P1, unsigned int P2, float uniqueness) override
 		{
-			sgm_engine_.execute(dst_L, dst_R, (const uint8_t*)src_L, (const uint8_t*)src_R, w, h, P1, P2, uniqueness);
+			sgm_engine_.execute(dst_L, dst_R, (const input_type*)src_L, (const input_type*)src_R, w, h, P1, P2, uniqueness);
 		}
 	private:
-		SemiGlobalMatching<uint8_t, 64> sgm_engine_;
-	};
-
-	class SemiGlobalMatching_8_128 : public SemiGlobalMatchingBase {
-	public:
-		void execute(output_type* dst_L, output_type* dst_R, const void* src_L, const void* src_R,
-			size_t w, size_t h, unsigned int P1, unsigned int P2, float uniqueness) override
-		{
-			sgm_engine_.execute(dst_L, dst_R, (const uint8_t*)src_L, (const uint8_t*)src_R, w, h, P1, P2, uniqueness);
-		}
-	private:
-		SemiGlobalMatching<uint8_t, 128> sgm_engine_;
-	};
-
-	class SemiGlobalMatching_16_64 : public SemiGlobalMatchingBase {
-	public:
-		void execute(output_type* dst_L, output_type* dst_R, const void* src_L, const void* src_R,
-			size_t w, size_t h, unsigned int P1, unsigned int P2, float uniqueness) override
-		{
-			sgm_engine_.execute(dst_L, dst_R, (const uint16_t*)src_L, (const uint16_t*)src_R, w, h, P1, P2, uniqueness);
-		}
-	private:
-		SemiGlobalMatching<uint16_t, 64> sgm_engine_;
-	};
-
-	class SemiGlobalMatching_16_128 : public SemiGlobalMatchingBase {
-	public:
-		void execute(output_type* dst_L, output_type* dst_R, const void* src_L, const void* src_R,
-			size_t w, size_t h, unsigned int P1, unsigned int P2, float uniqueness) override
-		{
-			sgm_engine_.execute(dst_L, dst_R, (const uint16_t*)src_L, (const uint16_t*)src_R, w, h, P1, P2, uniqueness);
-		}
-	private:
-		SemiGlobalMatching<uint16_t, 128> sgm_engine_;
+		SemiGlobalMatching<input_type, DISP_SIZE> sgm_engine_;
 	};
 
 	struct CudaStereoSGMResources {
@@ -91,13 +59,13 @@ namespace sgm {
 		CudaStereoSGMResources(int width_, int height_, int disparity_size_, int input_depth_bits_, int output_depth_bits_, EXECUTE_INOUT inout_type_) {
 
 			if (input_depth_bits_ == 8 && disparity_size_ == 64)
-				sgm_engine = new SemiGlobalMatching_8_64();
+				sgm_engine = new SemiGlobalMatchingImpl<uint8_t, 64>();
 			else if (input_depth_bits_ == 8 && disparity_size_ == 128)
-				sgm_engine = new SemiGlobalMatching_8_128();
+				sgm_engine = new SemiGlobalMatchingImpl<uint8_t, 128>();
 			else if (input_depth_bits_ == 16 && disparity_size_ == 64)
-				sgm_engine = new SemiGlobalMatching_16_64();
+				sgm_engine = new SemiGlobalMatchingImpl<uint16_t, 64>();
 			else if (input_depth_bits_ == 16 && disparity_size_ == 128)
-				sgm_engine = new SemiGlobalMatching_16_128();
+				sgm_engine = new SemiGlobalMatchingImpl<uint16_t, 128>();
 			else
 				throw std::logic_error("depth bits must be 8 or 16, and disparity size must be 64 or 128");
 
