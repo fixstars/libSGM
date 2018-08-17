@@ -15,6 +15,7 @@ limitations under the License.
 */
 
 #include <iostream>
+#include <iomanip>
 #include <chrono>
 
 #include <opencv2/core/core.hpp>
@@ -103,8 +104,9 @@ int main(int argc, char* argv[])
 	const double time_millisec = 1e-3 * sum / iterations;
 	const double fps = 1e3 / time_millisec;
 	std::cout << "# Results" << std::endl;
-	std::cout << "Processing Time[Milliseconds]: " << time_millisec << std::endl;
-	std::cout << "FPS                          : " << fps << std::endl;
+	std::cout.setf(std::ios::fixed);
+	std::cout << std::setprecision(1) << "Processing Time[Milliseconds]: " << time_millisec << std::endl;
+	std::cout << std::setprecision(1) << "FPS                          : " << fps << std::endl;
 	std::cout << std::endl;
 
 	// save disparity image
