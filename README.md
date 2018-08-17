@@ -12,6 +12,19 @@ From a pair of appropriately calibrated input images, we can obtain the disparit
 ---
 Because it uses CUDA, we can compute the disparity map at high speed.
 
+## Performance
+The libSGM performance obtained from benchmark sample
+### Settings
+- image size : 1024 x 440
+- disparity size : 128
+- sgm path : 8 path
+
+### Results
+|Device|Processing Time[Milliseconds]|FPS|
+|---|---|---|
+|Tegra X2|52.4|19.1|
+|GTX 1080 Ti|3.4|296|
+
 ## Requirements
 libSGM needs CUDA (compute capabilities >= 3.0) to be installed.  
 Moreover, to build the sample, we need the following libraries:

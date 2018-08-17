@@ -12,6 +12,19 @@ libSGMは、Semi-Global MatchingアルゴリズムをCUDAで実装したもの�
 ---
 CUDAを使用し、高速な視差画像算出が可能
 
+## パフォーマンス
+benchmarkサンプルで計測した処理時間を示します
+### Settings
+- image size : 1024 x 440
+- disparity size : 128
+- sgm path : 8 path
+
+### Results
+|Device|Processing Time[Milliseconds]|FPS|
+|---|---|---|
+|Tegra X2|52.4|19.1|
+|GTX 1080 Ti|3.4|296|
+
 ## Requirements
 libSGMはCUDA (compute capabilities >= 3.0)を必要とします。  
 また、サンプルをビルドする際には以下のライブラリが必要となります。
