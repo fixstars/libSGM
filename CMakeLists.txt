@@ -28,6 +28,7 @@ add_subdirectory(src)
 if(ENABLE_SAMPLES)
     add_subdirectory(sample/image)
     add_subdirectory(sample/movie)
+    add_subdirectory(sample/benchmark)
 endif()
 
 if(ENABLE_ZED_DEMO)
