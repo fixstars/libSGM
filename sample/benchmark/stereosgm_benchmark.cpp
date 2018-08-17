@@ -42,7 +42,7 @@ struct device_buffer
 int main(int argc, char* argv[])
 {
 	if (argc < 3) {
-		std::cout << "usage: " << argv[0] << " stereosgm left_img right_img [disp_size] [iterations]" << std::endl;
+		std::cout << "usage: " << argv[0] << " left_img right_img [disp_size] [iterations]" << std::endl;
 		return 0;
 	}
 
@@ -78,7 +78,7 @@ int main(int argc, char* argv[])
 	// show settings
 	std::cout << "# Settings" << std::endl;
 	std::cout << "device name         : " << prop.name << std::endl;
-	std::cout << "cuda runtime version: " << version << std::endl;
+	std::cout << "CUDA runtime version: " << version << std::endl;
 	std::cout << "image size          : " << I1.size() << std::endl;
 	std::cout << "disparity size      : " << disp_size << std::endl;
 	std::cout << "sgm path            : " << "8 path" << std::endl;
