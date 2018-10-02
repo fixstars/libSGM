@@ -19,6 +19,7 @@ limitations under the License.
 
 #include <memory>
 #include <cstdint>
+#include "types.hpp"
 
 namespace sgm {
 
@@ -27,7 +28,7 @@ class SemiGlobalMatching {
 
 public:
 	using input_type = T;
-	using output_type = uint8_t;
+	using output_type = sgm::output_type;
 
 private:
 	class Impl;

@@ -27,7 +27,7 @@ namespace sgm {
 
 	class SemiGlobalMatchingBase {
 	public:
-		using output_type = uint8_t;
+		using output_type = sgm::output_type;
 		virtual void execute(output_type* dst_L, output_type* dst_R, const void* src_L, const void* src_R, 
 			size_t w, size_t h, unsigned int P1, unsigned int P2, float uniqueness) = 0;
 
@@ -156,24 +156,24 @@ namespace sgm {
 		if (is_cuda_output(inout_type_) && output_depth_bits_ == 8)
 			d_left_disp = dst; // when threre is no device-host copy or type conversion, use passed buffer
 		
-		cu_res_->sgm_engine->execute((uint8_t*)d_tmp_left_disp, (uint8_t*)d_tmp_right_disp,
+		cu_res_->sgm_engine->execute((uint16_t*)d_tmp_left_disp, (uint16_t*)d_tmp_right_disp,
 			d_input_left, d_input_right, width_, height_, param_.P1, param_.P2, param_.uniqueness);
 
-		sgm::details::median_filter((uint8_t*)d_tmp_left_disp, (uint8_t*)d_left_disp, width_, height_);
-		sgm::details::median_filter((uint8_t*)d_tmp_right_disp, (uint8_t*)d_right_disp, width_, height_);
-		sgm::details::check_consistency((uint8_t*)d_left_disp, (uint8_t*)d_right_disp, d_input_left, width_, height_, input_depth_bits_);
+		sgm::details::median_filter((uint16_t*)d_tmp_left_disp, (uint16_t*)d_left_disp, width_, height_);
+		sgm::details::median_filter((uint16_t*)d_tmp_right_disp, (uint16_t*)d_right_disp, width_, height_);
+		sgm::details::check_consistency((uint16_t*)d_left_disp, (uint16_t*)d_right_disp, d_input_left, width_, height_, input_depth_bits_);
 
-		if (!is_cuda_output(inout_type_) && output_depth_bits_ == 16) {
-			sgm::details::cast_8bit_16bit_array((const uint8_t*)d_left_disp, (uint16_t*)d_tmp_left_disp, width_ * height_);
-			CudaSafeCall(cudaMemcpy(dst, d_tmp_left_disp, sizeof(uint16_t) * width_ * height_, cudaMemcpyDeviceToHost));
-		}
-		else if (is_cuda_output(inout_type_) && output_depth_bits_ == 16) {
-			sgm::details::cast_8bit_16bit_array((const uint8_t*)d_left_disp, (uint16_t*)dst, width_ * height_);
-		}
-		else if (!is_cuda_output(inout_type_) && output_depth_bits_ == 8) {
-			CudaSafeCall(cudaMemcpy(dst, d_left_disp, sizeof(uint8_t) * width_ * height_, cudaMemcpyDeviceToHost));
+		if (!is_cuda_output(inout_type_) && output_depth_bits_ == 8) {
+			sgm::details::cast_16bit_8bit_array((const uint16_t*)d_left_disp, (uint8_t*)d_tmp_left_disp, width_ * height_);
+			CudaSafeCall(cudaMemcpy(dst, d_tmp_left_disp, sizeof(uint8_t) * width_ * height_, cudaMemcpyDeviceToHost));
 		}
 		else if (is_cuda_output(inout_type_) && output_depth_bits_ == 8) {
+			sgm::details::cast_16bit_8bit_array((const uint16_t*)d_left_disp, (uint8_t*)dst, width_ * height_);
+		}
+		else if (!is_cuda_output(inout_type_) && output_depth_bits_ == 16) {
+			CudaSafeCall(cudaMemcpy(dst, d_left_disp, sizeof(uint16_t) * width_ * height_, cudaMemcpyDeviceToHost));
+		}
+		else if (is_cuda_output(inout_type_) && output_depth_bits_ == 16) {
 			// optimize! no-copy!
 		}
 		else {
