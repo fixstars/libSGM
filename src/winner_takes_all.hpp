@@ -22,15 +22,17 @@ limitations under the License.
 
 namespace sgm {
 
-template <size_t MAX_DISPARITY>
+template <size_t MAX_DISPARITY, typename _ComputeDisparity>
 class WinnerTakesAll {
+	using output_type = typename _ComputeDisparity::value_type;
 
 private:
 	DeviceBuffer<output_type> m_left_buffer;
 	DeviceBuffer<output_type> m_right_buffer;
+	_ComputeDisparity m_compute;
 
 public:
-	WinnerTakesAll();
+	WinnerTakesAll(_ComputeDisparity compute_);
 
 	const output_type *get_left_output() const {
 		return m_left_buffer.data();
@@ -40,6 +42,7 @@ public:
 		return m_right_buffer.data();
 	}
 
+	[[deprecated]]
 	void enqueue(
 		const cost_type *src,
 		size_t width,
@@ -47,6 +50,7 @@ public:
 		float uniqueness,
 		cudaStream_t stream);
 
+	[[deprecated]]
 	void enqueue(
 		output_type *left,
 		output_type *right,
@@ -56,8 +60,23 @@ public:
 		float uniqueness,
 		cudaStream_t stream);
 
-};
+	void enqueue(
+		const cost_type *src,
+		size_t width,
+		size_t height,
+		cudaStream_t stream);
 
+	void enqueue(
+		output_type *left,
+		output_type *right,
+		const cost_type *src,
+		size_t width,
+		size_t height,
+		cudaStream_t stream);
+};
+	namespace detail {
+		struct Hoge { using value_type = uint16_t; };
+	}
 }
 
 #endif
