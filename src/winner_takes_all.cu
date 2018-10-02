@@ -255,14 +255,15 @@ void enqueue_winner_takes_all(
 }
 
 
-template <size_t MAX_DISPARITY>
-WinnerTakesAll<MAX_DISPARITY>::WinnerTakesAll()
+template <size_t MAX_DISPARITY, typename _ComputeDisparity>
+WinnerTakesAll<MAX_DISPARITY, _ComputeDisparity>::WinnerTakesAll(_ComputeDisparity compute_)
 	: m_left_buffer()
 	, m_right_buffer()
+	, m_compute(compute_)
 { }
 
-template <size_t MAX_DISPARITY>
-void WinnerTakesAll<MAX_DISPARITY>::enqueue(
+template <size_t MAX_DISPARITY, typename _ComputeDisparity>
+void WinnerTakesAll<MAX_DISPARITY, _ComputeDisparity>::enqueue(
 	const cost_type *src,
 	size_t width,
 	size_t height,
@@ -285,8 +286,8 @@ void WinnerTakesAll<MAX_DISPARITY>::enqueue(
 		stream);
 }
 
-template <size_t MAX_DISPARITY>
-void WinnerTakesAll<MAX_DISPARITY>::enqueue(
+template <size_t MAX_DISPARITY, typename _ComputeDisparity>
+void WinnerTakesAll<MAX_DISPARITY, _ComputeDisparity>::enqueue(
 	output_type* left,
 	output_type* right,
 	const cost_type *src,
@@ -305,8 +306,7 @@ void WinnerTakesAll<MAX_DISPARITY>::enqueue(
 		stream);
 }
 
-
-template class WinnerTakesAll< 64>;
-template class WinnerTakesAll<128>;
+template class WinnerTakesAll< 64, sgm::detail::Hoge>;
+template class WinnerTakesAll<128, sgm::detail::Hoge>;
 
 }

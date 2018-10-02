@@ -21,8 +21,8 @@ limitations under the License.
 
 namespace sgm {
 
-template <typename T, size_t MAX_DISPARITY>
-class SemiGlobalMatching<T, MAX_DISPARITY>::Impl {
+template <typename T, size_t MAX_DISPARITY, typename _ComputeDisparity>
+class SemiGlobalMatching<T, MAX_DISPARITY, _ComputeDisparity>::Impl {
 
 private:
 	DeviceBuffer<T> m_input_left;
@@ -30,16 +30,16 @@ private:
 	CensusTransform<T> m_census_left;
 	CensusTransform<T> m_census_right;
 	PathAggregation<MAX_DISPARITY> m_path_aggregation;
-	WinnerTakesAll<MAX_DISPARITY> m_winner_takes_all;
+	WinnerTakesAll<MAX_DISPARITY, _ComputeDisparity> m_winner_takes_all;
 
 public:
-	Impl()
+	Impl(_ComputeDisparity compute_)
 		: m_input_left()
 		, m_input_right()
 		, m_census_left()
 		, m_census_right()
 		, m_path_aggregation()
-		, m_winner_takes_all()
+		, m_winner_takes_all(compute_)
 	{ }
 
 	void enqueue(
@@ -74,17 +74,17 @@ public:
 };
 
 
-template <typename T, size_t MAX_DISPARITY>
-SemiGlobalMatching<T, MAX_DISPARITY>::SemiGlobalMatching()
-	: m_impl(new Impl())
+template <typename T, size_t MAX_DISPARITY, typename _ComputeDisparity>
+SemiGlobalMatching<T, MAX_DISPARITY, _ComputeDisparity>::SemiGlobalMatching(_ComputeDisparity compute_)
+	: m_impl(new Impl(compute_))
 { }
 
-template <typename T, size_t MAX_DISPARITY>
-SemiGlobalMatching<T, MAX_DISPARITY>::~SemiGlobalMatching() = default;
+template <typename T, size_t MAX_DISPARITY, typename _ComputeDisparity>
+SemiGlobalMatching<T, MAX_DISPARITY, _ComputeDisparity>::~SemiGlobalMatching() = default;
 
 
-template <typename T, size_t MAX_DISPARITY>
-void SemiGlobalMatching<T, MAX_DISPARITY>::execute(
+template <typename T, size_t MAX_DISPARITY, typename _ComputeDisparity>
+void SemiGlobalMatching<T, MAX_DISPARITY, _ComputeDisparity>::execute(
 	output_type *dest_left,
 	output_type *dest_right,
 	const input_type *src_left,
@@ -104,8 +104,8 @@ void SemiGlobalMatching<T, MAX_DISPARITY>::execute(
 	cudaStreamSynchronize(0);
 }
 
-template <typename T, size_t MAX_DISPARITY>
-void SemiGlobalMatching<T, MAX_DISPARITY>::enqueue(
+template <typename T, size_t MAX_DISPARITY, typename _ComputeDisparity>
+void SemiGlobalMatching<T, MAX_DISPARITY, _ComputeDisparity>::enqueue(
 	output_type *dest_left,
 	output_type *dest_right,
 	const input_type *src_left,
@@ -125,10 +125,9 @@ void SemiGlobalMatching<T, MAX_DISPARITY>::enqueue(
 		uniqueness, stream);
 }
 
-
-template class SemiGlobalMatching<uint8_t,   64>;
-template class SemiGlobalMatching<uint8_t,  128>;
-template class SemiGlobalMatching<uint16_t,  64>;
-template class SemiGlobalMatching<uint16_t, 128>;
+template class SemiGlobalMatching<uint8_t,   64, sgm::detail::Hoge>;
+template class SemiGlobalMatching<uint8_t,  128, sgm::detail::Hoge>;
+template class SemiGlobalMatching<uint16_t,  64, sgm::detail::Hoge>;
+template class SemiGlobalMatching<uint16_t, 128, sgm::detail::Hoge>;
 
 }

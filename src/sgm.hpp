@@ -23,19 +23,19 @@ limitations under the License.
 
 namespace sgm {
 
-template <typename T, size_t MAX_DISPARITY>
+template <typename T, size_t MAX_DISPARITY, typename _ComputeDisparity>
 class SemiGlobalMatching {
 
 public:
 	using input_type = T;
-	using output_type = sgm::output_type;
+	using output_type = typename _ComputeDisparity::value_type;
 
 private:
 	class Impl;
 	std::unique_ptr<Impl> m_impl;
 
 public:
-	SemiGlobalMatching();
+	SemiGlobalMatching(_ComputeDisparity compute_);
 	~SemiGlobalMatching();
 
 	void execute(
