@@ -55,13 +55,13 @@ int main(int argc, char* argv[])
 
 	const int disp_size = argc > 3 ? std::stoi(argv[3]) : 128;
 	const int iterations = argc > 4 ? std::stoi(argv[4]) : 100;
+	const int out_depth = argc > 5 ? std::stoi(argv[5]) : 8;
 
 	const int width = I1.cols;
 	const int height = I1.rows;
 
 	const int input_depth = I1.type() == CV_8U ? 8 : 16;
 	const int input_bytes = input_depth * width * height / 8;
-	const int out_depth = 8;
 	const int output_bytes = out_depth * width * height / 8;
 
 	sgm::StereoSGM sgm(width, height, disp_size, input_depth, out_depth, sgm::EXECUTE_INOUT_CUDA2CUDA);
@@ -81,6 +81,7 @@ int main(int argc, char* argv[])
 	std::cout << "CUDA runtime version: " << version << std::endl;
 	std::cout << "image size          : " << I1.size() << std::endl;
 	std::cout << "disparity size      : " << disp_size << std::endl;
+	std::cout << "output_bytes        : " << out_depth << std::endl;
 	std::cout << "sgm path            : " << "8 path" << std::endl;
 	std::cout << "iterations          : " << iterations << std::endl;
 	std::cout << std::endl;
