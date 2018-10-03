@@ -115,14 +115,25 @@ __device__ inline uint16_t compute_disparity_normal(Top2 t2, float uniqueness, u
 template <size_t MAX_DISPARITY>
 __device__ inline uint16_t compute_disparity_subpixel(Top2 t2, float uniqueness, uint16_t* smem)
 {
-	uint16_t disp = compute_disparity_normal<MAX_DISPARITY>(t2, uniqueness, smem);
-	disp <<= sgm::StereoSGM::SUBPIXEL_SHIFT;
-	if (disp > 0 && disp < MAX_DISPARITY - 1) {
-		const int numer = smem[disp - 1] - smem[disp + 1];
-		const int denom = smem[disp - 1] - 2 * smem[disp] + smem[disp + 1];
-		disp += (numer << sgm::StereoSGM::SUBPIXEL_SHIFT + denom) / (2 * denom);
+	const float cost0 = static_cast<float>(unpack_cost(t2.values[0]));
+	const float cost1 = static_cast<float>(unpack_cost(t2.values[1]));
+	const uint16_t disp0 = static_cast<uint16_t>(unpack_index(t2.values[0]));
+	const uint16_t disp1 = static_cast<uint16_t>(unpack_index(t2.values[1]));
+	if(cost1 * uniqueness >= cost0
+		|| abs(disp1 - disp0) <= 1){
+		uint16_t disp = disp0;
+		disp <<= sgm::StereoSGM::SUBPIXEL_SHIFT;
+		if (disp > 0 && disp < MAX_DISPARITY - 1) {
+			const int numer = smem[disp - 1] - smem[disp + 1];
+			const int denom = smem[disp - 1] - 2 * smem[disp] + smem[disp + 1];
+			if (denom != 0 && -denom <= numer && numer <= denom) {
+				disp += ((numer << sgm::StereoSGM::SUBPIXEL_SHIFT) + denom) / (2 * denom);
+			}
+		}
+		return disp;
+	}else{
+		return 0;
 	}
-	return disp;
 }
 
 
