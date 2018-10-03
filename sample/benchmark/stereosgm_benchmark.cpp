@@ -56,6 +56,7 @@ int main(int argc, char* argv[])
 	const int disp_size = argc > 3 ? std::stoi(argv[3]) : 128;
 	const int iterations = argc > 4 ? std::stoi(argv[4]) : 100;
 	const int out_depth = argc > 5 ? std::stoi(argv[5]) : 8;
+	const bool subpixel = argc > 6 ? std::stoi(argv[6]) != 0 : false;
 
 	const int width = I1.cols;
 	const int height = I1.rows;
@@ -64,7 +65,9 @@ int main(int argc, char* argv[])
 	const int input_bytes = input_depth * width * height / 8;
 	const int output_bytes = out_depth * width * height / 8;
 
-	sgm::StereoSGM sgm(width, height, disp_size, input_depth, out_depth, sgm::EXECUTE_INOUT_CUDA2CUDA);
+	const sgm::StereoSGM::Parameters params{10, 120, 0.95f, subpixel};
+
+	sgm::StereoSGM sgm(width, height, disp_size, input_depth, out_depth, sgm::EXECUTE_INOUT_CUDA2CUDA, params);
 
 	device_buffer d_I1(input_bytes), d_I2(input_bytes), d_disparity(output_bytes);
 	cudaMemcpy(d_I1.data, I1.data, input_bytes, cudaMemcpyHostToDevice);
