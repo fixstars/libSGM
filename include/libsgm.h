@@ -61,7 +61,10 @@ namespace sgm {
 	*/
 	class StereoSGM {
 	public:
-
+		enum {
+			SUBPIXEL_SHIFT = 4,
+			SUBPIXEL_SCALE = (1 << SUBPIXEL_SHIFT)
+		};
 		struct Parameters
 		{
 			int P1;

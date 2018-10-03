@@ -15,6 +15,7 @@ limitations under the License.
 */
 
 #include <cstdio>
+#include <libsgm.h>
 #include "winner_takes_all.hpp"
 #include "utility.hpp"
 
@@ -115,12 +116,11 @@ template <size_t MAX_DISPARITY>
 __device__ inline uint16_t compute_disparity_subpixel(Top2 t2, float uniqueness, uint16_t* smem)
 {
 	uint16_t disp = compute_disparity_normal<MAX_DISPARITY>(t2, uniqueness, smem);
-	const int SCALE_SHIFT = 4;
-	disp <<= SCALE_SHIFT;
+	disp <<= sgm::StereoSGM::SUBPIXEL_SHIFT;
 	if (disp > 0 && disp < MAX_DISPARITY - 1) {
 		const int numer = smem[disp - 1] - smem[disp + 1];
 		const int denom = smem[disp - 1] - 2 * smem[disp] + smem[disp + 1];
-		disp |= (numer << SCALE_SHIFT + denom) / (2 * denom);
+		disp += (numer << sgm::StereoSGM::SUBPIXEL_SHIFT + denom) / (2 * denom);
 	}
 	return disp;
 }
