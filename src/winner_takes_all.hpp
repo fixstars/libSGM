@@ -45,6 +45,7 @@ public:
 		size_t width,
 		size_t height,
 		float uniqueness,
+		bool subpixel,
 		cudaStream_t stream);
 
 	void enqueue(
@@ -54,6 +55,7 @@ public:
 		size_t width,
 		size_t height,
 		float uniqueness,
+		bool subpixel,
 		cudaStream_t stream);
 
 };

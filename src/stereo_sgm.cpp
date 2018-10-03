@@ -29,7 +29,7 @@ namespace sgm {
 	public:
 		using output_type = sgm::output_type;
 		virtual void execute(output_type* dst_L, output_type* dst_R, const void* src_L, const void* src_R, 
-			size_t w, size_t h, unsigned int P1, unsigned int P2, float uniqueness) = 0;
+			size_t w, size_t h, unsigned int P1, unsigned int P2, float uniqueness, bool subpixel) = 0;
 
 		virtual ~SemiGlobalMatchingBase() {}
 	};
@@ -38,9 +38,9 @@ namespace sgm {
 	class SemiGlobalMatchingImpl : public SemiGlobalMatchingBase {
 	public:
 		void execute(output_type* dst_L, output_type* dst_R, const void* src_L, const void* src_R,
-			size_t w, size_t h, unsigned int P1, unsigned int P2, float uniqueness) override
+			size_t w, size_t h, unsigned int P1, unsigned int P2, float uniqueness, bool subpixel) override
 		{
-			sgm_engine_.execute(dst_L, dst_R, (const input_type*)src_L, (const input_type*)src_R, w, h, P1, P2, uniqueness);
+			sgm_engine_.execute(dst_L, dst_R, (const input_type*)src_L, (const input_type*)src_R, w, h, P1, P2, uniqueness, subpixel);
 		}
 	private:
 		SemiGlobalMatching<input_type, DISP_SIZE> sgm_engine_;
@@ -157,7 +157,7 @@ namespace sgm {
 			d_left_disp = dst; // when threre is no device-host copy or type conversion, use passed buffer
 		
 		cu_res_->sgm_engine->execute((uint16_t*)d_tmp_left_disp, (uint16_t*)d_tmp_right_disp,
-			d_input_left, d_input_right, width_, height_, param_.P1, param_.P2, param_.uniqueness);
+			d_input_left, d_input_right, width_, height_, param_.P1, param_.P2, param_.uniqueness, param_.subpixel);
 
 		sgm::details::median_filter((uint16_t*)d_tmp_left_disp, (uint16_t*)d_left_disp, width_, height_);
 		sgm::details::median_filter((uint16_t*)d_tmp_right_disp, (uint16_t*)d_right_disp, width_, height_);

@@ -70,7 +70,8 @@ namespace sgm {
 			int P1;
 			int P2;
 			float uniqueness;
-			Parameters(int P1 = 10, int P2 = 120, float uniqueness = 0.95f) : P1(P1), P2(P2), uniqueness(uniqueness) {}
+			bool subpixel;
+			Parameters(int P1 = 10, int P2 = 120, float uniqueness = 0.95f, bool subpixel = false) : P1(P1), P2(P2), uniqueness(uniqueness), subpixel(subpixel) {}
 		};
 
 		/**

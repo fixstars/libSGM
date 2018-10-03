@@ -47,7 +47,8 @@ public:
 		size_t height,
 		unsigned int penalty1,
 		unsigned int penalty2,
-		float uniqueness);
+		float uniqueness,
+		bool subpixel);
 
 	void enqueue(
 		output_type *dest_left,
@@ -59,6 +60,7 @@ public:
 		unsigned int penalty1,
 		unsigned int penalty2,
 		float uniqueness,
+		bool subpixel,
 		cudaStream_t stream);
 
 };

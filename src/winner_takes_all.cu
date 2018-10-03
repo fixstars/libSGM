@@ -262,13 +262,19 @@ void enqueue_winner_takes_all(
 	unsigned int width,
 	unsigned int height,
 	float uniqueness,
+	bool subpixel,
 	cudaStream_t stream)
 {
 	const unsigned int gdim =
 		(height + WARPS_PER_BLOCK - 1) / WARPS_PER_BLOCK;
 	const unsigned int bdim = BLOCK_SIZE;
-	winner_takes_all_kernel<MAX_DISPARITY><<<gdim, bdim, 0, stream>>>(
-		left_dest, right_dest, src, width, height, uniqueness);
+	if (subpixel) {
+		winner_takes_all_kernel<MAX_DISPARITY, compute_disparity_subpixel<MAX_DISPARITY>><<<gdim, bdim, 0, stream>>>(
+			left_dest, right_dest, src, width, height, uniqueness);
+	} else {
+		winner_takes_all_kernel<MAX_DISPARITY, compute_disparity_normal<MAX_DISPARITY>><<<gdim, bdim, 0, stream>>>(
+			left_dest, right_dest, src, width, height, uniqueness);
+	}
 }
 
 }
@@ -286,6 +292,7 @@ void WinnerTakesAll<MAX_DISPARITY>::enqueue(
 	size_t width,
 	size_t height,
 	float uniqueness,
+	bool subpixel,
 	cudaStream_t stream)
 {
 	if(m_left_buffer.size() != width * height){
@@ -301,6 +308,7 @@ void WinnerTakesAll<MAX_DISPARITY>::enqueue(
 		width,
 		height,
 		uniqueness,
+		subpixel,
 		stream);
 }
 
@@ -312,6 +320,7 @@ void WinnerTakesAll<MAX_DISPARITY>::enqueue(
 	size_t width,
 	size_t height,
 	float uniqueness,
+	bool subpixel,
 	cudaStream_t stream)
 {
 	enqueue_winner_takes_all<MAX_DISPARITY>(
@@ -321,6 +330,7 @@ void WinnerTakesAll<MAX_DISPARITY>::enqueue(
 		width,
 		height,
 		uniqueness,
+		subpixel,
 		stream);
 }
 

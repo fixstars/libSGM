@@ -52,6 +52,7 @@ public:
 		unsigned int penalty1,
 		unsigned int penalty2,
 		float uniqueness,
+		bool subpixel,
 		cudaStream_t stream)
 	{
 		m_census_left.enqueue(
@@ -67,7 +68,7 @@ public:
 		m_winner_takes_all.enqueue(
 			dest_left, dest_right,
 			m_path_aggregation.get_output(),
-			width, height, uniqueness,
+			width, height, uniqueness, subpixel,
 			stream);
 	}
 
@@ -93,14 +94,16 @@ void SemiGlobalMatching<T, MAX_DISPARITY>::execute(
 	size_t height,
 	unsigned int penalty1,
 	unsigned int penalty2,
-	float uniqueness)
+	float uniqueness,
+	bool subpixel)
 {
 	m_impl->enqueue(
 		dest_left, dest_right,
 		src_left, src_right,
 		width, height,
 		penalty1, penalty2,
-		uniqueness, 0);
+		uniqueness, subpixel,
+		0);
 	cudaStreamSynchronize(0);
 }
 
@@ -115,6 +118,7 @@ void SemiGlobalMatching<T, MAX_DISPARITY>::enqueue(
 	unsigned int penalty1,
 	unsigned int penalty2,
 	float uniqueness,
+	bool subpixel,
 	cudaStream_t stream)
 {
 	m_impl->enqueue(
@@ -122,7 +126,8 @@ void SemiGlobalMatching<T, MAX_DISPARITY>::enqueue(
 		src_left, src_right,
 		width, height,
 		penalty1, penalty2,
-		uniqueness, stream);
+		uniqueness, subpixel,
+		stream);
 }
 
 
