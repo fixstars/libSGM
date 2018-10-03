@@ -27,6 +27,17 @@ limitations under the License.
 
 #include <libsgm.h>
 
+cv::Mat color_normalized(const cv::Mat& src)
+{
+	cv::Mat tmp(src.size(), CV_8UC1);
+	double min, max;
+	cv::minMaxIdx(src, &min, &max);
+	src.convertTo(tmp, CV_8UC1, 256 / max, -min);
+	cv::Mat dst;
+	cv::applyColorMap(tmp, dst, cv::COLORMAP_JET);
+	return dst;
+}
+
 int main(int argc, char* argv[]) {
 	if (argc < 3) {
 		std::cerr << "usage: stereosgm left_img right_img [disp_size]" << std::endl;
@@ -40,6 +51,8 @@ int main(int argc, char* argv[]) {
 	if (argc >= 4) {
 		disp_size = atoi(argv[3]);
 	}
+	const int out_depth = argc > 4 ? std::stoi(argv[4]) : 8;
+	const bool subpixel = argc > 5 ? std::stoi(argv[5]) != 0 : false;
 
 	if (left.size() != right.size() || left.type() != right.type()) {
 		std::cerr << "mismatch input image size" << std::endl;
@@ -56,14 +69,23 @@ int main(int argc, char* argv[]) {
 		std::exit(EXIT_FAILURE);
 	}
 
-	sgm::StereoSGM ssgm(left.cols, left.rows, disp_size, bits, 16, sgm::EXECUTE_INOUT_HOST2HOST);
+	const sgm::StereoSGM::Parameters params{10, 120, 0.95f, subpixel};
 
-	cv::Mat output(cv::Size(left.cols, left.rows), CV_16UC1);
+	sgm::StereoSGM ssgm(left.cols, left.rows, disp_size, bits, out_depth, sgm::EXECUTE_INOUT_HOST2HOST, params);
+
+	cv::Mat output(cv::Size(left.cols, left.rows), out_depth == 8 ? CV_8UC1 : CV_16UC1);
 
 	ssgm.execute(left.data, right.data, output.data);
 	// show image
-	cv::imshow("image", output * (1 << 16) / disp_size);
-	
+	cv::Mat dst;
+	if (subpixel) {
+		dst = output * (1 << out_depth) / (disp_size * sgm::StereoSGM::SUBPIXEL_SCALE);
+	} else {
+		dst = output * (1 << out_depth) / disp_size;
+	}
+	cv::imshow("image", dst);
+
+	cv::Mat colored = color_normalized(output);
 	int key = cv::waitKey();
 	int mode = 0;
 	while (key != 27) {
@@ -77,17 +99,15 @@ int main(int argc, char* argv[]) {
 					#if CV_MAJOR_VERSION == 3
 					cv::setWindowTitle("image", "disparity");
 					#endif
-					cv::imshow("image", output * 256 / disp_size);
+					cv::imshow("image", dst);
 					break;
 				}
 			case 1:
 				{
-					cv::Mat m;
-					cv::applyColorMap(output * 256 / disp_size, m, cv::COLORMAP_JET);
 					#if CV_MAJOR_VERSION == 3
 					cv::setWindowTitle("image", "disparity color");
 					#endif
-					cv::imshow("image", m);
+					cv::imshow("image", colored);
 					break;
 				}
 			case 2:
