@@ -93,21 +93,40 @@ __device__ uint32_t unpack_index(uint32_t packed){
 	return packed & 0xffffu;
 }
 
-__device__ inline uint32_t compute_disparity(Top2 t2, float uniqueness){
+using ComputeDisparity = uint16_t(*)(Top2, float, uint16_t*);
+
+template <size_t MAX_DISPARITY>
+__device__ inline uint16_t compute_disparity_normal(Top2 t2, float uniqueness, uint16_t* smem = nullptr)
+{
 	const float cost0 = static_cast<float>(unpack_cost(t2.values[0]));
 	const float cost1 = static_cast<float>(unpack_cost(t2.values[1]));
-	const int disp0 = static_cast<int>(unpack_index(t2.values[0]));
-	const int disp1 = static_cast<int>(unpack_index(t2.values[1]));
-	if(static_cast<float>(cost1) * uniqueness >= static_cast<float>(cost0)){
-		return static_cast<uint32_t>(disp0);
+	const uint16_t disp0 = static_cast<uint16_t>(unpack_index(t2.values[0]));
+	const uint16_t disp1 = static_cast<uint16_t>(unpack_index(t2.values[1]));
+	if(cost1 * uniqueness >= cost0){
+		return disp0;
 	}else if(abs(disp1 - disp0) <= 1){
-		return static_cast<uint32_t>(disp0);
+		return disp0;
 	}else{
 		return 0;
 	}
 }
 
-template <unsigned int MAX_DISPARITY>
+template <size_t MAX_DISPARITY>
+__device__ inline uint16_t compute_disparity_subpixel(Top2 t2, float uniqueness, uint16_t* smem)
+{
+	uint16_t disp = compute_disparity_normal<MAX_DISPARITY>(t2, uniqueness, smem);
+	const __constant__ int SCALE_SHIFT = 4;
+	disp <<= SCALE_SHIFT;
+	if (disp > 0 && disp < MAX_DISPARITY - 1) {
+		const int numer = smem[disp - 1] - smem[disp + 1];
+		const int denom = smem[disp - 1] - 2 * smem[disp] + smem[disp + 1];
+		disp |= (numer << SCALE_SHIFT + denom) / (2 * denom);
+	}
+	return disp;
+}
+
+
+template <unsigned int MAX_DISPARITY, ComputeDisparity compute_disparity = compute_disparity_normal<MAX_DISPARITY>>
 __global__ void winner_takes_all_kernel(
 	output_type *left_dest,
 	output_type *right_dest,
@@ -196,7 +215,7 @@ __global__ void winner_takes_all_kernel(
 				}
 				left_top2 = subgroup_merge_top2<WARP_SIZE>(left_top2);
 				if(lane_id == 0){
-					left_dest[x] = compute_disparity(left_top2, uniqueness);
+					left_dest[x] = compute_disparity(left_top2, uniqueness, smem_cost_sum[warp_id][smem_x]);
 				}
 				// Update right
 #pragma unroll
@@ -218,7 +237,7 @@ __global__ void winner_takes_all_kernel(
 					right_top2[i].push(recv);
 					if(d == MAX_DISPARITY - 1){
 						if(0 <= p){
-							right_dest[p] = compute_disparity(right_top2[i], uniqueness);
+							right_dest[p] = compute_disparity_normal<MAX_DISPARITY>(right_top2[i], uniqueness);
 						}
 						right_top2[i].initialize();
 					}
@@ -230,7 +249,7 @@ __global__ void winner_takes_all_kernel(
 		const unsigned int k = lane_id * REDUCTION_PER_THREAD + i;
 		const int p = static_cast<int>(((width - k) & ~(MAX_DISPARITY - 1)) + k);
 		if(p < width){
-			right_dest[p] = compute_disparity(right_top2[i], uniqueness);
+			right_dest[p] = compute_disparity_normal<MAX_DISPARITY>(right_top2[i], uniqueness);
 		}
 	}
 }
