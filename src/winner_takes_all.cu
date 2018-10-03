@@ -115,7 +115,7 @@ template <size_t MAX_DISPARITY>
 __device__ inline uint16_t compute_disparity_subpixel(Top2 t2, float uniqueness, uint16_t* smem)
 {
 	uint16_t disp = compute_disparity_normal<MAX_DISPARITY>(t2, uniqueness, smem);
-	const __constant__ int SCALE_SHIFT = 4;
+	const int SCALE_SHIFT = 4;
 	disp <<= SCALE_SHIFT;
 	if (disp > 0 && disp < MAX_DISPARITY - 1) {
 		const int numer = smem[disp - 1] - smem[disp + 1];
