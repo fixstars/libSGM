@@ -16,5 +16,5 @@ endif()
 include_directories(${OpenCV_INCLUDE_DIRS})
 include_directories(../../include)
 
-cuda_add_executable(stereosgm_movie stereosgm_movie.cpp)
-target_link_libraries(stereosgm_movie sgm ${CUDA_LIBRARIES} ${OpenCV_LIBS})
+cuda_add_executable(stereo_movie stereosgm_movie.cpp)
+target_link_libraries(stereo_movie sgm ${CUDA_LIBRARIES} ${OpenCV_LIBS})
