@@ -263,7 +263,11 @@ int main(int argc, char* argv[])
 			I1.convertTo(I1, CV_8U);
 		}
 
-		disparity.convertTo(disparity_8u, CV_8U, 255. / disp_size);
+		if (subpixel) {
+			disparity.convertTo(disparity_8u, CV_8U, 255. / disp_size / sgm::StereoSGM::SUBPIXEL_SCALE);
+		} else {
+			disparity.convertTo(disparity_8u, CV_8U, 255. / disp_size);
+		}
 		reprojectPointsTo3D(disparity, camera, points, subpixel);
 		drawPoints3D(points, draw);
 
