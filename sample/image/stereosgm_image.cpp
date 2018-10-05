@@ -32,7 +32,8 @@ cv::Mat color_normalized(const cv::Mat& src)
 	cv::Mat tmp(src.size(), CV_8UC1);
 	double min, max;
 	cv::minMaxIdx(src, &min, &max);
-	src.convertTo(tmp, CV_8UC1, 256 / max, -min);
+	double alpha = 255 / max;
+	src.convertTo(tmp, CV_8UC1, alpha, -min * alpha);
 	cv::Mat dst;
 	cv::applyColorMap(tmp, dst, cv::COLORMAP_JET);
 	return dst;
@@ -79,9 +80,9 @@ int main(int argc, char* argv[]) {
 	// show image
 	cv::Mat dst;
 	if (subpixel) {
-		dst = output * (1 << out_depth) / (disp_size * sgm::StereoSGM::SUBPIXEL_SCALE);
+		output.convertTo(dst, CV_8UC1, 255. / (disp_size * sgm::StereoSGM::SUBPIXEL_SCALE));
 	} else {
-		dst = output * (1 << out_depth) / disp_size;
+		output.convertTo(dst, CV_8UC1, 255. / disp_size);
 	}
 	cv::imshow("image", dst);
 
