@@ -153,7 +153,7 @@ namespace sgm {
 		void* d_left_disp = cu_res_->d_left_disp;
 		void* d_right_disp = cu_res_->d_right_disp;
 
-		if (is_cuda_output(inout_type_) && output_depth_bits_ == 8)
+		if (is_cuda_output(inout_type_) && output_depth_bits_ == 16)
 			d_left_disp = dst; // when threre is no device-host copy or type conversion, use passed buffer
 		
 		cu_res_->sgm_engine->execute((uint16_t*)d_tmp_left_disp, (uint16_t*)d_tmp_right_disp,
