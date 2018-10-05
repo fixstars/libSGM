@@ -123,7 +123,7 @@ __device__ inline uint16_t compute_disparity_subpixel(Top2 t2, float uniqueness,
 		|| abs(disp1 - disp0) <= 1){
 		uint16_t disp = disp0;
 		disp <<= sgm::StereoSGM::SUBPIXEL_SHIFT;
-		if (disp > 0 && disp < MAX_DISPARITY - 1) {
+		if (disp0 > 0 && disp0 < MAX_DISPARITY - 1) {
 			const int numer = smem[disp0 - 1] - smem[disp0 + 1];
 			const int denom = smem[disp0 - 1] - 2 * smem[disp0] + smem[disp0 + 1];
 			disp += ((numer << sgm::StereoSGM::SUBPIXEL_SHIFT) + denom) / (2 * denom);
