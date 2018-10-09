@@ -8,6 +8,7 @@ before_script:
 
 stages:
   - build
+  - test
 
 .build_template: &build_definition
   stage: build
@@ -46,4 +47,17 @@ build:samples_off:static:
   variables:
     build_samples: "OFF"
     build_shared: "OFF"
+  artifacts:
+    paths:
+      - ./test/sgm-test
+    expire_in: 1h
   <<: *build_definition
+
+test:
+  stage: test
+  tags:
+    - docker
+  script:
+    - ./test/sgm-test
+  dependencies:
+    - build:samples_off:static
