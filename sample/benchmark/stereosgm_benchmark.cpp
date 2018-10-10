@@ -42,7 +42,7 @@ struct device_buffer
 int main(int argc, char* argv[])
 {
 	if (argc < 3) {
-		std::cout << "usage: " << argv[0] << " left_img right_img [disp_size] [iterations]" << std::endl;
+		std::cout << "usage: " << argv[0] << " left_img right_img [disp_size] [out_depth] [subpixel] [iterations]" << std::endl;
 		return 0;
 	}
 
@@ -54,9 +54,9 @@ int main(int argc, char* argv[])
 	ASSERT_MSG(I1.type() == CV_8U || I1.type() == CV_16U, "input image format must be CV_8U or CV_16U.");
 
 	const int disp_size = argc > 3 ? std::stoi(argv[3]) : 128;
-	const int iterations = argc > 4 ? std::stoi(argv[4]) : 100;
-	const int out_depth = argc > 5 ? std::stoi(argv[5]) : 8;
-	const bool subpixel = argc > 6 ? std::stoi(argv[6]) != 0 : false;
+	const int out_depth = argc > 4 ? std::stoi(argv[4]) : 8;
+	const bool subpixel = argc > 5 ? std::stoi(argv[5]) != 0 : false;
+	const int iterations = argc > 6 ? std::stoi(argv[6]) : 100;
 
 	const int width = I1.cols;
 	const int height = I1.rows;
