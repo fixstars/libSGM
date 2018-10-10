@@ -85,6 +85,7 @@ int main(int argc, char* argv[])
 	std::cout << "image size          : " << I1.size() << std::endl;
 	std::cout << "disparity size      : " << disp_size << std::endl;
 	std::cout << "output_bytes        : " << out_depth << std::endl;
+	std::cout << "subpixel option     : " << (subpixel ? "true" : "false") << std::endl;
 	std::cout << "sgm path            : " << "8 path" << std::endl;
 	std::cout << "iterations          : " << iterations << std::endl;
 	std::cout << std::endl;
@@ -114,7 +115,7 @@ int main(int argc, char* argv[])
 	std::cout << std::endl;
 
 	// save disparity image
-	cv::Mat disparity(height, width, CV_8U);
+	cv::Mat disparity(height, width, out_depth == 8 ? CV_8U : CV_16U);
 	cudaMemcpy(disparity.data, d_disparity.data, output_bytes, cudaMemcpyDeviceToHost);
 	disparity *= 255. / disp_size;
 	cv::imwrite("disparity.png", disparity);
