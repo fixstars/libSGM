@@ -29,9 +29,6 @@ The libSGM performance obtained from benchmark sample
 libSGM needs CUDA (compute capabilities >= 3.0) to be installed.  
 Moreover, to build the sample, we need the following libraries:
 - OpenCV
-- OpenGL
-- GLFW3
-- GLEW
 - CMake 3.10 or later
 
 ## Build Instructions

@@ -14,119 +14,119 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-#include <stdlib.h>
 #include <iostream>
+#include <iomanip>
 #include <string>
+#include <chrono>
+
+#include <cuda_runtime.h>
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/core/version.hpp>
+#if CV_MAJOR_VERSION == 2
+#include <opencv2/contrib/contrib.hpp>
+#endif
 
 #include <libsgm.h>
 
-#include "demo.h"
-#include "renderer.h"
+#define ASSERT_MSG(expr, msg) \
+	if (!(expr)) { \
+		std::cerr << msg << std::endl; \
+		std::exit(EXIT_FAILURE); \
+	} \
 
-int main(int argc, char* argv[]) {
+struct device_buffer
+{
+	device_buffer() : data(nullptr) {}
+	device_buffer(size_t count) { allocate(count); }
+	void allocate(size_t count) { cudaMalloc(&data, count); }
+	~device_buffer() { cudaFree(data); }
+	void* data;
+};
 
+template <class... Args>
+static std::string format_string(const char* fmt, Args... args)
+{
+	const int BUF_SIZE = 1024;
+	char buf[BUF_SIZE];
+	std::snprintf(buf, BUF_SIZE, fmt, args...);
+	return std::string(buf);
+}
+
+int main(int argc, char* argv[])
+{
 	if (argc < 3) {
-		std::cerr << "usage: stereosgm left_img_fmt right_img_fmt [disp_size] [max_frame_num]" << std::endl;
-		std::exit(EXIT_FAILURE);
-	}
-	std::string left_filename_fmt, right_filename_fmt;
-	left_filename_fmt = argv[1];
-	right_filename_fmt = argv[2];
-
-	// dangerous
-	char buf[1024];
-	sprintf(buf, left_filename_fmt.c_str(), 0);
-	cv::Mat left = cv::imread(buf, -1);
-	sprintf(buf, right_filename_fmt.c_str(), 0);
-	cv::Mat right = cv::imread(buf, -1);
-
-
-	int disp_size = 64;
-	if (argc >= 4) {
-		disp_size = atoi(argv[3]);
-	}
-
-	int max_frame = 100;
-	if(argc >= 5) {
-		max_frame = atoi(argv[4]);
-	}
-
-
-	if (left.size() != right.size() || left.type() != right.type()) {
-		std::cerr << "mismatch input image size" << std::endl;
+		std::cout << "usage: " << argv[0] << " left-image-format right-image-format [disp_size]" << std::endl;
 		std::exit(EXIT_FAILURE);
 	}
 
-	int bits = 0;
+	const int first_frame = 1;
 
-	switch (left.type()) {
-	case CV_8UC1: bits = 8; break;
-	case CV_16UC1: bits = 16; break;
-	default:
-		std::cerr << "invalid input image color format" << left.type() << std::endl;
-		std::exit(EXIT_FAILURE);
-	}
+	cv::Mat I1 = cv::imread(format_string(argv[1], first_frame), -1);
+	cv::Mat I2 = cv::imread(format_string(argv[2], first_frame), -1);
+	const int disp_size = argc >= 4 ? std::stoi(argv[3]) : 128;
 
-	int width = left.cols;
-	int height = left.rows;
+	ASSERT_MSG(!I1.empty() && !I2.empty(), "imread failed.");
+	ASSERT_MSG(I1.size() == I2.size() && I1.type() == I2.type(), "input images must be same size and type.");
+	ASSERT_MSG(I1.type() == CV_8U || I1.type() == CV_16U, "input image format must be CV_8U or CV_16U.");
+	ASSERT_MSG(disp_size == 64 || disp_size == 128, "disparity size must be 64 or 128.");
 
-	cudaGLSetGLDevice(0);
+	const int width = I1.cols;
+	const int height = I1.rows;
 
-	SGMDemo demo(width, height);
+	const int input_depth = I1.type() == CV_8U ? 8 : 16;
+	const int input_bytes = input_depth * width * height / 8;
+	const int output_depth = 8;
+	const int output_bytes = output_depth * width * height / 8;
 
-	if (demo.init()) {
-		printf("fail to init SGM Demo\n");
-		std::exit(EXIT_FAILURE);
-	}
+	sgm::StereoSGM sgm(width, height, disp_size, input_depth, output_depth, sgm::EXECUTE_INOUT_CUDA2CUDA);
 
-	sgm::StereoSGM ssgm(width, height, disp_size, bits, 16, sgm::EXECUTE_INOUT_HOST2CUDA);
+	cv::Mat disparity(height, width, output_depth == 8 ? CV_8U : CV_16U);
+	cv::Mat disparity_8u, disparity_color;
 
-	Renderer renderer(width, height);
-	
-	uint16_t* d_output_buffer = NULL;
-	cudaMalloc((void**)&d_output_buffer, sizeof(uint16_t) * width * height);
+	device_buffer d_I1(input_bytes), d_I2(input_bytes), d_disparity(output_bytes);
 
-	int frame_no = 0;
-	while (!demo.should_close()) {
+	for (int frame_no = first_frame;; frame_no++) {
 
-		glClearColor(0.0, 0.0, 0.0, 1.0);
-		glClear(GL_COLOR_BUFFER_BIT);
-		
-		if (frame_no == max_frame) { frame_no = 0; }
-
-		sprintf(buf, left_filename_fmt.c_str(), frame_no);
-		cv::Mat left = cv::imread(buf, -1);
-		sprintf(buf, right_filename_fmt.c_str(), frame_no);
-		cv::Mat right = cv::imread(buf, -1);
-
-		if (left.size() == cv::Size(0, 0) || right.size() == cv::Size(0, 0)) {
-			max_frame = frame_no;
-			frame_no = 0;
+		I1 = cv::imread(format_string(argv[1], frame_no), -1);
+		I2 = cv::imread(format_string(argv[2], frame_no), -1);
+		if (I1.empty() || I2.empty()) {
+			frame_no = first_frame;
 			continue;
 		}
 
-		ssgm.execute(left.data, right.data, d_output_buffer);
+		cudaMemcpy(d_I1.data, I1.data, input_bytes, cudaMemcpyHostToDevice);
+		cudaMemcpy(d_I2.data, I2.data, input_bytes, cudaMemcpyHostToDevice);
 
-		switch (demo.get_flag()) {
-		case 0:
-			{
-				renderer.render_input((uint16_t*)left.data);
-			}
-			break;
-		case 1:
-			renderer.render_disparity(d_output_buffer, disp_size);
-			break;
-		case 2:
-			renderer.render_disparity_color(d_output_buffer, disp_size);
-			break;
+		const auto t1 = std::chrono::system_clock::now();
+
+		sgm.execute(d_I1.data, d_I2.data, d_disparity.data);
+		cudaDeviceSynchronize();
+
+		const auto t2 = std::chrono::system_clock::now();
+		const auto duration = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
+		const double fps = 1e6 / duration;
+
+		cudaMemcpy(disparity.data, d_disparity.data, output_bytes, cudaMemcpyDeviceToHost);
+
+		// draw results
+		if (I1.type() != CV_8U) {
+			cv::normalize(I1, I1, 0, 255, cv::NORM_MINMAX);
+			I1.convertTo(I1, CV_8U);
 		}
-		
-		demo.swap_buffer();
-		frame_no++;
+
+		disparity.convertTo(disparity_8u, CV_8U, 255. / disp_size);
+		cv::applyColorMap(disparity_8u, disparity_color, cv::COLORMAP_JET);
+		cv::putText(disparity_color, format_string("sgm execution time: %4.1f[msec] %4.1f[FPS]", 1e-3 * duration, fps),
+			cv::Point(50, 50), 2, 0.75, cv::Scalar(255, 255, 255));
+
+		cv::imshow("left image", I1);
+		cv::imshow("disparity", disparity_color);
+		const char c = cv::waitKey(1);
+		if (c == 27) // ESC
+			break;
 	}
 
-	cudaFree(d_output_buffer);
+	return 0;
 }
