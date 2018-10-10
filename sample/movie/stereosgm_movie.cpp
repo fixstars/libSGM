@@ -19,10 +19,14 @@ limitations under the License.
 #include <string>
 #include <chrono>
 
+#include <cuda_runtime.h>
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
-#include <cuda_runtime.h>
+#include <opencv2/core/version.hpp>
+#if CV_MAJOR_VERSION == 2
+#include <opencv2/contrib/contrib.hpp>
+#endif
 
 #include <libsgm.h>
 
