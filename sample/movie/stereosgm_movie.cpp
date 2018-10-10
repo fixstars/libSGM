@@ -54,7 +54,7 @@ int main(int argc, char* argv[])
 {
 	if (argc < 3) {
 		std::cout << "usage: " << argv[0] << " left-image-format right-image-format [disp_size]" << std::endl;
-		return 0;
+		std::exit(EXIT_FAILURE);
 	}
 
 	const int first_frame = 1;
