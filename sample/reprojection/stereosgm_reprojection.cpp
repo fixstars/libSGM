@@ -130,7 +130,7 @@ static cv::Scalar computeColor(float val)
 
 void reprojectPointsTo3D(const cv::Mat& disparity, const CameraParameters& camera, std::vector<cv::Point3f>& points, bool subpixeled)
 {
-	CV_Assert(disparity.type() == CV_8U || disparity.type() == CV_16U);
+	CV_Assert(disparity.type() == CV_32F);
 
 	CoordinateTransform tf(camera);
 
@@ -141,21 +141,7 @@ void reprojectPointsTo3D(const cv::Mat& disparity, const CameraParameters& camer
 	{
 		for (int x = 0; x < disparity.cols; x++)
 		{
-			short raw;
-			switch (disparity.elemSize1()) {
-			case 1:
-				raw = disparity.at<uchar>(y, x);
-				break;
-			case 2:
-				raw = disparity.at<ushort>(y, x);
-				break;
-			default:
-				CV_Assert(false);
-			}
-			float d = raw;
-			if (subpixeled) {
-				d /= sgm::StereoSGM::SUBPIXEL_SCALE;
-			}
+			const float d = disparity.at<float>(y, x);
 			if (d > 0)
 				points.push_back(tf.imageToWorld(cv::Point(x, y), d));
 		}
@@ -229,7 +215,7 @@ int main(int argc, char* argv[])
 	sgm::StereoSGM sgm(width, height, disp_size, input_depth, output_depth, sgm::EXECUTE_INOUT_CUDA2CUDA, params);
 
 	cv::Mat disparity(height, width, output_depth == 8 ? CV_8U : CV_16U);
-	cv::Mat disparity_8u, disparity_color, draw;
+	cv::Mat disparity_8u, disparity_32f, disparity_color, draw;
 	std::vector<cv::Point3f> points;
 
 	device_buffer d_I1(input_bytes), d_I2(input_bytes), d_disparity(output_bytes);
@@ -263,14 +249,11 @@ int main(int argc, char* argv[])
 			I1.convertTo(I1, CV_8U);
 		}
 
-		if (subpixel) {
-			disparity.convertTo(disparity_8u, CV_8U, 255. / disp_size / sgm::StereoSGM::SUBPIXEL_SCALE);
-		} else {
-			disparity.convertTo(disparity_8u, CV_8U, 255. / disp_size);
-		}
-		reprojectPointsTo3D(disparity, camera, points, subpixel);
+		disparity.convertTo(disparity_32f, CV_32F, subpixel ? 1. / sgm::StereoSGM::SUBPIXEL_SCALE : 1);
+		reprojectPointsTo3D(disparity_32f, camera, points, subpixel);
 		drawPoints3D(points, draw);
 
+		disparity_32f.convertTo(disparity_8u, CV_8U, 255. / disp_size);
 		cv::applyColorMap(disparity_8u, disparity_color, cv::COLORMAP_JET);
 		cv::putText(disparity_color, format_string("sgm execution time: %4.1f[msec] %4.1f[FPS]", 1e-3 * duration, fps),
 			cv::Point(50, 50), 2, 0.75, cv::Scalar(255, 255, 255));
