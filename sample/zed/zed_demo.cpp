@@ -16,19 +16,60 @@ limitations under the License.
 
 #include <stdlib.h>
 #include <iostream>
+#include <iomanip>
 #include <string>
+#include <chrono>
+
+#include <cuda_runtime.h>
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
 #include <nppi.h>
 
-#include <zed/Camera.hpp>
+#include <sl/Camera.hpp>
 
 #include <libsgm.h>
 
-#include "demo.h"
-#include "renderer.h"
+using namespace sl;
+
+template <class... Args>
+static std::string format_string(const char* fmt, Args... args)
+{
+	const int BUF_SIZE = 1024;
+	char buf[BUF_SIZE];
+	std::snprintf(buf, BUF_SIZE, fmt, args...);
+	return std::string(buf);
+}
+
+struct device_buffer {
+	device_buffer() : data(nullptr) {}
+	device_buffer(size_t count) { allocate(count); }
+	void allocate(size_t count) { cudaMalloc(&data, count); }
+	~device_buffer() { cudaFree(data); }
+	void* data;
+};
+
+// code from https://github.com/stereolabs/zed-opencv/blob/master/src/main.cpp
+cv::Mat slMat2cvMat(Mat& input) {
+    // Mapping between MAT_TYPE and CV_TYPE
+    int cv_type = -1;
+    switch (input.getDataType()) {
+        case MAT_TYPE_32F_C1: cv_type = CV_32FC1; break;
+        case MAT_TYPE_32F_C2: cv_type = CV_32FC2; break;
+        case MAT_TYPE_32F_C3: cv_type = CV_32FC3; break;
+        case MAT_TYPE_32F_C4: cv_type = CV_32FC4; break;
+        case MAT_TYPE_8U_C1: cv_type = CV_8UC1; break;
+        case MAT_TYPE_8U_C2: cv_type = CV_8UC2; break;
+        case MAT_TYPE_8U_C3: cv_type = CV_8UC3; break;
+        case MAT_TYPE_8U_C4: cv_type = CV_8UC4; break;
+        default: break;
+    }
+
+    // Since cv::Mat data requires a uchar* pointer, we get the uchar1 pointer from sl::Mat (getPtr<T>())
+    // cv::Mat and sl::Mat will share a single memory structure
+    return cv::Mat(input.getHeight(), input.getWidth(), cv_type, input.getPtr<sl::uchar1>(MEM_CPU));
+}
 
 int main(int argc, char* argv[]) {	
 	
@@ -39,68 +80,76 @@ int main(int argc, char* argv[]) {
 		disp_size = atoi(argv[1]);
 	}
 	
-	// init zed cam
-	auto cap = new sl::zed::Camera(sl::zed::ZEDResolution_mode::VGA);
-	sl::zed::ERRCODE err = cap->init(sl::zed::MODE::PERFORMANCE, 0, true);
-	if (err != sl::zed::ERRCODE::SUCCESS) {
-		std::cout << sl::zed::errcode2str(err) << std::endl;
-		exit(EXIT_FAILURE);
+	Camera zed;
+	InitParameters initParameters;
+	initParameters.camera_resolution = RESOLUTION_VGA;
+	ERROR_CODE err = zed.open(initParameters);
+	if (err != SUCCESS) {
+		std::cout << toString(err) << std::endl;
+		zed.close();
+		return 1;
 	}
 
-	int width = cap->getImageSize().width;
-	int height = cap->getImageSize().height;
+	Mat zed_image_r(zed.getResolution(), MAT_TYPE_8U_C4);
+	Mat zed_image_l(zed.getResolution(), MAT_TYPE_8U_C4);
+	cv::Mat ocv_image_r = slMat2cvMat(zed_image_r);
+	cv::Mat ocv_image_l = slMat2cvMat(zed_image_l);
 
-	sgm::StereoSGM ssgm(width, height, disp_size, 8, 16, sgm::EXECUTE_INOUT_CUDA2CUDA);
-
-
-	SGMDemo demo(width, height);
-	if (demo.init()) {
-		printf("fail to init SGM Demo\n");
-		std::exit(EXIT_FAILURE);
+	if (zed.grab() == SUCCESS) {
+		
 	}
+	const int width = zed.getResolution().width;
+	const int height = zed.getResolution().height;
+	printf("%d %d\n", width, height);
+	printf("%d %d\n", ocv_image_r.size().width, ocv_image_r.size().height);
+	const int input_depth = ocv_image_r.type() == CV_8U ? 8 : 16;
+	const int input_bytes = input_depth * width * height / 8;
+	const int output_depth = 16;
+	const int output_bytes = output_depth * width * height / 8;
 
-	Renderer renderer(width, height);
+	sgm::StereoSGM ssgm(width, height, disp_size, input_depth, output_depth, sgm::EXECUTE_INOUT_CUDA2CUDA);
 
-	uint16_t* d_output_buffer = NULL;
-	uint8_t* d_input_left = NULL;
-	uint8_t* d_input_right = NULL;
-	cudaMalloc((void**)&d_input_left, width * height);
-	cudaMalloc((void**)&d_input_right, width * height);
-	cudaMalloc((void**)&d_output_buffer, sizeof(uint16_t) * width * height);
+	cv::Mat disparity(height, width, CV_16U);
+	cv::Mat disparity_8u, disparity_color;
 
-	const NppiSize roi = { width, height };
+	device_buffer d_image_r(input_bytes), d_image_l(input_bytes), d_disparity(output_bytes);
 
-	cv::Mat h_input_left(height, width, CV_8UC1);
+	while (1) {
+		if (zed.grab() == SUCCESS) {
+			zed.retrieveImage(zed_image_l, VIEW_LEFT, MEM_CPU, width, height);
+			zed.retrieveImage(zed_image_r, VIEW_RIGHT, MEM_CPU, width, height);
+		} else continue;
+		if (ocv_image_r.empty() || ocv_image_l.empty()) continue;
 
-	while (!demo.should_close()) {
-		cap->grab(sl::zed::SENSING_MODE::FULL, false, false);
+		cudaMemcpy(d_image_r.data, ocv_image_r.data, input_bytes, cudaMemcpyHostToDevice);
+		cudaMemcpy(d_image_l.data, ocv_image_l.data, input_bytes, cudaMemcpyHostToDevice);
+		
+		const auto t1 = std::chrono::system_clock::now();
 
-		sl::zed::Mat left_zm = cap->retrieveImage_gpu(sl::zed::SIDE::LEFT);
-		sl::zed::Mat right_zm = cap->retrieveImage_gpu(sl::zed::SIDE::RIGHT);
+		ssgm.execute(d_image_l.data, d_image_r.data, d_disparity.data);
+		cudaDeviceSynchronize();
 
-		nppiRGBToGray_8u_AC4C1R(left_zm.data, width * 4, d_input_left, width, roi);
-		nppiRGBToGray_8u_AC4C1R(right_zm.data, width * 4, d_input_right, width, roi);
+		const auto t2 = std::chrono::system_clock::now();
+		const auto duration = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
+		const double fps = 1e6 / duration;
 
-		ssgm.execute(d_input_left, d_input_right, d_output_buffer);
-
-		switch (demo.get_flag()) {
-		case 0: 
-			cudaMemcpy(h_input_left.data, d_input_left, width * height, cudaMemcpyDeviceToHost);
-			renderer.render_input((uint8_t*)h_input_left.data); 
-			break;
-		case 1: 
-			renderer.render_disparity(d_output_buffer, disp_size);
-			break;
-		case 2: 
-			renderer.render_disparity_color(d_output_buffer, disp_size);
-			break;
+		cudaMemcpy(disparity.data, d_disparity.data, output_bytes, cudaMemcpyDeviceToHost);
+		if (ocv_image_l.type() != CV_8U) {
+			cv::normalize(ocv_image_l, ocv_image_l, 0, 255, cv::NORM_MINMAX);
+			ocv_image_l.convertTo(ocv_image_l, CV_8U);
 		}
 
-		demo.swap_buffer();
-	}
+		disparity.convertTo(disparity_8u, CV_8U, 255. / disp_size);
+		cv::applyColorMap(disparity_8u, disparity_color, cv::COLORMAP_JET);
+		cv::putText(disparity_color, format_string("sgm execution time: %4.1f[msec] %4.1f[FPS]", 1e-3 * duration, fps),
+			cv::Point(50, 50), 2, 0.75, cv::Scalar(255, 255, 255));
 
-	cudaFree(d_input_left);
-	cudaFree(d_input_right);
-	cudaFree(d_output_buffer);
-	delete cap;
+		cv::imshow("input left", ocv_image_l);
+		cv::imshow("disparity", disparity_color);
+		const char c = cv::waitKey(1);
+		if (c == 27) // ESC
+			break;
+	}
+	zed.close();
+	return 0;
 }
