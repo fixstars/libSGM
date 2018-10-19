@@ -38,7 +38,11 @@ static std::string format_string(const char* fmt, Args... args)
 }
 
 int main(int argc, char* argv[]) {	
-	
+	if (argc < 3) {
+		std::cout << "usage: " << argv[0] << " left-image-format right-image-format" << std::endl;
+		std::exit(EXIT_FAILURE);
+	}
+
 	const int disp_size = 64;
 	
 	Camera zed;
@@ -65,8 +69,8 @@ int main(int argc, char* argv[]) {
 			zed.retrieveImage(zed_image_r, VIEW_RIGHT_UNRECTIFIED_GRAY, MEM_CPU);
 		} else continue;
 		if (ocv_image_r.empty() || ocv_image_l.empty()) continue;
-		imwrite(format_string("./imgleft/imgleft%09d.pgm", frame_no), ocv_image_l);
-		imwrite(format_string("./imgright/imgright%09d.pgm", frame_no), ocv_image_r);
+		imwrite(format_string(argv[1], frame_no), ocv_image_l);
+		imwrite(format_string(argv[2], frame_no), ocv_image_r);
 		
 		const char c = cv::waitKey(1);
 		if (c == 27) // ESC
