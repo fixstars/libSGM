@@ -29,9 +29,6 @@ endif()
 
 CUDA_ADD_EXECUTABLE(zed_demo
 	zed_demo.cpp
-	demo.cpp
-	renderer.cpp
-	cuda_gl.cu
 )
 
 

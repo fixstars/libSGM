@@ -50,35 +50,9 @@ struct device_buffer {
 	void* data;
 };
 
-// code from https://github.com/stereolabs/zed-opencv/blob/master/src/main.cpp
-cv::Mat slMat2cvMat(Mat& input) {
-    // Mapping between MAT_TYPE and CV_TYPE
-    int cv_type = -1;
-    switch (input.getDataType()) {
-        case MAT_TYPE_32F_C1: cv_type = CV_32FC1; break;
-        case MAT_TYPE_32F_C2: cv_type = CV_32FC2; break;
-        case MAT_TYPE_32F_C3: cv_type = CV_32FC3; break;
-        case MAT_TYPE_32F_C4: cv_type = CV_32FC4; break;
-        case MAT_TYPE_8U_C1: cv_type = CV_8UC1; break;
-        case MAT_TYPE_8U_C2: cv_type = CV_8UC2; break;
-        case MAT_TYPE_8U_C3: cv_type = CV_8UC3; break;
-        case MAT_TYPE_8U_C4: cv_type = CV_8UC4; break;
-        default: break;
-    }
-
-    // Since cv::Mat data requires a uchar* pointer, we get the uchar1 pointer from sl::Mat (getPtr<T>())
-    // cv::Mat and sl::Mat will share a single memory structure
-    return cv::Mat(input.getHeight(), input.getWidth(), cv_type, input.getPtr<sl::uchar1>(MEM_CPU));
-}
-
 int main(int argc, char* argv[]) {	
 	
-	int disp_size = 64;
-	const int bits = 8;
-
-	if (argc >= 2) {
-		disp_size = atoi(argv[1]);
-	}
+	const int disp_size = 128;
 	
 	Camera zed;
 	InitParameters initParameters;
@@ -89,35 +63,31 @@ int main(int argc, char* argv[]) {
 		zed.close();
 		return 1;
 	}
-
-	Mat zed_image_r(zed.getResolution(), MAT_TYPE_8U_C4);
-	Mat zed_image_l(zed.getResolution(), MAT_TYPE_8U_C4);
-	cv::Mat ocv_image_r = slMat2cvMat(zed_image_r);
-	cv::Mat ocv_image_l = slMat2cvMat(zed_image_l);
-
-	if (zed.grab() == SUCCESS) {
-		
-	}
 	const int width = zed.getResolution().width;
 	const int height = zed.getResolution().height;
-	printf("%d %d\n", width, height);
-	printf("%d %d\n", ocv_image_r.size().width, ocv_image_r.size().height);
-	const int input_depth = ocv_image_r.type() == CV_8U ? 8 : 16;
+
+	// sl::Mat and cv::Mat share data over memory
+	Mat zed_image_r(zed.getResolution(), MAT_TYPE_8U_C1);
+	Mat zed_image_l(zed.getResolution(), MAT_TYPE_8U_C1);
+	cv::Mat ocv_image_r(height, width, CV_8UC1, zed_image_r.getPtr<uchar>(MEM_CPU));
+	cv::Mat ocv_image_l(height, width, CV_8UC1, zed_image_l.getPtr<uchar>(MEM_CPU));
+
+	const int input_depth = 8;
 	const int input_bytes = input_depth * width * height / 8;
-	const int output_depth = 16;
+	const int output_depth = 8;
 	const int output_bytes = output_depth * width * height / 8;
 
-	sgm::StereoSGM ssgm(width, height, disp_size, input_depth, output_depth, sgm::EXECUTE_INOUT_CUDA2CUDA);
+	sgm::StereoSGM sgm(width, height, disp_size, input_depth, output_depth, sgm::EXECUTE_INOUT_CUDA2CUDA);
 
-	cv::Mat disparity(height, width, CV_16U);
+	cv::Mat disparity(height, width, CV_8U);
 	cv::Mat disparity_8u, disparity_color;
 
 	device_buffer d_image_r(input_bytes), d_image_l(input_bytes), d_disparity(output_bytes);
 
 	while (1) {
 		if (zed.grab() == SUCCESS) {
-			zed.retrieveImage(zed_image_l, VIEW_LEFT, MEM_CPU, width, height);
-			zed.retrieveImage(zed_image_r, VIEW_RIGHT, MEM_CPU, width, height);
+			zed.retrieveImage(zed_image_l, VIEW_LEFT_UNRECTIFIED_GRAY, MEM_CPU);
+			zed.retrieveImage(zed_image_r, VIEW_RIGHT_UNRECTIFIED_GRAY, MEM_CPU);
 		} else continue;
 		if (ocv_image_r.empty() || ocv_image_l.empty()) continue;
 
@@ -126,7 +96,7 @@ int main(int argc, char* argv[]) {
 		
 		const auto t1 = std::chrono::system_clock::now();
 
-		ssgm.execute(d_image_l.data, d_image_r.data, d_disparity.data);
+		sgm.execute(d_image_l.data, d_image_r.data, d_disparity.data);
 		cudaDeviceSynchronize();
 
 		const auto t2 = std::chrono::system_clock::now();
@@ -134,10 +104,6 @@ int main(int argc, char* argv[]) {
 		const double fps = 1e6 / duration;
 
 		cudaMemcpy(disparity.data, d_disparity.data, output_bytes, cudaMemcpyDeviceToHost);
-		if (ocv_image_l.type() != CV_8U) {
-			cv::normalize(ocv_image_l, ocv_image_l, 0, 255, cv::NORM_MINMAX);
-			ocv_image_l.convertTo(ocv_image_l, CV_8U);
-		}
 
 		disparity.convertTo(disparity_8u, CV_8U, 255. / disp_size);
 		cv::applyColorMap(disparity_8u, disparity_color, cv::COLORMAP_JET);
@@ -145,6 +111,7 @@ int main(int argc, char* argv[]) {
 			cv::Point(50, 50), 2, 0.75, cv::Scalar(255, 255, 255));
 
 		cv::imshow("input left", ocv_image_l);
+		cv::imshow("input right", ocv_image_r);
 		cv::imshow("disparity", disparity_color);
 		const char c = cv::waitKey(1);
 		if (c == 27) // ESC
