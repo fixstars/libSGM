@@ -52,7 +52,7 @@ struct device_buffer {
 
 int main(int argc, char* argv[]) {	
 	
-	const int disp_size = 128;
+	const int disp_size = 64;
 	
 	Camera zed;
 	InitParameters initParameters;
