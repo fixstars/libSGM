@@ -52,7 +52,7 @@ struct device_buffer {
 
 int main(int argc, char* argv[]) {	
 	
-	const int disp_size = 64;
+	const int disp_size = 128;
 	
 	Camera zed;
 	InitParameters initParameters;
@@ -86,8 +86,8 @@ int main(int argc, char* argv[]) {
 
 	while (1) {
 		if (zed.grab() == SUCCESS) {
-			zed.retrieveImage(zed_image_l, VIEW_LEFT_UNRECTIFIED_GRAY, MEM_CPU);
-			zed.retrieveImage(zed_image_r, VIEW_RIGHT_UNRECTIFIED_GRAY, MEM_CPU);
+			zed.retrieveImage(zed_image_l, VIEW_LEFT_GRAY, MEM_CPU);
+			zed.retrieveImage(zed_image_r, VIEW_RIGHT_GRAY, MEM_CPU);
 		} else continue;
 		if (ocv_image_r.empty() || ocv_image_l.empty()) continue;
 
@@ -111,7 +111,6 @@ int main(int argc, char* argv[]) {
 			cv::Point(50, 50), 2, 0.75, cv::Scalar(255, 255, 255));
 
 		cv::imshow("input left", ocv_image_l);
-		cv::imshow("input right", ocv_image_r);
 		cv::imshow("disparity", disparity_color);
 		const char c = cv::waitKey(1);
 		if (c == 27) // ESC
