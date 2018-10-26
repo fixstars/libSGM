@@ -25,13 +25,9 @@ limitations under the License.
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
-#include <nppi.h>
-
 #include <sl/Camera.hpp>
 
 #include <libsgm.h>
-
-using namespace sl;
 
 template <class... Args>
 static std::string format_string(const char* fmt, Args... args)
@@ -54,23 +50,23 @@ int main(int argc, char* argv[]) {
 	
 	const int disp_size = 128;
 	
-	Camera zed;
-	InitParameters initParameters;
-	initParameters.camera_resolution = RESOLUTION_VGA;
-	ERROR_CODE err = zed.open(initParameters);
-	if (err != SUCCESS) {
+	sl::Camera zed;
+	sl::InitParameters initParameters;
+	initParameters.camera_resolution = sl::RESOLUTION_VGA;
+	sl::ERROR_CODE err = zed.open(initParameters);
+	if (err != sl::SUCCESS) {
 		std::cout << toString(err) << std::endl;
 		zed.close();
 		return 1;
 	}
-	const int width = zed.getResolution().width;
-	const int height = zed.getResolution().height;
+	const int width = static_cast<int>(zed.getResolution().width);
+	const int height = static_cast<int>(zed.getResolution().height);
 
 	// sl::Mat and cv::Mat share data over memory
-	Mat zed_image_r(zed.getResolution(), MAT_TYPE_8U_C1);
-	Mat zed_image_l(zed.getResolution(), MAT_TYPE_8U_C1);
-	cv::Mat ocv_image_r(height, width, CV_8UC1, zed_image_r.getPtr<uchar>(MEM_CPU));
-	cv::Mat ocv_image_l(height, width, CV_8UC1, zed_image_l.getPtr<uchar>(MEM_CPU));
+	sl::Mat zed_image_r(zed.getResolution(), sl::MAT_TYPE_8U_C1);
+	sl::Mat zed_image_l(zed.getResolution(), sl::MAT_TYPE_8U_C1);
+	cv::Mat ocv_image_r(height, width, CV_8UC1, zed_image_r.getPtr<uchar>(sl::MEM_CPU));
+	cv::Mat ocv_image_l(height, width, CV_8UC1, zed_image_l.getPtr<uchar>(sl::MEM_CPU));
 
 	const int input_depth = 8;
 	const int input_bytes = input_depth * width * height / 8;
@@ -85,9 +81,9 @@ int main(int argc, char* argv[]) {
 	device_buffer d_image_r(input_bytes), d_image_l(input_bytes), d_disparity(output_bytes);
 
 	while (1) {
-		if (zed.grab() == SUCCESS) {
-			zed.retrieveImage(zed_image_l, VIEW_LEFT_GRAY, MEM_CPU);
-			zed.retrieveImage(zed_image_r, VIEW_RIGHT_GRAY, MEM_CPU);
+		if (zed.grab() == sl::SUCCESS) {
+			zed.retrieveImage(zed_image_l, sl::VIEW_LEFT_GRAY, sl::MEM_CPU);
+			zed.retrieveImage(zed_image_r, sl::VIEW_RIGHT_GRAY, sl::MEM_CPU);
 		} else continue;
 		if (ocv_image_r.empty() || ocv_image_l.empty()) continue;
 
