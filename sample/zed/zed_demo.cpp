@@ -21,8 +21,8 @@ limitations under the License.
 #include <chrono>
 
 #include <cuda_runtime.h>
+#include <opencv2/opencv.hpp>
 #include <opencv2/core/core.hpp>
-#include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
 #include <sl/Camera.hpp>
@@ -63,10 +63,8 @@ int main(int argc, char* argv[]) {
 	const int height = static_cast<int>(zed.getResolution().height);
 
 	// sl::Mat and cv::Mat share data over memory
-	sl::Mat zed_image_r(zed.getResolution(), sl::MAT_TYPE_8U_C1);
-	sl::Mat zed_image_l(zed.getResolution(), sl::MAT_TYPE_8U_C1);
-	cv::Mat ocv_image_r(height, width, CV_8UC1, zed_image_r.getPtr<uchar>(sl::MEM_CPU));
-	cv::Mat ocv_image_l(height, width, CV_8UC1, zed_image_l.getPtr<uchar>(sl::MEM_CPU));
+	sl::Mat d_zed_image_l(zed.getResolution(), sl::MAT_TYPE_8U_C1, sl::MEM_GPU);
+	sl::Mat d_zed_image_r(zed.getResolution(), sl::MAT_TYPE_8U_C1, sl::MEM_GPU);
 
 	const int input_depth = 8;
 	const int input_bytes = input_depth * width * height / 8;
@@ -78,18 +76,16 @@ int main(int argc, char* argv[]) {
 	cv::Mat disparity(height, width, CV_8U);
 	cv::Mat disparity_8u, disparity_color;
 
-	device_buffer d_image_r(input_bytes), d_image_l(input_bytes), d_disparity(output_bytes);
-
+	device_buffer d_image_l(input_bytes), d_image_r(input_bytes), d_disparity(output_bytes);
 	while (1) {
 		if (zed.grab() == sl::SUCCESS) {
-			zed.retrieveImage(zed_image_l, sl::VIEW_LEFT_GRAY, sl::MEM_CPU);
-			zed.retrieveImage(zed_image_r, sl::VIEW_RIGHT_GRAY, sl::MEM_CPU);
+			zed.retrieveImage(d_zed_image_l, sl::VIEW_LEFT_GRAY, sl::MEM_GPU);
+			zed.retrieveImage(d_zed_image_r, sl::VIEW_RIGHT_GRAY, sl::MEM_GPU);
 		} else continue;
-		if (ocv_image_r.empty() || ocv_image_l.empty()) continue;
 
-		cudaMemcpy(d_image_r.data, ocv_image_r.data, input_bytes, cudaMemcpyHostToDevice);
-		cudaMemcpy(d_image_l.data, ocv_image_l.data, input_bytes, cudaMemcpyHostToDevice);
-		
+		cudaMemcpy2D(d_image_l.data, width, d_zed_image_l.getPtr<uchar>(sl::MEM_GPU), static_cast<int>(d_zed_image_l.getStep(sl::MEM_GPU)), width, height, cudaMemcpyDeviceToDevice);
+		cudaMemcpy2D(d_image_r.data, width, d_zed_image_r.getPtr<uchar>(sl::MEM_GPU), static_cast<int>(d_zed_image_r.getStep(sl::MEM_GPU)), width, height, cudaMemcpyDeviceToDevice);
+
 		const auto t1 = std::chrono::system_clock::now();
 
 		sgm.execute(d_image_l.data, d_image_r.data, d_disparity.data);
@@ -106,7 +102,6 @@ int main(int argc, char* argv[]) {
 		cv::putText(disparity_color, format_string("sgm execution time: %4.1f[msec] %4.1f[FPS]", 1e-3 * duration, fps),
 			cv::Point(50, 50), 2, 0.75, cv::Scalar(255, 255, 255));
 
-		cv::imshow("input left", ocv_image_l);
 		cv::imshow("disparity", disparity_color);
 		const char c = cv::waitKey(1);
 		if (c == 27) // ESC
