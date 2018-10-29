@@ -173,7 +173,7 @@ void drawPoints3D(const std::vector<cv::Point3f>& points, cv::Mat& draw)
 int main(int argc, char* argv[])
 {
 	if (argc < 4) {
-		std::cout << "usage: " << argv[0] << " left-image-format right-image-format camera.xml [dizp_size] [ouput_depth] [subpixel]" << std::endl;
+		std::cout << "usage: " << argv[0] << " left-image-format right-image-format camera.xml [dizp_size] [subpixel]" << std::endl;
 		return 0;
 	}
 
@@ -183,15 +183,14 @@ int main(int argc, char* argv[])
 	cv::Mat I2 = cv::imread(format_string(argv[2], first_frame), -1);
 	const cv::FileStorage cvfs(argv[3], cv::FileStorage::READ);
 	const int disp_size = argc >= 5 ? std::stoi(argv[4]) : 128;
-	const int output_depth = argc >= 6 ? std::stoi(argv[5]) : 16;
-	const bool subpixel = argc >= 7 ? std::stoi(argv[6]) != 0 : true;
+	const bool subpixel = argc >= 6 ? std::stoi(argv[5]) != 0 : true;
+	const int output_depth = subpixel ? 16 : 8;
 
 	ASSERT_MSG(!I1.empty() && !I2.empty(), "imread failed.");
 	ASSERT_MSG(cvfs.isOpened(), "camera.xml read failed.");
 	ASSERT_MSG(I1.size() == I2.size() && I1.type() == I2.type(), "input images must be same size and type.");
 	ASSERT_MSG(I1.type() == CV_8U || I1.type() == CV_16U, "input image format must be CV_8U or CV_16U.");
 	ASSERT_MSG(disp_size == 64 || disp_size == 128, "disparity size must be 64 or 128.");
-	ASSERT_MSG(output_depth == 8 || output_depth == 16, "output depth must be 8 or 16");
 
 	// read camera parameters
 	const cv::FileNode node(cvfs.fs, NULL);
