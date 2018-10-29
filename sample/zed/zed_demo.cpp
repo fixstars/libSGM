@@ -83,8 +83,8 @@ int main(int argc, char* argv[]) {
 			zed.retrieveImage(d_zed_image_r, sl::VIEW_RIGHT_GRAY, sl::MEM_GPU);
 		} else continue;
 
-		cudaMemcpy2D(d_image_l.data, width, d_zed_image_l.getPtr<uchar>(sl::MEM_GPU), static_cast<int>(d_zed_image_l.getStep(sl::MEM_GPU)), width, height, cudaMemcpyDeviceToDevice);
-		cudaMemcpy2D(d_image_r.data, width, d_zed_image_r.getPtr<uchar>(sl::MEM_GPU), static_cast<int>(d_zed_image_r.getStep(sl::MEM_GPU)), width, height, cudaMemcpyDeviceToDevice);
+		cudaMemcpy2D(d_image_l.data, width, d_zed_image_l.getPtr<uchar>(sl::MEM_GPU), d_zed_image_l.getStep(sl::MEM_GPU), width, height, cudaMemcpyDeviceToDevice);
+		cudaMemcpy2D(d_image_r.data, width, d_zed_image_r.getPtr<uchar>(sl::MEM_GPU), d_zed_image_r.getStep(sl::MEM_GPU), width, height, cudaMemcpyDeviceToDevice);
 
 		const auto t1 = std::chrono::system_clock::now();
 
