@@ -94,15 +94,15 @@ __device__ uint32_t unpack_index(uint32_t packed){
 	return packed & 0xffffu;
 }
 
-using ComputeDisparity = uint16_t(*)(Top2, float, uint16_t*);
+using ComputeDisparity = uint32_t(*)(Top2, float, uint16_t*);
 
 template <size_t MAX_DISPARITY>
-__device__ inline uint16_t compute_disparity_normal(Top2 t2, float uniqueness, uint16_t* smem = nullptr)
+__device__ inline uint32_t compute_disparity_normal(Top2 t2, float uniqueness, uint16_t* smem = nullptr)
 {
 	const float cost0 = static_cast<float>(unpack_cost(t2.values[0]));
 	const float cost1 = static_cast<float>(unpack_cost(t2.values[1]));
-	const uint16_t disp0 = static_cast<uint16_t>(unpack_index(t2.values[0]));
-	const uint16_t disp1 = static_cast<uint16_t>(unpack_index(t2.values[1]));
+	const int disp0 = static_cast<int>(unpack_index(t2.values[0]));
+	const int disp1 = static_cast<int>(unpack_index(t2.values[1]));
 	if(cost1 * uniqueness >= cost0){
 		return disp0;
 	}else if(abs(disp1 - disp0) <= 1){
@@ -113,15 +113,15 @@ __device__ inline uint16_t compute_disparity_normal(Top2 t2, float uniqueness, u
 }
 
 template <size_t MAX_DISPARITY>
-__device__ inline uint16_t compute_disparity_subpixel(Top2 t2, float uniqueness, uint16_t* smem)
+__device__ inline uint32_t compute_disparity_subpixel(Top2 t2, float uniqueness, uint16_t* smem)
 {
 	const float cost0 = static_cast<float>(unpack_cost(t2.values[0]));
 	const float cost1 = static_cast<float>(unpack_cost(t2.values[1]));
-	const uint16_t disp0 = static_cast<uint16_t>(unpack_index(t2.values[0]));
-	const uint16_t disp1 = static_cast<uint16_t>(unpack_index(t2.values[1]));
+	const int disp0 = static_cast<int>(unpack_index(t2.values[0]));
+	const int disp1 = static_cast<int>(unpack_index(t2.values[1]));
 	if(cost1 * uniqueness >= cost0
 		|| abs(disp1 - disp0) <= 1){
-		uint16_t disp = disp0;
+		int disp = disp0;
 		disp <<= sgm::StereoSGM::SUBPIXEL_SHIFT;
 		if (disp0 > 0 && disp0 < MAX_DISPARITY - 1) {
 			const int numer = smem[disp0 - 1] - smem[disp0 + 1];
