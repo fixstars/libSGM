@@ -62,7 +62,6 @@ int main(int argc, char* argv[]) {
 	const int width = static_cast<int>(zed.getResolution().width);
 	const int height = static_cast<int>(zed.getResolution().height);
 
-	// sl::Mat and cv::Mat share data over memory
 	sl::Mat d_zed_image_l(zed.getResolution(), sl::MAT_TYPE_8U_C1, sl::MEM_GPU);
 	sl::Mat d_zed_image_r(zed.getResolution(), sl::MAT_TYPE_8U_C1, sl::MEM_GPU);
 
