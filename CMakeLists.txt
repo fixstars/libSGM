@@ -3,10 +3,10 @@ cmake_minimum_required(VERSION 3.1)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-set(CUDA_ARCH "-arch=sm_61" CACHE STRING "Value of the NVCC -arch option.")
+set(CUDA_ARCH "-arch=sm_50" CACHE STRING "Value of the NVCC -arch option.")
 
 option(ENABLE_ZED_DEMO "Build a Demo using ZED Camera" OFF)
-option(ENABLE_SAMPLES  "Build samples" ON)
+option(ENABLE_SAMPLES  "Build samples" OFF)
 option(LIBSGM_SHARED   "Build a shared library" OFF)
 
 if(WIN32)
@@ -27,7 +27,7 @@ add_subdirectory(src)
 
 if(ENABLE_SAMPLES)
     add_subdirectory(sample/image)
-    # add_subdirectory(sample/movie)
+    add_subdirectory(sample/movie)
     add_subdirectory(sample/reprojection)
     add_subdirectory(sample/benchmark)
 endif()
