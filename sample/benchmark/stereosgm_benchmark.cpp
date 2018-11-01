@@ -91,7 +91,7 @@ int main(int argc, char* argv[])
 	std::cout << "CUDA runtime version: " << version << std::endl;
 	std::cout << "image size          : " << I1.size() << std::endl;
 	std::cout << "disparity size      : " << disp_size << std::endl;
-	std::cout << "output_bytes        : " << out_depth << std::endl;
+	std::cout << "output depth        : " << out_depth << std::endl;
 	std::cout << "subpixel option     : " << (subpixel ? "true" : "false") << std::endl;
 	std::cout << "sgm path            : " << "8 path" << std::endl;
 	std::cout << "iterations          : " << iterations << std::endl;
