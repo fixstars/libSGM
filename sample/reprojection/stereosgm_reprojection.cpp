@@ -184,7 +184,7 @@ int main(int argc, char* argv[])
 	const cv::FileStorage cvfs(argv[3], cv::FileStorage::READ);
 	const int disp_size = argc >= 5 ? std::stoi(argv[4]) : 128;
 	const bool subpixel = argc >= 6 ? std::stoi(argv[5]) != 0 : true;
-	const int output_depth = subpixel ? 16 : 8;
+	const int output_depth = 16;
 
 	ASSERT_MSG(!I1.empty() && !I2.empty(), "imread failed.");
 	ASSERT_MSG(cvfs.isOpened(), "camera.xml read failed.");
