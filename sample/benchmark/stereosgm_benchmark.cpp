@@ -42,7 +42,7 @@ struct device_buffer
 int main(int argc, char* argv[])
 {
 	if (argc < 3) {
-		std::cout << "usage: " << argv[0] << " left_img right_img [disp_size] [out_depth] [subpixel] [iterations]" << std::endl;
+		std::cout << "usage: " << argv[0] << " left_img right_img [disp_size] [out_depth] [subpixel_enable(0: false, 1:true)] [iterations]" << std::endl;
 		return 0;
 	}
 
