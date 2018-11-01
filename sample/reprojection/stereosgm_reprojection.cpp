@@ -174,7 +174,7 @@ int main(int argc, char* argv[])
 {
 	if (argc < 4) {
 		std::cout << "usage: " << argv[0] << " left-image-format right-image-format camera.xml [dizp_size] [subpixel_enable(0: false, 1:true)]" << std::endl;
-		return 0;
+		std::exit(EXIT_FAILURE);
 	}
 
 	const int first_frame = 1;

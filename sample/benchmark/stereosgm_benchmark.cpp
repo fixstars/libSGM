@@ -43,7 +43,7 @@ int main(int argc, char* argv[])
 {
 	if (argc < 3) {
 		std::cout << "usage: " << argv[0] << " left_img right_img [disp_size] [out_depth] [subpixel_enable(0: false, 1:true)] [iterations]" << std::endl;
-		return 0;
+		std::exit(EXIT_FAILURE);
 	}
 
 	cv::Mat I1 = cv::imread(argv[1], -1);
@@ -56,6 +56,13 @@ int main(int argc, char* argv[])
 	const int disp_size = argc > 3 ? std::stoi(argv[3]) : 128;
 	const int out_depth = argc > 4 ? std::stoi(argv[4]) : 8;
 	const bool subpixel = argc > 5 ? std::stoi(argv[5]) != 0 : false;
+
+	ASSERT_MSG(disp_size == 64 || disp_size == 128, "disparity size must be 64 or 128.");
+	if (subpixel) {
+		ASSERT_MSG(out_depth == 16, "output depth bits must be 16 if subpixel option is enabled.");
+	} else {
+		ASSERT_MSG(out_depth == 8 || out_depth == 16, "output depth bits must be 8 or 16");
+	}
 	const int iterations = argc > 6 ? std::stoi(argv[6]) : 100;
 
 	const int width = I1.cols;

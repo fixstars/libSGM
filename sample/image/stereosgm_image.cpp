@@ -27,6 +27,12 @@ limitations under the License.
 
 #include <libsgm.h>
 
+#define ASSERT_MSG(expr, msg) \
+	if (!(expr)) { \
+		std::cerr << msg << std::endl; \
+		std::exit(EXIT_FAILURE); \
+	} \
+
 int main(int argc, char* argv[]) {
 	if (argc < 3) {
 		std::cerr << "usage: stereosgm left_img right_img [disp_size]" << std::endl;
@@ -41,10 +47,9 @@ int main(int argc, char* argv[]) {
 		disp_size = atoi(argv[3]);
 	}
 
-	if (left.size() != right.size() || left.type() != right.type()) {
-		std::cerr << "mismatch input image size" << std::endl;
-		std::exit(EXIT_FAILURE);
-	}
+	ASSERT_MSG(left.size() == right.size() && left.type() == right.type(), "input images must be same size and type.");
+	ASSERT_MSG(left.type() == CV_8U || left.type() == CV_16U, "input image format must be CV_8U or CV_16U.");
+	ASSERT_MSG(disp_size == 64 || disp_size == 128, "disparity size must be 64 or 128.");
 
 	int bits = 0;
 
@@ -102,4 +107,6 @@ int main(int argc, char* argv[]) {
 		}
 		key = cv::waitKey();
 	}
+
+	return 0;
 }
