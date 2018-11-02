@@ -1,4 +1,4 @@
-image: nvidia/cuda:9.2-devel-ubuntu18.04
+image: adaskit/libsgm:0.1
 
 variables:
   GIT_SUBMODULE_STRATEGY: recursive
