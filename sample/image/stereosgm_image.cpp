@@ -27,17 +27,11 @@ limitations under the License.
 
 #include <libsgm.h>
 
-cv::Mat color_normalized(const cv::Mat& src)
-{
-	cv::Mat tmp(src.size(), CV_8UC1);
-	double min, max;
-	cv::minMaxIdx(src, &min, &max);
-	double alpha = 255 / max;
-	src.convertTo(tmp, CV_8UC1, alpha, -min * alpha);
-	cv::Mat dst;
-	cv::applyColorMap(tmp, dst, cv::COLORMAP_JET);
-	return dst;
-}
+#define ASSERT_MSG(expr, msg) \
+	if (!(expr)) { \
+		std::cerr << msg << std::endl; \
+		std::exit(EXIT_FAILURE); \
+	} \
 
 int main(int argc, char* argv[]) {
 	if (argc < 3) {
@@ -52,13 +46,10 @@ int main(int argc, char* argv[]) {
 	if (argc >= 4) {
 		disp_size = atoi(argv[3]);
 	}
-	const int out_depth = argc > 4 ? std::stoi(argv[4]) : 8;
-	const bool subpixel = argc > 5 ? std::stoi(argv[5]) != 0 : false;
 
-	if (left.size() != right.size() || left.type() != right.type()) {
-		std::cerr << "mismatch input image size" << std::endl;
-		std::exit(EXIT_FAILURE);
-	}
+	ASSERT_MSG(left.size() == right.size() && left.type() == right.type(), "input images must be same size and type.");
+	ASSERT_MSG(left.type() == CV_8U || left.type() == CV_16U, "input image format must be CV_8U or CV_16U.");
+	ASSERT_MSG(disp_size == 64 || disp_size == 128, "disparity size must be 64 or 128.");
 
 	int bits = 0;
 
@@ -70,23 +61,14 @@ int main(int argc, char* argv[]) {
 		std::exit(EXIT_FAILURE);
 	}
 
-	const sgm::StereoSGM::Parameters params{10, 120, 0.95f, subpixel};
+	sgm::StereoSGM ssgm(left.cols, left.rows, disp_size, bits, 8, sgm::EXECUTE_INOUT_HOST2HOST);
 
-	sgm::StereoSGM ssgm(left.cols, left.rows, disp_size, bits, out_depth, sgm::EXECUTE_INOUT_HOST2HOST, params);
-
-	cv::Mat output(cv::Size(left.cols, left.rows), out_depth == 8 ? CV_8UC1 : CV_16UC1);
+	cv::Mat output(cv::Size(left.cols, left.rows), CV_8UC1);
 
 	ssgm.execute(left.data, right.data, output.data);
 	// show image
-	cv::Mat dst;
-	if (subpixel) {
-		output.convertTo(dst, CV_8UC1, 255. / (disp_size * sgm::StereoSGM::SUBPIXEL_SCALE));
-	} else {
-		output.convertTo(dst, CV_8UC1, 255. / disp_size);
-	}
-	cv::imshow("image", dst);
-
-	cv::Mat colored = color_normalized(output);
+	cv::imshow("image", output * 256 / disp_size);
+	
 	int key = cv::waitKey();
 	int mode = 0;
 	while (key != 27) {
@@ -100,15 +82,17 @@ int main(int argc, char* argv[]) {
 					#if CV_MAJOR_VERSION == 3
 					cv::setWindowTitle("image", "disparity");
 					#endif
-					cv::imshow("image", dst);
+					cv::imshow("image", output * 256 / disp_size);
 					break;
 				}
 			case 1:
 				{
+					cv::Mat m;
+					cv::applyColorMap(output * 256 / disp_size, m, cv::COLORMAP_JET);
 					#if CV_MAJOR_VERSION == 3
 					cv::setWindowTitle("image", "disparity color");
 					#endif
-					cv::imshow("image", colored);
+					cv::imshow("image", m);
 					break;
 				}
 			case 2:
@@ -123,4 +107,6 @@ int main(int argc, char* argv[]) {
 		}
 		key = cv::waitKey();
 	}
+
+	return 0;
 }

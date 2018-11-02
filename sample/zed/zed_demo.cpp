@@ -16,91 +16,96 @@ limitations under the License.
 
 #include <stdlib.h>
 #include <iostream>
+#include <iomanip>
 #include <string>
+#include <chrono>
+
+#include <cuda_runtime.h>
+#include <opencv2/opencv.hpp>
 #include <opencv2/core/core.hpp>
-#include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
-#include <nppi.h>
-
-#include <zed/Camera.hpp>
+#include <sl/Camera.hpp>
 
 #include <libsgm.h>
 
-#include "demo.h"
-#include "renderer.h"
+template <class... Args>
+static std::string format_string(const char* fmt, Args... args)
+{
+	const int BUF_SIZE = 1024;
+	char buf[BUF_SIZE];
+	std::snprintf(buf, BUF_SIZE, fmt, args...);
+	return std::string(buf);
+}
+
+struct device_buffer {
+	device_buffer() : data(nullptr) {}
+	device_buffer(size_t count) { allocate(count); }
+	void allocate(size_t count) { cudaMalloc(&data, count); }
+	~device_buffer() { cudaFree(data); }
+	void* data;
+};
 
 int main(int argc, char* argv[]) {	
 	
-	int disp_size = 64;
-	const int bits = 8;
-
-	if (argc >= 2) {
-		disp_size = atoi(argv[1]);
-	}
+	const int disp_size = 128;
 	
-	// init zed cam
-	auto cap = new sl::zed::Camera(sl::zed::ZEDResolution_mode::VGA);
-	sl::zed::ERRCODE err = cap->init(sl::zed::MODE::PERFORMANCE, 0, true);
-	if (err != sl::zed::ERRCODE::SUCCESS) {
-		std::cout << sl::zed::errcode2str(err) << std::endl;
-		exit(EXIT_FAILURE);
+	sl::Camera zed;
+	sl::InitParameters initParameters;
+	initParameters.camera_resolution = sl::RESOLUTION_VGA;
+	sl::ERROR_CODE err = zed.open(initParameters);
+	if (err != sl::SUCCESS) {
+		std::cout << toString(err) << std::endl;
+		zed.close();
+		return 1;
 	}
+	const int width = static_cast<int>(zed.getResolution().width);
+	const int height = static_cast<int>(zed.getResolution().height);
 
-	int width = cap->getImageSize().width;
-	int height = cap->getImageSize().height;
+	sl::Mat d_zed_image_l(zed.getResolution(), sl::MAT_TYPE_8U_C1, sl::MEM_GPU);
+	sl::Mat d_zed_image_r(zed.getResolution(), sl::MAT_TYPE_8U_C1, sl::MEM_GPU);
 
-	sgm::StereoSGM ssgm(width, height, disp_size, 8, 16, sgm::EXECUTE_INOUT_CUDA2CUDA);
+	const int input_depth = 8;
+	const int input_bytes = input_depth * width * height / 8;
+	const int output_depth = 8;
+	const int output_bytes = output_depth * width * height / 8;
 
+	sgm::StereoSGM sgm(width, height, disp_size, input_depth, output_depth, sgm::EXECUTE_INOUT_CUDA2CUDA);
 
-	SGMDemo demo(width, height);
-	if (demo.init()) {
-		printf("fail to init SGM Demo\n");
-		std::exit(EXIT_FAILURE);
+	cv::Mat disparity(height, width, CV_8U);
+	cv::Mat disparity_8u, disparity_color;
+
+	device_buffer d_image_l(input_bytes), d_image_r(input_bytes), d_disparity(output_bytes);
+	while (1) {
+		if (zed.grab() == sl::SUCCESS) {
+			zed.retrieveImage(d_zed_image_l, sl::VIEW_LEFT_GRAY, sl::MEM_GPU);
+			zed.retrieveImage(d_zed_image_r, sl::VIEW_RIGHT_GRAY, sl::MEM_GPU);
+		} else continue;
+
+		cudaMemcpy2D(d_image_l.data, width, d_zed_image_l.getPtr<uchar>(sl::MEM_GPU), d_zed_image_l.getStep(sl::MEM_GPU), width, height, cudaMemcpyDeviceToDevice);
+		cudaMemcpy2D(d_image_r.data, width, d_zed_image_r.getPtr<uchar>(sl::MEM_GPU), d_zed_image_r.getStep(sl::MEM_GPU), width, height, cudaMemcpyDeviceToDevice);
+
+		const auto t1 = std::chrono::system_clock::now();
+
+		sgm.execute(d_image_l.data, d_image_r.data, d_disparity.data);
+		cudaDeviceSynchronize();
+
+		const auto t2 = std::chrono::system_clock::now();
+		const auto duration = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
+		const double fps = 1e6 / duration;
+
+		cudaMemcpy(disparity.data, d_disparity.data, output_bytes, cudaMemcpyDeviceToHost);
+
+		disparity.convertTo(disparity_8u, CV_8U, 255. / disp_size);
+		cv::applyColorMap(disparity_8u, disparity_color, cv::COLORMAP_JET);
+		cv::putText(disparity_color, format_string("sgm execution time: %4.1f[msec] %4.1f[FPS]", 1e-3 * duration, fps),
+			cv::Point(50, 50), 2, 0.75, cv::Scalar(255, 255, 255));
+
+		cv::imshow("disparity", disparity_color);
+		const char c = cv::waitKey(1);
+		if (c == 27) // ESC
+			break;
 	}
-
-	Renderer renderer(width, height);
-
-	uint16_t* d_output_buffer = NULL;
-	uint8_t* d_input_left = NULL;
-	uint8_t* d_input_right = NULL;
-	cudaMalloc((void**)&d_input_left, width * height);
-	cudaMalloc((void**)&d_input_right, width * height);
-	cudaMalloc((void**)&d_output_buffer, sizeof(uint16_t) * width * height);
-
-	const NppiSize roi = { width, height };
-
-	cv::Mat h_input_left(height, width, CV_8UC1);
-
-	while (!demo.should_close()) {
-		cap->grab(sl::zed::SENSING_MODE::FULL, false, false);
-
-		sl::zed::Mat left_zm = cap->retrieveImage_gpu(sl::zed::SIDE::LEFT);
-		sl::zed::Mat right_zm = cap->retrieveImage_gpu(sl::zed::SIDE::RIGHT);
-
-		nppiRGBToGray_8u_AC4C1R(left_zm.data, width * 4, d_input_left, width, roi);
-		nppiRGBToGray_8u_AC4C1R(right_zm.data, width * 4, d_input_right, width, roi);
-
-		ssgm.execute(d_input_left, d_input_right, d_output_buffer);
-
-		switch (demo.get_flag()) {
-		case 0: 
-			cudaMemcpy(h_input_left.data, d_input_left, width * height, cudaMemcpyDeviceToHost);
-			renderer.render_input((uint8_t*)h_input_left.data); 
-			break;
-		case 1: 
-			renderer.render_disparity(d_output_buffer, disp_size);
-			break;
-		case 2: 
-			renderer.render_disparity_color(d_output_buffer, disp_size);
-			break;
-		}
-
-		demo.swap_buffer();
-	}
-
-	cudaFree(d_input_left);
-	cudaFree(d_input_right);
-	cudaFree(d_output_buffer);
-	delete cap;
+	zed.close();
+	return 0;
 }

@@ -130,7 +130,7 @@ static cv::Scalar computeColor(float val)
 
 void reprojectPointsTo3D(const cv::Mat& disparity, const CameraParameters& camera, std::vector<cv::Point3f>& points, bool subpixeled)
 {
-	CV_Assert(disparity.type() == CV_8U || disparity.type() == CV_16U);
+	CV_Assert(disparity.type() == CV_32F);
 
 	CoordinateTransform tf(camera);
 
@@ -141,21 +141,7 @@ void reprojectPointsTo3D(const cv::Mat& disparity, const CameraParameters& camer
 	{
 		for (int x = 0; x < disparity.cols; x++)
 		{
-			short raw;
-			switch (disparity.elemSize1()) {
-			case 1:
-				raw = disparity.at<uchar>(y, x);
-				break;
-			case 2:
-				raw = disparity.at<ushort>(y, x);
-				break;
-			default:
-				CV_Assert(false);
-			}
-			float d = raw;
-			if (subpixeled) {
-				d /= sgm::StereoSGM::SUBPIXEL_SCALE;
-			}
+			const float d = disparity.at<float>(y, x);
 			if (d > 0)
 				points.push_back(tf.imageToWorld(cv::Point(x, y), d));
 		}
@@ -187,8 +173,8 @@ void drawPoints3D(const std::vector<cv::Point3f>& points, cv::Mat& draw)
 int main(int argc, char* argv[])
 {
 	if (argc < 4) {
-		std::cout << "usage: " << argv[0] << " left-image-format right-image-format camera.xml [dizp_size] [ouput_depth] [subpixel]" << std::endl;
-		return 0;
+		std::cout << "usage: " << argv[0] << " left-image-format right-image-format camera.xml [disp_size] [subpixel_enable(0: false, 1:true)]" << std::endl;
+		std::exit(EXIT_FAILURE);
 	}
 
 	const int first_frame = 1;
@@ -197,15 +183,14 @@ int main(int argc, char* argv[])
 	cv::Mat I2 = cv::imread(format_string(argv[2], first_frame), -1);
 	const cv::FileStorage cvfs(argv[3], cv::FileStorage::READ);
 	const int disp_size = argc >= 5 ? std::stoi(argv[4]) : 128;
-	const int output_depth = argc >= 6 ? std::stoi(argv[5]) : 16;
-	const bool subpixel = argc >= 7 ? std::stoi(argv[6]) != 0 : true;
+	const bool subpixel = argc >= 6 ? std::stoi(argv[5]) != 0 : true;
+	const int output_depth = 16;
 
 	ASSERT_MSG(!I1.empty() && !I2.empty(), "imread failed.");
 	ASSERT_MSG(cvfs.isOpened(), "camera.xml read failed.");
 	ASSERT_MSG(I1.size() == I2.size() && I1.type() == I2.type(), "input images must be same size and type.");
 	ASSERT_MSG(I1.type() == CV_8U || I1.type() == CV_16U, "input image format must be CV_8U or CV_16U.");
 	ASSERT_MSG(disp_size == 64 || disp_size == 128, "disparity size must be 64 or 128.");
-	ASSERT_MSG(output_depth == 8 || output_depth == 16, "output depth must be 8 or 16");
 
 	// read camera parameters
 	const cv::FileNode node(cvfs.fs, NULL);
@@ -229,7 +214,7 @@ int main(int argc, char* argv[])
 	sgm::StereoSGM sgm(width, height, disp_size, input_depth, output_depth, sgm::EXECUTE_INOUT_CUDA2CUDA, params);
 
 	cv::Mat disparity(height, width, output_depth == 8 ? CV_8U : CV_16U);
-	cv::Mat disparity_8u, disparity_color, draw;
+	cv::Mat disparity_8u, disparity_32f, disparity_color, draw;
 	std::vector<cv::Point3f> points;
 
 	device_buffer d_I1(input_bytes), d_I2(input_bytes), d_disparity(output_bytes);
@@ -263,14 +248,11 @@ int main(int argc, char* argv[])
 			I1.convertTo(I1, CV_8U);
 		}
 
-		if (subpixel) {
-			disparity.convertTo(disparity_8u, CV_8U, 255. / disp_size / sgm::StereoSGM::SUBPIXEL_SCALE);
-		} else {
-			disparity.convertTo(disparity_8u, CV_8U, 255. / disp_size);
-		}
-		reprojectPointsTo3D(disparity, camera, points, subpixel);
+		disparity.convertTo(disparity_32f, CV_32F, subpixel ? 1. / sgm::StereoSGM::SUBPIXEL_SCALE : 1);
+		reprojectPointsTo3D(disparity_32f, camera, points, subpixel);
 		drawPoints3D(points, draw);
 
+		disparity_32f.convertTo(disparity_8u, CV_8U, 255. / disp_size);
 		cv::applyColorMap(disparity_8u, disparity_color, cv::COLORMAP_JET);
 		cv::putText(disparity_color, format_string("sgm execution time: %4.1f[msec] %4.1f[FPS]", 1e-3 * duration, fps),
 			cv::Point(50, 50), 2, 0.75, cv::Scalar(255, 255, 255));

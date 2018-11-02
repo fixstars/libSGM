@@ -124,6 +124,10 @@ namespace sgm {
 			width_ = height_ = input_depth_bits_ = output_depth_bits_ = disparity_size_ = 0;
 			throw std::logic_error("disparity size must be 64 or 128");
 		}
+		if (param.subpixel && output_depth_bits != 16) {
+			width_ = height_ = input_depth_bits_ = output_depth_bits_ = disparity_size_ = 0;
+			throw std::logic_error("output depth bits must be 16 if sub-pixel option was enabled");
+		}
 
 		cu_res_ = new CudaStereoSGMResources(width_, height_, disparity_size_, input_depth_bits_, output_depth_bits_, inout_type_);
 	}

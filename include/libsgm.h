@@ -61,10 +61,8 @@ namespace sgm {
 	*/
 	class StereoSGM {
 	public:
-		enum {
-			SUBPIXEL_SHIFT = 4,
-			SUBPIXEL_SCALE = (1 << SUBPIXEL_SHIFT)
-		};
+		static const int SUBPIXEL_SHIFT = 4;
+		static const int SUBPIXEL_SCALE = (1 << SUBPIXEL_SHIFT);
 		struct Parameters
 		{
 			int P1;
@@ -81,6 +79,8 @@ namespace sgm {
 		* @param input_depth_bits Processed image's bits per pixel. It must be 8 or 16.
 		* @param output_depth_bits Disparity image's bits per pixel. It must be 8 or 16.
 		* @param inout_type 	Specify input/output pointer type. See sgm::EXECUTE_TYPE.
+		* @attention
+		* output_depth_bits must be set to 16 when subpixel is enabled.
 		*/
 		LIBSGM_API StereoSGM(int width, int height, int disparity_size, int input_depth_bits, int output_depth_bits, 
 			EXECUTE_INOUT inout_type, const Parameters& param = Parameters());
@@ -95,6 +95,7 @@ namespace sgm {
 		* @attention
 		* You need to allocate dst memory at least width x height x sizeof(element_type) bytes.
 		* The element_type is uint8_t for output_depth_bits == 8 and uint16_t for output_depth_bits == 16.
+		* Note that dst element value would be multiplied StereoSGM::SUBPIXEL_SCALE if subpixel option was enabled.
 		*/
 		LIBSGM_API void execute(const void* left_pixels, const void* right_pixels, void* dst);
 
