@@ -50,7 +50,7 @@ build:samples_off:static:
   artifacts:
     paths:
       - ./test/sgm-test
-    expire_in: 1h
+    expire_in: 1d
   <<: *build_definition
 
 test:
