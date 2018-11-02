@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<opencv_storage>
+
+<!--  Intrinsic parameters -->
+<FocalLengthX>1267.485352</FocalLengthX> <!--  focal length x (pixel) -->
+<FocalLengthY>1224.548950</FocalLengthY> <!--  focal length y (pixel) -->
+<CenterX>472.735474</CenterX>            <!--  principal point x (pixel) -->
+<CenterY>175.787781</CenterY>            <!--  principal point y (pixel) -->
+
+<!--  Extrinsic parameters -->
+<BaseLine>0.214382</BaseLine>            <!--  baseline (meter) -->
+<Height>1.170000</Height>                <!--  height position (meter) -->
+<Tilt>0.081276</Tilt>                    <!--  tilt angle (radian) -->
+
+</opencv_storage>

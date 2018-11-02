@@ -15,6 +15,7 @@ limitations under the License.
 */
 
 #include <cstdio>
+#include <libsgm.h>
 #include "winner_takes_all.hpp"
 #include "utility.hpp"
 
@@ -93,21 +94,48 @@ __device__ uint32_t unpack_index(uint32_t packed){
 	return packed & 0xffffu;
 }
 
-__device__ inline uint32_t compute_disparity(Top2 t2, float uniqueness){
+using ComputeDisparity = uint32_t(*)(Top2, float, uint16_t*);
+
+template <size_t MAX_DISPARITY>
+__device__ inline uint32_t compute_disparity_normal(Top2 t2, float uniqueness, uint16_t* smem = nullptr)
+{
 	const float cost0 = static_cast<float>(unpack_cost(t2.values[0]));
 	const float cost1 = static_cast<float>(unpack_cost(t2.values[1]));
 	const int disp0 = static_cast<int>(unpack_index(t2.values[0]));
 	const int disp1 = static_cast<int>(unpack_index(t2.values[1]));
-	if(static_cast<float>(cost1) * uniqueness >= static_cast<float>(cost0)){
-		return static_cast<uint32_t>(disp0);
+	if(cost1 * uniqueness >= cost0){
+		return disp0;
 	}else if(abs(disp1 - disp0) <= 1){
-		return static_cast<uint32_t>(disp0);
+		return disp0;
 	}else{
 		return 0;
 	}
 }
 
-template <unsigned int MAX_DISPARITY>
+template <size_t MAX_DISPARITY>
+__device__ inline uint32_t compute_disparity_subpixel(Top2 t2, float uniqueness, uint16_t* smem)
+{
+	const float cost0 = static_cast<float>(unpack_cost(t2.values[0]));
+	const float cost1 = static_cast<float>(unpack_cost(t2.values[1]));
+	const int disp0 = static_cast<int>(unpack_index(t2.values[0]));
+	const int disp1 = static_cast<int>(unpack_index(t2.values[1]));
+	if(cost1 * uniqueness >= cost0
+		|| abs(disp1 - disp0) <= 1){
+		int disp = disp0;
+		disp <<= sgm::StereoSGM::SUBPIXEL_SHIFT;
+		if (disp0 > 0 && disp0 < MAX_DISPARITY - 1) {
+			const int numer = smem[disp0 - 1] - smem[disp0 + 1];
+			const int denom = smem[disp0 - 1] - 2 * smem[disp0] + smem[disp0 + 1];
+			disp += ((numer << sgm::StereoSGM::SUBPIXEL_SHIFT) + denom) / (2 * denom);
+		}
+		return disp;
+	}else{
+		return 0;
+	}
+}
+
+
+template <unsigned int MAX_DISPARITY, ComputeDisparity compute_disparity = compute_disparity_normal<MAX_DISPARITY>>
 __global__ void winner_takes_all_kernel(
 	output_type *left_dest,
 	output_type *right_dest,
@@ -196,7 +224,7 @@ __global__ void winner_takes_all_kernel(
 				}
 				left_top2 = subgroup_merge_top2<WARP_SIZE>(left_top2);
 				if(lane_id == 0){
-					left_dest[x] = compute_disparity(left_top2, uniqueness);
+					left_dest[x] = compute_disparity(left_top2, uniqueness, smem_cost_sum[warp_id][smem_x]);
 				}
 				// Update right
 #pragma unroll
@@ -218,7 +246,7 @@ __global__ void winner_takes_all_kernel(
 					right_top2[i].push(recv);
 					if(d == MAX_DISPARITY - 1){
 						if(0 <= p){
-							right_dest[p] = compute_disparity(right_top2[i], uniqueness);
+							right_dest[p] = compute_disparity_normal<MAX_DISPARITY>(right_top2[i], uniqueness);
 						}
 						right_top2[i].initialize();
 					}
@@ -230,7 +258,7 @@ __global__ void winner_takes_all_kernel(
 		const unsigned int k = lane_id * REDUCTION_PER_THREAD + i;
 		const int p = static_cast<int>(((width - k) & ~(MAX_DISPARITY - 1)) + k);
 		if(p < width){
-			right_dest[p] = compute_disparity(right_top2[i], uniqueness);
+			right_dest[p] = compute_disparity_normal<MAX_DISPARITY>(right_top2[i], uniqueness);
 		}
 	}
 }
@@ -243,13 +271,19 @@ void enqueue_winner_takes_all(
 	unsigned int width,
 	unsigned int height,
 	float uniqueness,
+	bool subpixel,
 	cudaStream_t stream)
 {
 	const unsigned int gdim =
 		(height + WARPS_PER_BLOCK - 1) / WARPS_PER_BLOCK;
 	const unsigned int bdim = BLOCK_SIZE;
-	winner_takes_all_kernel<MAX_DISPARITY><<<gdim, bdim, 0, stream>>>(
-		left_dest, right_dest, src, width, height, uniqueness);
+	if (subpixel) {
+		winner_takes_all_kernel<MAX_DISPARITY, compute_disparity_subpixel<MAX_DISPARITY>><<<gdim, bdim, 0, stream>>>(
+			left_dest, right_dest, src, width, height, uniqueness);
+	} else {
+		winner_takes_all_kernel<MAX_DISPARITY, compute_disparity_normal<MAX_DISPARITY>><<<gdim, bdim, 0, stream>>>(
+			left_dest, right_dest, src, width, height, uniqueness);
+	}
 }
 
 }
@@ -267,6 +301,7 @@ void WinnerTakesAll<MAX_DISPARITY>::enqueue(
 	size_t width,
 	size_t height,
 	float uniqueness,
+	bool subpixel,
 	cudaStream_t stream)
 {
 	if(m_left_buffer.size() != width * height){
@@ -282,6 +317,7 @@ void WinnerTakesAll<MAX_DISPARITY>::enqueue(
 		width,
 		height,
 		uniqueness,
+		subpixel,
 		stream);
 }
 
@@ -293,6 +329,7 @@ void WinnerTakesAll<MAX_DISPARITY>::enqueue(
 	size_t width,
 	size_t height,
 	float uniqueness,
+	bool subpixel,
 	cudaStream_t stream)
 {
 	enqueue_winner_takes_all<MAX_DISPARITY>(
@@ -302,6 +339,7 @@ void WinnerTakesAll<MAX_DISPARITY>::enqueue(
 		width,
 		height,
 		uniqueness,
+		subpixel,
 		stream);
 }
 

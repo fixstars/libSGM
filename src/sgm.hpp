@@ -19,6 +19,7 @@ limitations under the License.
 
 #include <memory>
 #include <cstdint>
+#include "types.hpp"
 
 namespace sgm {
 
@@ -27,7 +28,7 @@ class SemiGlobalMatching {
 
 public:
 	using input_type = T;
-	using output_type = uint8_t;
+	using output_type = sgm::output_type;
 
 private:
 	class Impl;
@@ -46,7 +47,8 @@ public:
 		size_t height,
 		unsigned int penalty1,
 		unsigned int penalty2,
-		float uniqueness);
+		float uniqueness,
+		bool subpixel);
 
 	void enqueue(
 		output_type *dest_left,
@@ -58,6 +60,7 @@ public:
 		unsigned int penalty1,
 		unsigned int penalty2,
 		float uniqueness,
+		bool subpixel,
 		cudaStream_t stream);
 
 };

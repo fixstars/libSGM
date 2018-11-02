@@ -7,10 +7,10 @@ You may obtain a copy of the License at
 
 http ://www.apache.org/licenses/LICENSE-2.0
 
-Unlestd::cout required by applicable law or agreed to in writing, software
+Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either exprestd::cout or implied.
-See the License for the specific language governing permistd::coutions and
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
 limitations under the License.
 */
 
@@ -42,8 +42,8 @@ struct device_buffer
 int main(int argc, char* argv[])
 {
 	if (argc < 3) {
-		std::cout << "usage: " << argv[0] << " left_img right_img [disp_size] [iterations]" << std::endl;
-		return 0;
+		std::cout << "usage: " << argv[0] << " left_img right_img [disp_size] [out_depth] [subpixel_enable(0: false, 1:true)] [iterations]" << std::endl;
+		std::exit(EXIT_FAILURE);
 	}
 
 	cv::Mat I1 = cv::imread(argv[1], -1);
@@ -54,17 +54,27 @@ int main(int argc, char* argv[])
 	ASSERT_MSG(I1.type() == CV_8U || I1.type() == CV_16U, "input image format must be CV_8U or CV_16U.");
 
 	const int disp_size = argc > 3 ? std::stoi(argv[3]) : 128;
-	const int iterations = argc > 4 ? std::stoi(argv[4]) : 100;
+	const int out_depth = argc > 4 ? std::stoi(argv[4]) : 8;
+	const bool subpixel = argc > 5 ? std::stoi(argv[5]) != 0 : false;
+
+	ASSERT_MSG(disp_size == 64 || disp_size == 128, "disparity size must be 64 or 128.");
+	if (subpixel) {
+		ASSERT_MSG(out_depth == 16, "output depth bits must be 16 if subpixel option is enabled.");
+	} else {
+		ASSERT_MSG(out_depth == 8 || out_depth == 16, "output depth bits must be 8 or 16");
+	}
+	const int iterations = argc > 6 ? std::stoi(argv[6]) : 100;
 
 	const int width = I1.cols;
 	const int height = I1.rows;
 
 	const int input_depth = I1.type() == CV_8U ? 8 : 16;
 	const int input_bytes = input_depth * width * height / 8;
-	const int out_depth = 8;
 	const int output_bytes = out_depth * width * height / 8;
 
-	sgm::StereoSGM sgm(width, height, disp_size, input_depth, out_depth, sgm::EXECUTE_INOUT_CUDA2CUDA);
+	const sgm::StereoSGM::Parameters params{10, 120, 0.95f, subpixel};
+
+	sgm::StereoSGM sgm(width, height, disp_size, input_depth, out_depth, sgm::EXECUTE_INOUT_CUDA2CUDA, params);
 
 	device_buffer d_I1(input_bytes), d_I2(input_bytes), d_disparity(output_bytes);
 	cudaMemcpy(d_I1.data, I1.data, input_bytes, cudaMemcpyHostToDevice);
@@ -81,6 +91,8 @@ int main(int argc, char* argv[])
 	std::cout << "CUDA runtime version: " << version << std::endl;
 	std::cout << "image size          : " << I1.size() << std::endl;
 	std::cout << "disparity size      : " << disp_size << std::endl;
+	std::cout << "output depth        : " << out_depth << std::endl;
+	std::cout << "subpixel option     : " << (subpixel ? "true" : "false") << std::endl;
 	std::cout << "sgm path            : " << "8 path" << std::endl;
 	std::cout << "iterations          : " << iterations << std::endl;
 	std::cout << std::endl;
@@ -110,7 +122,7 @@ int main(int argc, char* argv[])
 	std::cout << std::endl;
 
 	// save disparity image
-	cv::Mat disparity(height, width, CV_8U);
+	cv::Mat disparity(height, width, out_depth == 8 ? CV_8U : CV_16U);
 	cudaMemcpy(disparity.data, d_disparity.data, output_bytes, cudaMemcpyDeviceToHost);
 	disparity *= 255. / disp_size;
 	cv::imwrite("disparity.png", disparity);
