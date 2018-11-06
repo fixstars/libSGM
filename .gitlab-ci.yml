@@ -3,9 +3,6 @@ image: adaskit/libsgm:0.1
 variables:
   GIT_SUBMODULE_STRATEGY: recursive
 
-before_script:
-  - &general_before_script export DEBIAN_FRONTEND=noninteractive && apt-get update && apt-get install -y build-essential cmake libopencv-dev
-
 stages:
   - build
   - test
@@ -18,18 +15,12 @@ stages:
     - cmake . -DENABLE_SAMPLES=${build_samples} -DLIBSGM_SHARED=${build_shared} -DENABLE_TESTS=${build_tests}
     - make
 
-.build_sample_template: &build_sample_definition
-  before_script:
-    - *general_before_script
-    - apt-get install -y libxinerama-dev libxcursor-dev libxi-dev libglew-dev libglfw3-dev
-
 build:samples_on:shared:
   variables:
     build_samples: "ON"
     build_shared: "ON"
     build_tests: "OFF"
   <<: *build_definition
-  <<: *build_sample_definition
 
 build:samples_on:static:
   variables:
@@ -37,7 +28,6 @@ build:samples_on:static:
     build_shared: "OFF"
     build_tests: "OFF"
   <<: *build_definition
-  <<: *build_sample_definition
 
 build:samples_off:shared:
   variables:
