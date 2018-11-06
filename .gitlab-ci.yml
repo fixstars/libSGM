@@ -57,7 +57,7 @@ build:test:
 test:
   stage: test
   tags:
-    - docker
+    - nvidia-docker
   script:
     - ./test/sgm-test
   dependencies:
