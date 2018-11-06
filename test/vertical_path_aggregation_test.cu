@@ -51,4 +51,3 @@ TEST(VerticalPathAggregationTest, RandomDown2Up){
 	EXPECT_EQ(actual, expect);
 	debug_compare(actual.data(), expect.data(), width, height, disparity);
 }
-

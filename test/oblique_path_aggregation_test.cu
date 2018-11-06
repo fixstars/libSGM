@@ -97,4 +97,3 @@ TEST(ObliquePathAggregationTest, RandomDownLeft2UpRight){
 	EXPECT_EQ(actual, expect);
 	debug_compare(actual.data(), expect.data(), width, height, disparity);
 }
-

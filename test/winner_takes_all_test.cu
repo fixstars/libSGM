@@ -153,4 +153,3 @@ TEST(WinnerTakesAllTest, RandomRight){
 	EXPECT_EQ(actual, expect);
 	debug_compare(actual.data(), expect.data(), width, height, 1);
 }
-
