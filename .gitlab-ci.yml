@@ -15,7 +15,7 @@ stages:
   tags:
     - docker
   script:
-    - cmake . -DENABLE_SAMPLES=${build_samples} -DLIBSGM_SHARED=${build_shared}
+    - cmake . -DENABLE_SAMPLES=${build_samples} -DLIBSGM_SHARED=${build_shared} -DENABLE_TESTS=${build_tests}
     - make
 
 .build_sample_template: &build_sample_definition
@@ -27,6 +27,7 @@ build:samples_on:shared:
   variables:
     build_samples: "ON"
     build_shared: "ON"
+    build_tests: "OFF"
   <<: *build_definition
   <<: *build_sample_definition
 
@@ -34,6 +35,7 @@ build:samples_on:static:
   variables:
     build_samples: "ON"
     build_shared: "OFF"
+    build_tests: "OFF"
   <<: *build_definition
   <<: *build_sample_definition
 
@@ -41,12 +43,21 @@ build:samples_off:shared:
   variables:
     build_samples: "OFF"
     build_shared: "ON"
+    build_tests: "OFF"
   <<: *build_definition
 
 build:samples_off:static:
   variables:
     build_samples: "OFF"
     build_shared: "OFF"
+    build_tests: "OFF"
+  <<: *build_definition
+
+build:test:
+  variables:
+    build_samples: "OFF"
+    build_shared: "OFF"
+    build_tests: "ON"
   artifacts:
     paths:
       - ./test/sgm-test
@@ -60,4 +71,4 @@ test:
   script:
     - ./test/sgm-test
   dependencies:
-    - build:samples_off:static
+    - build:test
