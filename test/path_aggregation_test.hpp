@@ -5,6 +5,12 @@
 #include <algorithm>
 #include <thrust/host_vector.h>
 
+#ifdef _WIN32
+#define popcnt64 __popcnt64
+#else
+#define popcnt64 __builtin_popcountll
+#endif
+
 static thrust::host_vector<sgm::cost_type> path_aggregation(
 	const thrust::host_vector<sgm::feature_type>& left,
 	const thrust::host_vector<sgm::feature_type>& right,
@@ -31,7 +37,7 @@ static thrust::host_vector<sgm::cost_type> path_aggregation(
 				if(k + 1 < max_disparity){
 					cost = std::min(cost, before[k + 1] - min_cost + p1);
 				}
-				cost += __builtin_popcountll(l ^ r);
+				cost += popcnt64(l ^ r);
 				result[k + (j + i * width) * max_disparity] = static_cast<uint8_t>(cost);
 			}
 		}
