@@ -3,6 +3,10 @@ project(sgm-test)
 
 find_package(CUDA REQUIRED)
 
+if (MSVC)
+	option(gtest_force_shared_crt "Force Gmock to use standard compiler flags" ON)
+endif()
+
 add_subdirectory(googletest)
 
 include_directories(${gtest_SOURCE_DIR}/include)
