@@ -47,7 +47,7 @@ thrust::host_vector<sgm::output_type> winner_takes_all_left(
 					dst = disp0;
 					if (subpixel) {
 						dst <<= sgm::StereoSGM::SUBPIXEL_SHIFT;
-						if (0 < disp0 && disp0 < disparity - 1) {
+						if (0 < disp0 && disp0 < static_cast<int>(disparity) - 1) {
 							const int left = w[disp0 - 1].first;
 							const int right = w[disp0 + 1].first;
 							const int numer = left - right;

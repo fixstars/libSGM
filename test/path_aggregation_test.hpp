@@ -37,7 +37,7 @@ static thrust::host_vector<sgm::cost_type> path_aggregation(
 				if(k + 1 < max_disparity){
 					cost = std::min(cost, before[k + 1] - min_cost + p1);
 				}
-				cost += popcnt64(l ^ r);
+				cost += static_cast<int>(popcnt64(l ^ r));
 				result[k + (j + i * width) * max_disparity] = static_cast<uint8_t>(cost);
 			}
 		}
