@@ -11,13 +11,12 @@ include_directories(../src)
 
 file(GLOB TEST_SOURCES "*.cpp" "*.cu")
 
-set(CUDA_NVCC_FLAGS
-    -std=c++11
-    -arch=sm_61
-    -lineinfo)
+if (CMAKE_COMPILER_IS_GNUCXX)
+	set(CMAKE_CXX_FLAGS "-O3 -Wall")
+	set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -std=c++11")
+endif()
 
-set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_C_STANDARD 11)
+SET(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} ${CUDA_ARCH} -lineinfo")
 
 cuda_add_executable(sgm-test ${TEST_SOURCES})
 target_link_libraries(sgm-test sgm gtest)
