@@ -106,8 +106,8 @@ template <typename T>
 void enqueue_census_transform(
 	feature_type *dest,
 	const T *src,
-	size_t width,
-	size_t height,
+	int width,
+	int height,
 	cudaStream_t stream)
 {
 	const int width_per_block = BLOCK_SIZE - WINDOW_WIDTH + 1;
@@ -130,11 +130,11 @@ CensusTransform<T>::CensusTransform()
 template <typename T>
 void CensusTransform<T>::enqueue(
 	const input_type *src,
-	size_t width,
-	size_t height,
+	int width,
+	int height,
 	cudaStream_t stream)
 {
-	if(m_feature_buffer.size() != width * height){
+	if(m_feature_buffer.size() != static_cast<size_t>(width * height)){
 		m_feature_buffer = DeviceBuffer<feature_type>(width * height);
 	}
 	enqueue_census_transform(

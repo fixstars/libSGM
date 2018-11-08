@@ -44,8 +44,8 @@ template <size_t MAX_DISPARITY>
 void PathAggregation<MAX_DISPARITY>::enqueue(
 	const feature_type *left,
 	const feature_type *right,
-	size_t width,
-	size_t height,
+	int width,
+	int height,
 	unsigned int p1,
 	unsigned int p2,
 	cudaStream_t stream)

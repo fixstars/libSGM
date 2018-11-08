@@ -40,8 +40,8 @@ public:
 	
 	void enqueue(
 		const input_type *src,
-		size_t width,
-		size_t height,
+		int width,
+		int height,
 		cudaStream_t stream);
 
 };

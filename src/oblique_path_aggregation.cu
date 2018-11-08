@@ -29,8 +29,8 @@ __global__ void aggregate_oblique_path_kernel(
 	uint8_t *dest,
 	const feature_type *left,
 	const feature_type *right,
-	unsigned int width,
-	unsigned int height,
+	int width,
+	int height,
 	unsigned int p1,
 	unsigned int p2)
 {
@@ -119,8 +119,8 @@ void enqueue_aggregate_upleft2downright_path(
 	cost_type *dest,
 	const feature_type *left,
 	const feature_type *right,
-	size_t width,
-	size_t height,
+	int width,
+	int height,
 	unsigned int p1,
 	unsigned int p2,
 	cudaStream_t stream)
@@ -128,8 +128,8 @@ void enqueue_aggregate_upleft2downright_path(
 	static const unsigned int SUBGROUP_SIZE = MAX_DISPARITY / DP_BLOCK_SIZE;
 	static const unsigned int PATHS_PER_BLOCK = BLOCK_SIZE / SUBGROUP_SIZE;
 
-	const size_t gdim = (width + height + PATHS_PER_BLOCK - 2) / PATHS_PER_BLOCK;
-	const size_t bdim = BLOCK_SIZE;
+	const int gdim = (width + height + PATHS_PER_BLOCK - 2) / PATHS_PER_BLOCK;
+	const int bdim = BLOCK_SIZE;
 	aggregate_oblique_path_kernel<1, 1, MAX_DISPARITY><<<gdim, bdim, 0, stream>>>(
 		dest, left, right, width, height, p1, p2);
 }
@@ -139,8 +139,8 @@ void enqueue_aggregate_upright2downleft_path(
 	cost_type *dest,
 	const feature_type *left,
 	const feature_type *right,
-	size_t width,
-	size_t height,
+	int width,
+	int height,
 	unsigned int p1,
 	unsigned int p2,
 	cudaStream_t stream)
@@ -148,8 +148,8 @@ void enqueue_aggregate_upright2downleft_path(
 	static const unsigned int SUBGROUP_SIZE = MAX_DISPARITY / DP_BLOCK_SIZE;
 	static const unsigned int PATHS_PER_BLOCK = BLOCK_SIZE / SUBGROUP_SIZE;
 
-	const size_t gdim = (width + height + PATHS_PER_BLOCK - 2) / PATHS_PER_BLOCK;
-	const size_t bdim = BLOCK_SIZE;
+	const int gdim = (width + height + PATHS_PER_BLOCK - 2) / PATHS_PER_BLOCK;
+	const int bdim = BLOCK_SIZE;
 	aggregate_oblique_path_kernel<-1, 1, MAX_DISPARITY><<<gdim, bdim, 0, stream>>>(
 		dest, left, right, width, height, p1, p2);
 }
@@ -159,8 +159,8 @@ void enqueue_aggregate_downright2upleft_path(
 	cost_type *dest,
 	const feature_type *left,
 	const feature_type *right,
-	size_t width,
-	size_t height,
+	int width,
+	int height,
 	unsigned int p1,
 	unsigned int p2,
 	cudaStream_t stream)
@@ -168,8 +168,8 @@ void enqueue_aggregate_downright2upleft_path(
 	static const unsigned int SUBGROUP_SIZE = MAX_DISPARITY / DP_BLOCK_SIZE;
 	static const unsigned int PATHS_PER_BLOCK = BLOCK_SIZE / SUBGROUP_SIZE;
 
-	const size_t gdim = (width + height + PATHS_PER_BLOCK - 2) / PATHS_PER_BLOCK;
-	const size_t bdim = BLOCK_SIZE;
+	const int gdim = (width + height + PATHS_PER_BLOCK - 2) / PATHS_PER_BLOCK;
+	const int bdim = BLOCK_SIZE;
 	aggregate_oblique_path_kernel<-1, -1, MAX_DISPARITY><<<gdim, bdim, 0, stream>>>(
 		dest, left, right, width, height, p1, p2);
 }
@@ -179,8 +179,8 @@ void enqueue_aggregate_downleft2upright_path(
 	cost_type *dest,
 	const feature_type *left,
 	const feature_type *right,
-	size_t width,
-	size_t height,
+	int width,
+	int height,
 	unsigned int p1,
 	unsigned int p2,
 	cudaStream_t stream)
@@ -188,8 +188,8 @@ void enqueue_aggregate_downleft2upright_path(
 	static const unsigned int SUBGROUP_SIZE = MAX_DISPARITY / DP_BLOCK_SIZE;
 	static const unsigned int PATHS_PER_BLOCK = BLOCK_SIZE / SUBGROUP_SIZE;
 
-	const size_t gdim = (width + height + PATHS_PER_BLOCK - 2) / PATHS_PER_BLOCK;
-	const size_t bdim = BLOCK_SIZE;
+	const int gdim = (width + height + PATHS_PER_BLOCK - 2) / PATHS_PER_BLOCK;
+	const int bdim = BLOCK_SIZE;
 	aggregate_oblique_path_kernel<1, -1, MAX_DISPARITY><<<gdim, bdim, 0, stream>>>(
 		dest, left, right, width, height, p1, p2);
 }
@@ -199,8 +199,8 @@ template void enqueue_aggregate_upleft2downright_path<64u>(
 	cost_type *dest,
 	const feature_type *left,
 	const feature_type *right,
-	size_t width,
-	size_t height,
+	int width,
+	int height,
 	unsigned int p1,
 	unsigned int p2,
 	cudaStream_t stream);
@@ -209,8 +209,8 @@ template void enqueue_aggregate_upleft2downright_path<128u>(
 	cost_type *dest,
 	const feature_type *left,
 	const feature_type *right,
-	size_t width,
-	size_t height,
+	int width,
+	int height,
 	unsigned int p1,
 	unsigned int p2,
 	cudaStream_t stream);
@@ -219,8 +219,8 @@ template void enqueue_aggregate_upright2downleft_path<64u>(
 	cost_type *dest,
 	const feature_type *left,
 	const feature_type *right,
-	size_t width,
-	size_t height,
+	int width,
+	int height,
 	unsigned int p1,
 	unsigned int p2,
 	cudaStream_t stream);
@@ -229,8 +229,8 @@ template void enqueue_aggregate_upright2downleft_path<128u>(
 	cost_type *dest,
 	const feature_type *left,
 	const feature_type *right,
-	size_t width,
-	size_t height,
+	int width,
+	int height,
 	unsigned int p1,
 	unsigned int p2,
 	cudaStream_t stream);
@@ -239,8 +239,8 @@ template void enqueue_aggregate_downright2upleft_path<64u>(
 	cost_type *dest,
 	const feature_type *left,
 	const feature_type *right,
-	size_t width,
-	size_t height,
+	int width,
+	int height,
 	unsigned int p1,
 	unsigned int p2,
 	cudaStream_t stream);
@@ -249,8 +249,8 @@ template void enqueue_aggregate_downright2upleft_path<128u>(
 	cost_type *dest,
 	const feature_type *left,
 	const feature_type *right,
-	size_t width,
-	size_t height,
+	int width,
+	int height,
 	unsigned int p1,
 	unsigned int p2,
 	cudaStream_t stream);
@@ -259,8 +259,8 @@ template void enqueue_aggregate_downleft2upright_path<64u>(
 	cost_type *dest,
 	const feature_type *left,
 	const feature_type *right,
-	size_t width,
-	size_t height,
+	int width,
+	int height,
 	unsigned int p1,
 	unsigned int p2,
 	cudaStream_t stream);
@@ -269,8 +269,8 @@ template void enqueue_aggregate_downleft2upright_path<128u>(
 	cost_type *dest,
 	const feature_type *left,
 	const feature_type *right,
-	size_t width,
-	size_t height,
+	int width,
+	int height,
 	unsigned int p1,
 	unsigned int p2,
 	cudaStream_t stream);

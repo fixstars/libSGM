@@ -22,14 +22,14 @@ limitations under the License.
 #include "sgm.hpp"
 
 namespace sgm {
-	static bool is_cuda_input(EXECUTE_INOUT type) { return (int)type & 0x1; }
-	static bool is_cuda_output(EXECUTE_INOUT type) { return (int)type & 0x2; }
+	static bool is_cuda_input(EXECUTE_INOUT type) { return (type & 0x1) > 0; }
+	static bool is_cuda_output(EXECUTE_INOUT type) { return (type & 0x2) > 0; }
 
 	class SemiGlobalMatchingBase {
 	public:
 		using output_type = sgm::output_type;
 		virtual void execute(output_type* dst_L, output_type* dst_R, const void* src_L, const void* src_R, 
-			size_t w, size_t h, unsigned int P1, unsigned int P2, float uniqueness, bool subpixel) = 0;
+			int w, int h, unsigned int P1, unsigned int P2, float uniqueness, bool subpixel) = 0;
 
 		virtual ~SemiGlobalMatchingBase() {}
 	};
@@ -38,7 +38,7 @@ namespace sgm {
 	class SemiGlobalMatchingImpl : public SemiGlobalMatchingBase {
 	public:
 		void execute(output_type* dst_L, output_type* dst_R, const void* src_L, const void* src_R,
-			size_t w, size_t h, unsigned int P1, unsigned int P2, float uniqueness, bool subpixel) override
+			int w, int h, unsigned int P1, unsigned int P2, float uniqueness, bool subpixel) override
 		{
 			sgm_engine_.execute(dst_L, dst_R, (const input_type*)src_L, (const input_type*)src_R, w, h, P1, P2, uniqueness, subpixel);
 		}
