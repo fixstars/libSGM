@@ -7,6 +7,7 @@ set(CUDA_ARCH "-arch=sm_50" CACHE STRING "Value of the NVCC -arch option.")
 
 option(ENABLE_ZED_DEMO "Build a Demo using ZED Camera" OFF)
 option(ENABLE_SAMPLES  "Build samples" OFF)
+option(ENABLE_TESTS    "Test library" OFF)
 option(LIBSGM_SHARED   "Build a shared library" OFF)
 
 if(WIN32)
@@ -30,6 +31,10 @@ if(ENABLE_SAMPLES)
     add_subdirectory(sample/movie)
     add_subdirectory(sample/reprojection)
     add_subdirectory(sample/benchmark)
+endif()
+
+if(ENABLE_TESTS)
+	add_subdirectory(test)
 endif()
 
 if(ENABLE_ZED_DEMO)
