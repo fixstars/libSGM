@@ -134,7 +134,7 @@ void CensusTransform<T>::enqueue(
 	int height,
 	cudaStream_t stream)
 {
-	if(m_feature_buffer.size() != width * height){
+	if(m_feature_buffer.size() != static_cast<size_t>(width * height)){
 		m_feature_buffer = DeviceBuffer<feature_type>(width * height);
 	}
 	enqueue_census_transform(

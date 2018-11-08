@@ -304,10 +304,10 @@ void WinnerTakesAll<MAX_DISPARITY>::enqueue(
 	bool subpixel,
 	cudaStream_t stream)
 {
-	if(m_left_buffer.size() != width * height){
+	if(m_left_buffer.size() != static_cast<size_t>(width * height)){
 		m_left_buffer = DeviceBuffer<output_type>(width * height);
 	}
-	if(m_right_buffer.size() != width * height){
+	if(m_right_buffer.size() != static_cast<size_t>(width * height)){
 		m_right_buffer = DeviceBuffer<output_type>(width * height);
 	}
 	enqueue_winner_takes_all<MAX_DISPARITY>(
