@@ -22,8 +22,8 @@ limitations under the License.
 #include "sgm.hpp"
 
 namespace sgm {
-	static bool is_cuda_input(EXECUTE_INOUT type) { return (int)type & 0x1; }
-	static bool is_cuda_output(EXECUTE_INOUT type) { return (int)type & 0x2; }
+	static bool is_cuda_input(EXECUTE_INOUT type) { return (type & 0x1) > 0; }
+	static bool is_cuda_output(EXECUTE_INOUT type) { return (type & 0x2) > 0; }
 
 	class SemiGlobalMatchingBase {
 	public:
