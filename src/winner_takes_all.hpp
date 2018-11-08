@@ -42,8 +42,8 @@ public:
 
 	void enqueue(
 		const cost_type *src,
-		size_t width,
-		size_t height,
+		int width,
+		int height,
 		float uniqueness,
 		bool subpixel,
 		cudaStream_t stream);
@@ -52,8 +52,8 @@ public:
 		output_type *left,
 		output_type *right,
 		const cost_type *src,
-		size_t width,
-		size_t height,
+		int width,
+		int height,
 		float uniqueness,
 		bool subpixel,
 		cudaStream_t stream);

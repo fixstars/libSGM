@@ -27,8 +27,8 @@ void enqueue_aggregate_upleft2downright_path(
 	cost_type *dest,
 	const feature_type *left,
 	const feature_type *right,
-	size_t width,
-	size_t height,
+	int width,
+	int height,
 	unsigned int p1,
 	unsigned int p2,
 	cudaStream_t stream);
@@ -38,8 +38,8 @@ void enqueue_aggregate_upright2downleft_path(
 	cost_type *dest,
 	const feature_type *left,
 	const feature_type *right,
-	size_t width,
-	size_t height,
+	int width,
+	int height,
 	unsigned int p1,
 	unsigned int p2,
 	cudaStream_t stream);
@@ -49,8 +49,8 @@ void enqueue_aggregate_downright2upleft_path(
 	cost_type *dest,
 	const feature_type *left,
 	const feature_type *right,
-	size_t width,
-	size_t height,
+	int width,
+	int height,
 	unsigned int p1,
 	unsigned int p2,
 	cudaStream_t stream);
@@ -60,8 +60,8 @@ void enqueue_aggregate_downleft2upright_path(
 	cost_type *dest,
 	const feature_type *left,
 	const feature_type *right,
-	size_t width,
-	size_t height,
+	int width,
+	int height,
 	unsigned int p1,
 	unsigned int p2,
 	cudaStream_t stream);

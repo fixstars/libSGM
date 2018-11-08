@@ -140,8 +140,8 @@ __global__ void winner_takes_all_kernel(
 	output_type *left_dest,
 	output_type *right_dest,
 	const cost_type *src,
-	unsigned int width,
-	unsigned int height,
+	int width,
+	int height,
 	float uniqueness)
 {
 	static const unsigned int ACCUMULATION_PER_THREAD = 16u;
@@ -268,15 +268,15 @@ void enqueue_winner_takes_all(
 	output_type *left_dest,
 	output_type *right_dest,
 	const cost_type *src,
-	unsigned int width,
-	unsigned int height,
+	int width,
+	int height,
 	float uniqueness,
 	bool subpixel,
 	cudaStream_t stream)
 {
-	const unsigned int gdim =
+	const int gdim =
 		(height + WARPS_PER_BLOCK - 1) / WARPS_PER_BLOCK;
-	const unsigned int bdim = BLOCK_SIZE;
+	const int bdim = BLOCK_SIZE;
 	if (subpixel) {
 		winner_takes_all_kernel<MAX_DISPARITY, compute_disparity_subpixel<MAX_DISPARITY>><<<gdim, bdim, 0, stream>>>(
 			left_dest, right_dest, src, width, height, uniqueness);
@@ -298,8 +298,8 @@ WinnerTakesAll<MAX_DISPARITY>::WinnerTakesAll()
 template <size_t MAX_DISPARITY>
 void WinnerTakesAll<MAX_DISPARITY>::enqueue(
 	const cost_type *src,
-	size_t width,
-	size_t height,
+	int width,
+	int height,
 	float uniqueness,
 	bool subpixel,
 	cudaStream_t stream)
@@ -326,8 +326,8 @@ void WinnerTakesAll<MAX_DISPARITY>::enqueue(
 	output_type* left,
 	output_type* right,
 	const cost_type *src,
-	size_t width,
-	size_t height,
+	int width,
+	int height,
 	float uniqueness,
 	bool subpixel,
 	cudaStream_t stream)
