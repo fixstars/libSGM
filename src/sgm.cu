@@ -58,9 +58,9 @@ public:
 		cudaStream_t stream)
 	{
 		m_census_left.enqueue(
-			src_left, width, height, stream);
+			src_left, width, height, src_pitch, stream);
 		m_census_right.enqueue(
-			src_right, width, height, stream);
+			src_right, width, height, src_pitch, stream);
 		m_path_aggregation.enqueue(
 			m_census_left.get_output(),
 			m_census_right.get_output(),

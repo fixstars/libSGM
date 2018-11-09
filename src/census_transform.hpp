@@ -42,6 +42,7 @@ public:
 		const input_type *src,
 		int width,
 		int height,
+		int pitch,
 		cudaStream_t stream);
 
 };

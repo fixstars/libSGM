@@ -32,7 +32,8 @@ __global__ void census_transform_kernel(
 	feature_type *dest,
 	const T *src,
 	int width,
-	int height)
+	int height,
+	int pitch)
 {
 	using pixel_type = T;
 	static const int SMEM_BUFFER_SIZE = WINDOW_HEIGHT + 1;
@@ -50,7 +51,7 @@ __global__ void census_transform_kernel(
 		const int x = x0 + tid, y = y0 - half_kh + i;
 		pixel_type value = 0;
 		if(0 <= x && x < width && 0 <= y && y < height){
-			value = src[x + y * width];
+			value = src[x + y * pitch];
 		}
 		smem_lines[i][tid] = value;
 	}
@@ -63,7 +64,7 @@ __global__ void census_transform_kernel(
 			const int x = x0 + tid, y = y0 + half_kh + i + 1;
 			pixel_type value = 0;
 			if(0 <= x && x < width && 0 <= y && y < height){
-				value = src[x + y * width];
+				value = src[x + y * pitch];
 			}
 			const int smem_x = tid;
 			const int smem_y = (WINDOW_HEIGHT + i) % SMEM_BUFFER_SIZE;
@@ -108,6 +109,7 @@ void enqueue_census_transform(
 	const T *src,
 	int width,
 	int height,
+	int pitch,
 	cudaStream_t stream)
 {
 	const int width_per_block = BLOCK_SIZE - WINDOW_WIDTH + 1;
@@ -116,7 +118,7 @@ void enqueue_census_transform(
 		(width  + width_per_block  - 1) / width_per_block,
 		(height + height_per_block - 1) / height_per_block);
 	const dim3 bdim(BLOCK_SIZE);
-	census_transform_kernel<<<gdim, bdim, 0, stream>>>(dest, src, width, height);
+	census_transform_kernel<<<gdim, bdim, 0, stream>>>(dest, src, width, height, pitch);
 }
 
 }
@@ -132,13 +134,14 @@ void CensusTransform<T>::enqueue(
 	const input_type *src,
 	int width,
 	int height,
+	int pitch,
 	cudaStream_t stream)
 {
 	if(m_feature_buffer.size() != static_cast<size_t>(width * height)){
 		m_feature_buffer = DeviceBuffer<feature_type>(width * height);
 	}
 	enqueue_census_transform(
-		m_feature_buffer.data(), src, width, height, stream);
+		m_feature_buffer.data(), src, width, height, pitch, stream);
 }
 
 template class CensusTransform<uint8_t>;
