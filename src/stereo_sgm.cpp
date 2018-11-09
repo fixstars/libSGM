@@ -173,7 +173,7 @@ namespace sgm {
 		sgm::details::check_consistency((uint16_t*)d_left_disp, (uint16_t*)d_right_disp, d_input_left, width_, height_, input_depth_bits_, param_.subpixel);
 
 		if (!is_cuda_output(inout_type_) && output_depth_bits_ == 8) {
-			sgm::details::cast_16bit_8bit_array((const uint16_t*)d_left_disp, (uint8_t*)d_tmp_left_disp, width_ * height_);
+			sgm::details::cast_16bit_8bit_array((const uint16_t*)d_left_disp, (uint8_t*)d_tmp_left_disp, dst_pitch_ * height_);
 			CudaSafeCall(cudaMemcpy(dst, d_tmp_left_disp, sizeof(uint8_t) * dst_pitch_ * height_, cudaMemcpyDeviceToHost));
 		}
 		else if (is_cuda_output(inout_type_) && output_depth_bits_ == 8) {
