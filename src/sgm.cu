@@ -70,7 +70,7 @@ public:
 		m_winner_takes_all.enqueue(
 			dest_left, dest_right,
 			m_path_aggregation.get_output(),
-			width, height, uniqueness, subpixel,
+			width, height, dst_pitch, uniqueness, subpixel,
 			stream);
 	}
 
