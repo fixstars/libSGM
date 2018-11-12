@@ -115,7 +115,7 @@ static void test_random_left(bool subpixel, size_t padding = 0)
 
 	sgm::WinnerTakesAll<disparity> wta;
 	const auto d_input = to_device_vector(input);
-	wta.enqueue(d_input.data().get(), width, height, pitch, uniqueness, subpixel, 0);
+	wta.enqueue(d_input.data().get(), width, height, static_cast<int>(pitch), uniqueness, subpixel, 0);
 	cudaStreamSynchronize(0);
 
 	const thrust::device_vector<sgm::output_type> d_actual(
