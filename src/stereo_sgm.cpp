@@ -168,8 +168,8 @@ namespace sgm {
 		cu_res_->sgm_engine->execute((uint16_t*)d_tmp_left_disp, (uint16_t*)d_tmp_right_disp,
 			d_input_left, d_input_right, width_, height_, src_pitch_, dst_pitch_, param_.P1, param_.P2, param_.uniqueness, param_.subpixel);
 
-		sgm::details::median_filter((uint16_t*)d_tmp_left_disp, (uint16_t*)d_left_disp, width_, height_);
-		sgm::details::median_filter((uint16_t*)d_tmp_right_disp, (uint16_t*)d_right_disp, width_, height_);
+		sgm::details::median_filter((uint16_t*)d_tmp_left_disp, (uint16_t*)d_left_disp, width_, height_, dst_pitch_);
+		sgm::details::median_filter((uint16_t*)d_tmp_right_disp, (uint16_t*)d_right_disp, width_, height_, dst_pitch_);
 		sgm::details::check_consistency((uint16_t*)d_left_disp, (uint16_t*)d_right_disp, d_input_left, width_, height_, input_depth_bits_, param_.subpixel);
 
 		if (!is_cuda_output(inout_type_) && output_depth_bits_ == 8) {

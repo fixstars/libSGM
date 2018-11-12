@@ -92,7 +92,7 @@ namespace {
 #undef MAX_OP
 	}
 
-	__global__ void median_kernel_3x3_8u(const uint8_t* src, uint8_t* dst, int w, int h)
+	__global__ void median_kernel_3x3_8u(const uint8_t* src, uint8_t* dst, int w, int h, int p)
 	{
 		const int x = blockIdx.x * blockDim.x + threadIdx.x;
 		const int y = blockIdx.y * blockDim.y + threadIdx.y;
@@ -108,7 +108,7 @@ namespace {
 		dst[y * w + x] = buf[KSIZE_SQ / 2];
 	}
 
-	__global__ void median_kernel_3x3_16u(const uint16_t* src, uint16_t* dst, int w, int h)
+	__global__ void median_kernel_3x3_16u(const uint16_t* src, uint16_t* dst, int w, int h, int p)
 	{
 		const int x = blockIdx.x * blockDim.x + threadIdx.x;
 		const int y = blockIdx.y * blockDim.y + threadIdx.y;
@@ -117,11 +117,11 @@ namespace {
 
 		uint16_t buf[KSIZE_SQ];
 		for (int i = 0; i < KSIZE_SQ; i++)
-			buf[i] = src[(y - RADIUS + i / KSIZE) * w + (x - RADIUS + i % KSIZE)];
+			buf[i] = src[(y - RADIUS + i / KSIZE) * p + (x - RADIUS + i % KSIZE)];
 
 		median_selection_network_9(buf);
 
-		dst[y * w + x] = buf[KSIZE_SQ / 2];
+		dst[y * p + x] = buf[KSIZE_SQ / 2];
 	}
 
 	__global__ void median_kernel_3x3_8u_v4(const uint8_t* src, uint8_t* dst, int w, int h, int pitch)
@@ -256,33 +256,33 @@ namespace {
 namespace sgm {
 	namespace details {
 
-		void median_filter(const uint8_t* d_src, uint8_t* d_dst, int width, int height) {
+		void median_filter(const uint8_t* d_src, uint8_t* d_dst, int width, int height, int pitch) {
 
-			if (width % 4 == 0) {
+			if (pitch % 4 == 0) {
 				const dim3 block(BLOCK_X, BLOCK_Y);
 				const dim3 grid(divup(width / 4, block.x), divup(height, block.y));
-				median_kernel_3x3_8u_v4<<<grid, block>>>(d_src, d_dst, width, height, width);
+				median_kernel_3x3_8u_v4<<<grid, block>>>(d_src, d_dst, width, height, pitch);
 			}
 			else {
 				const dim3 block(BLOCK_X, BLOCK_Y);
 				const dim3 grid(divup(width, block.x), divup(height, block.y));
-				median_kernel_3x3_8u<<<grid, block>>>(d_src, d_dst, width, height);
+				median_kernel_3x3_8u<<<grid, block>>>(d_src, d_dst, width, height, pitch);
 			}
 
 			CudaSafeCall(cudaGetLastError());
 		}
 
-		void median_filter(const uint16_t* d_src, uint16_t* d_dst, int width, int height) {
+		void median_filter(const uint16_t* d_src, uint16_t* d_dst, int width, int height, int pitch) {
 			
-			if (width % 2 == 0) {
+			if (pitch % 2 == 0) {
 				const dim3 block(BLOCK_X, BLOCK_Y);
 				const dim3 grid(divup(width / 2, block.x), divup(height, block.y));
-				median_kernel_3x3_16u_v2<<<grid, block>>>(d_src, d_dst, width, height, width);
+				median_kernel_3x3_16u_v2<<<grid, block>>>(d_src, d_dst, width, height, pitch);
 			}
 			else {
 				const dim3 block(BLOCK_X, BLOCK_Y);
 				const dim3 grid(divup(width, block.x), divup(height, block.y));
-				median_kernel_3x3_16u<<<grid, block>>>(d_src, d_dst, width, height);
+				median_kernel_3x3_16u<<<grid, block>>>(d_src, d_dst, width, height, pitch);
 			}
 
 			CudaSafeCall(cudaGetLastError());

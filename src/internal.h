@@ -33,8 +33,8 @@ limitations under the License.
 namespace sgm {
 	namespace details {
 
-		void median_filter(const uint8_t* d_src, uint8_t* d_dst, int width, int height);
-		void median_filter(const uint16_t* d_src, uint16_t* d_dst, int width, int height);
+		void median_filter(const uint8_t* d_src, uint8_t* d_dst, int width, int height, int pitch);
+		void median_filter(const uint16_t* d_src, uint16_t* d_dst, int width, int height, int pitch);
 
 		void check_consistency(uint8_t* d_left_disp, const uint8_t* d_right_disp, const void* d_src_left, int width, int height, int depth_bits, bool subpixel);
 		void check_consistency(uint16_t* d_left_disp, const uint16_t* d_right_disp, const void* d_src_left, int width, int height, int depth_bits, bool subpixel);
