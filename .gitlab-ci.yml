@@ -12,7 +12,7 @@ stages:
   tags:
     - docker
   script:
-    - cmake . -DENABLE_SAMPLES=${build_samples} -DLIBSGM_SHARED=${build_shared} -DENABLE_TESTS=${build_tests}
+    - cmake . -DWITH_OPENCV="ON" -DENABLE_SAMPLES=${build_samples} -DLIBSGM_SHARED=${build_shared} -DENABLE_TESTS=${build_tests}
     - make
 
 build:samples_on:shared:
