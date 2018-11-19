@@ -133,3 +133,5 @@ namespace sgm {
 		Parameters param_;
 	};
 }
+
+#include "libsgm_wrapper.h"
