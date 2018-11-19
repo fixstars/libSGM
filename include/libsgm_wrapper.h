@@ -18,8 +18,8 @@ namespace sgm {
 		/**
 		 * @param param You can specify parameters.  See libsgm.h for more information.
 		 */
-		LibSGMWrapper(const sgm::StereoSGM::Parameters& param = {});
-		~LibSGMWrapper();
+		LIBSGM_API LibSGMWrapper(const sgm::StereoSGM::Parameters& param = {});
+		LIBSGM_API ~LibSGMWrapper();
 
 #ifdef WITH_OPENCV
 		/**
@@ -31,7 +31,7 @@ namespace sgm {
 		 * type of output image `disparity` is CV_16U.
 		 * Note that dst element value would be multiplied StereoSGM::SUBPIXEL_SCALE if subpixel option was enabled.
 		 */
-		void execute(const cv::cuda::GpuMat& I1, const cv::cuda::GpuMat& I2, cv::cuda::GpuMat& disparity);
+		LIBSGM_API void execute(const cv::cuda::GpuMat& I1, const cv::cuda::GpuMat& I2, cv::cuda::GpuMat& disparity);
 		/**
 		 * Execute stereo semi global matching via wrapper class
 		 * @param I1        Input left image.  Image's type is must be CV_8U or CV_16U
@@ -41,7 +41,7 @@ namespace sgm {
 		 * type of output image `disparity` is CV_16U.
 		 * Note that dst element value would be multiplied StereoSGM::SUBPIXEL_SCALE if subpixel option was enabled.
 		 */
-		void execute(const cv::Mat& I1, const cv::Mat& I2, cv::Mat& disparity);
+		LIBSGM_API void execute(const cv::Mat& I1, const cv::Mat& I2, cv::Mat& disparity);
 #endif // WITH_OPENCV
 
 	private:
