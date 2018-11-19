@@ -17,6 +17,7 @@ namespace sgm {
 
 #ifdef WITH_OPENCV
 		void execute(const cv::cuda::GpuMat& I1, const cv::cuda::GpuMat& I2, cv::cuda::GpuMat& disparity);
+		void execute(const cv::Mat& I1, const cv::Mat& I2, cv::Mat& disparity);
 #endif // WITH_OPENCV
 
 	private:
