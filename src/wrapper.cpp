@@ -26,12 +26,44 @@ namespace sgm {
 		int src_pitch;
 		int dst_pitch;
 		int input_depth_bits;
+
+		bool operator==(const sgm::LibSGMWrapper::Info& rhs) {
+			return
+				width == rhs.width
+				&& height == rhs.height
+				&& src_pitch == rhs.src_pitch
+				&& dst_pitch == rhs.dst_pitch
+				&& input_depth_bits == rhs.input_depth_bits;
+		}
+		bool operator!=(const sgm::LibSGMWrapper::Info& rhs) {
+			return !(*this == rhs);
+		}
 	};
 
 #ifdef WITH_OPENCV
 	void LibSGMWrapper::execute(const cv::cuda::GpuMat& I1, const cv::cuda::GpuMat& I2, cv::cuda::GpuMat& disparity) {
-		// TODO: implement
-	}
+		const cv::Size size = I1.size();
+		CV_Assert(size == I2.size());
+		CV_Assert(I1.type() == I2.type());
+		const int depth = I1.depth();
+		CV_Assert(depth == CV_8U || depth == CV_16U);
+		if (disparity.size() != size
+				|| disparity.depth() != CV_16U) {
+			disparity.create(size, CV_16U);
+		}
+		std::unique_ptr<Info> info(new Info());
+		info->width = size.width;
+		info->height = size.height;
+		info->src_pitch = static_cast<int>(I1.step1());
+		info->dst_pitch = static_cast<int>(disparity.step1());
+		info->input_depth_bits = static_cast<int>(I1.elemSize1()) * 8;
+		if (sgm_.get() == nullptr
+				|| info != prev_) {
+			sgm_.reset(new StereoSGM(info->width, info->height, DISPARITY_SIZE, info->input_depth_bits, OUTPUT_DEPTH_BITS, info->src_pitch, info->dst_pitch, sgm::EXECUTE_INOUT_CUDA2CUDA, param_));
+		}
+		prev_ = std::move(info);
 
+		sgm_->execute(I1.data, I2.data, disparity.data);
+	}
 #endif // WITH_OPENCV
 }
