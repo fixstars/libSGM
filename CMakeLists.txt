@@ -9,6 +9,7 @@ option(ENABLE_ZED_DEMO "Build a Demo using ZED Camera" OFF)
 option(ENABLE_SAMPLES  "Build samples" OFF)
 option(ENABLE_TESTS    "Test library" OFF)
 option(LIBSGM_SHARED   "Build a shared library" OFF)
+option(WITH_OPENCV     "Make library compatible with cv::cuda::GpuMat of OpenCV" OFF)
 
 if(WIN32)
   set(ZED_SDK_LIB "C:\\Program Files (x86)\\ZED SDK\\lib\\sl_zed64.lib" CACHE STRING "ZED SDK library(sl_zed**.llb) path.")
@@ -19,6 +20,11 @@ else()
 endif()
 
 project(libSGM VERSION 2.2.0)
+
+if(WITH_OPENCV)
+	find_package(OpenCV REQUIRED core)
+	include_directories(${OpenCV_INCLUDE_DIRS})
+endif()
 
 configure_file(${CMAKE_SOURCE_DIR}/include/libsgm_config.h.in
                ${CMAKE_SOURCE_DIR}/include/libsgm_config.h
