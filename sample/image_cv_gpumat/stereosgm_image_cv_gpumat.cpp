@@ -56,66 +56,66 @@ int main(int argc, char* argv[]) {
 		std::exit(EXIT_FAILURE);
 	}
 
-		const cv::Mat left = cv::imread(argv[1], -1);
-		const cv::Mat right = cv::imread(argv[2], -1);
+	const cv::Mat left = cv::imread(argv[1], -1);
+	const cv::Mat right = cv::imread(argv[2], -1);
 
-		ASSERT_MSG(left.size() == right.size() && left.type() == right.type(), "input images must be same size and type.");
-		ASSERT_MSG(left.type() == CV_8U || left.type() == CV_16U, "input image format must be CV_8U or CV_16U.");
+	ASSERT_MSG(left.size() == right.size() && left.type() == right.type(), "input images must be same size and type.");
+	ASSERT_MSG(left.type() == CV_8U || left.type() == CV_16U, "input image format must be CV_8U or CV_16U.");
 
-		sgm::LibSGMWrapper sgmw;
-		cv::Mat processed;
-		try {
-			execute(sgmw, left, right, processed);
-		} catch (const cv::Exception& e) {
-			std::cerr << e.what() << std::endl;
-			if (e.code == cv::Error::GpuNotSupported) {
-				return 1;
-			} else {
-				return -1;
-			}
+	sgm::LibSGMWrapper sgmw;
+	cv::Mat processed;
+	try {
+		execute(sgmw, left, right, processed);
+	} catch (const cv::Exception& e) {
+		std::cerr << e.what() << std::endl;
+		if (e.code == cv::Error::GpuNotSupported) {
+			return 1;
+		} else {
+			return -1;
 		}
+	}
 
-		// post-process for showing image
-		cv::Mat colored;
-		cv::applyColorMap(processed, colored, cv::COLORMAP_JET);
-		cv::imshow("image", processed);
+	// post-process for showing image
+	cv::Mat colored;
+	cv::applyColorMap(processed, colored, cv::COLORMAP_JET);
+	cv::imshow("image", processed);
 
-		int key = cv::waitKey();
-		int mode = 0;
-		while (key != 27) {
-			if (key == 's') {
-				mode += 1;
-				if (mode >= 3) mode = 0;
+	int key = cv::waitKey();
+	int mode = 0;
+	while (key != 27) {
+		if (key == 's') {
+			mode += 1;
+			if (mode >= 3) mode = 0;
 
-				switch (mode) {
-				case 0:
-					{
-						#if CV_MAJOR_VERSION == 3
-						cv::setWindowTitle("image", "disparity");
-						#endif
-						cv::imshow("image", processed);
-						break;
-					}
-				case 1:
-					{
-						#if CV_MAJOR_VERSION == 3
-						cv::setWindowTitle("image", "disparity color");
-						#endif
-						cv::imshow("image", colored);
-						break;
-					}
-				case 2:
-					{
-						#if CV_MAJOR_VERSION == 3
-						cv::setWindowTitle("image", "input");
-						#endif
-						cv::imshow("image", left);
-						break;
-					}
+			switch (mode) {
+			case 0:
+				{
+					#if CV_MAJOR_VERSION == 3
+					cv::setWindowTitle("image", "disparity");
+					#endif
+					cv::imshow("image", processed);
+					break;
+				}
+			case 1:
+				{
+					#if CV_MAJOR_VERSION == 3
+					cv::setWindowTitle("image", "disparity color");
+					#endif
+					cv::imshow("image", colored);
+					break;
+				}
+			case 2:
+				{
+					#if CV_MAJOR_VERSION == 3
+					cv::setWindowTitle("image", "input");
+					#endif
+					cv::imshow("image", left);
+					break;
 				}
 			}
-			key = cv::waitKey();
 		}
+		key = cv::waitKey();
+	}
 
 	return 0;
 }
