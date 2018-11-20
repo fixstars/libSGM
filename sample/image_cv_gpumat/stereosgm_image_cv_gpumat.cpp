@@ -34,6 +34,22 @@ limitations under the License.
 		std::exit(EXIT_FAILURE); \
 	} \
 
+static void execute(sgm::LibSGMWrapper& sgmw, const cv::Mat& _left, const cv::Mat& _right, cv::Mat& dst) noexcept(false)
+{
+	cv::cuda::GpuMat left, right;
+	left.upload(_left);
+	right.upload(_right);
+
+	cv::cuda::GpuMat output;
+
+	sgmw.execute(left, right, output);
+
+	// normalize result
+	cv::cuda::GpuMat processed;
+	output.convertTo(processed, CV_8UC1, 256. / sgm::LibSGMWrapper::DISPARITY_SIZE);
+	processed.download(dst);
+}
+
 int main(int argc, char* argv[]) {
 	if (argc < 3) {
 		std::cerr << "usage: stereosgm left_img right_img" << std::endl;
@@ -41,26 +57,27 @@ int main(int argc, char* argv[]) {
 	}
 
 	try {
-		const cv::Mat _left = cv::imread(argv[1], -1);
-		const cv::Mat _right = cv::imread(argv[2], -1);
-		cv::cuda::GpuMat left, right;
-		left.upload(_left);
-		right.upload(_right);
+		const cv::Mat left = cv::imread(argv[1], -1);
+		const cv::Mat right = cv::imread(argv[2], -1);
 
 		ASSERT_MSG(left.size() == right.size() && left.type() == right.type(), "input images must be same size and type.");
 		ASSERT_MSG(left.type() == CV_8U || left.type() == CV_16U, "input image format must be CV_8U or CV_16U.");
 
 		sgm::LibSGMWrapper sgmw;
-		cv::cuda::GpuMat output;
-
-		sgmw.execute(left, right, output);
+		cv::Mat processed;
+		try {
+			execute(sgmw, left, right, processed);
+		} catch (const cv::Exception& e) {
+			std::cerr << e.what() << std::endl;
+			if (e.code == cv::Error::GpuNotSupported) {
+				return 1;
+			} else {
+				return -1;
+			}
+		}
 
 		// post-process for showing image
-		cv::cuda::GpuMat _processed;
-		cv::Mat processed;
 		cv::Mat colored;
-		output.convertTo(_processed, CV_8UC1, 256. / sgm::LibSGMWrapper::DISPARITY_SIZE);
-		_processed.download(processed);
 		cv::applyColorMap(processed, colored, cv::COLORMAP_JET);
 		cv::imshow("image", processed);
 
@@ -93,7 +110,7 @@ int main(int argc, char* argv[]) {
 						#if CV_MAJOR_VERSION == 3
 						cv::setWindowTitle("image", "input");
 						#endif
-						cv::imshow("image", _left);
+						cv::imshow("image", left);
 						break;
 					}
 				}
