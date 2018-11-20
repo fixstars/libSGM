@@ -49,8 +49,7 @@ namespace sgm {
 		CV_Assert(I1.type() == I2.type());
 		const int depth = I1.depth();
 		CV_Assert(depth == CV_8U || depth == CV_16U);
-		if (disparity.size() != size
-				|| disparity.depth() != CV_16U) {
+		if (disparity.size() != size || disparity.depth() != CV_16U) {
 			disparity.create(size, CV_16U);
 		}
 		std::unique_ptr<Info> info(new Info());
@@ -60,8 +59,7 @@ namespace sgm {
 		info->dst_pitch = static_cast<int>(disparity.step1());
 		info->input_depth_bits = static_cast<int>(I1.elemSize1()) * 8;
 		info->inout_type = sgm::EXECUTE_INOUT_CUDA2CUDA;
-		if (!sgm_
-				|| !prev_ || *info != *prev_) {
+		if (!sgm_ || !prev_ || *info != *prev_) {
 			sgm_.reset(new StereoSGM(info->width, info->height, DISPARITY_SIZE, info->input_depth_bits, OUTPUT_DEPTH_BITS, info->src_pitch, info->dst_pitch, info->inout_type, param_));
 		}
 		prev_ = std::move(info);
@@ -74,8 +72,7 @@ namespace sgm {
 		CV_Assert(I1.type() == I2.type());
 		const int depth = I1.depth();
 		CV_Assert(depth == CV_8U || depth == CV_16U);
-		if (disparity.size() != size
-				|| disparity.depth() != CV_16U) {
+		if (disparity.size() != size || disparity.depth() != CV_16U) {
 			disparity.create(size, CV_16U);
 		}
 		std::unique_ptr<Info> info(new Info());
@@ -85,8 +82,7 @@ namespace sgm {
 		info->dst_pitch = static_cast<int>(disparity.step1());
 		info->input_depth_bits = static_cast<int>(I1.elemSize1()) * 8;
 		info->inout_type = sgm::EXECUTE_INOUT_HOST2HOST;
-		if (!sgm_
-				|| !prev_ || *info != *prev_) {
+		if (!sgm_ || !prev_ || *info != *prev_) {
 			sgm_.reset(new StereoSGM(info->width, info->height, DISPARITY_SIZE, info->input_depth_bits, OUTPUT_DEPTH_BITS, info->src_pitch, info->dst_pitch, info->inout_type, param_));
 		}
 		prev_ = std::move(info);
