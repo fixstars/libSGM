@@ -56,7 +56,6 @@ int main(int argc, char* argv[]) {
 		std::exit(EXIT_FAILURE);
 	}
 
-	try {
 		const cv::Mat left = cv::imread(argv[1], -1);
 		const cv::Mat right = cv::imread(argv[2], -1);
 
@@ -117,14 +116,6 @@ int main(int argc, char* argv[]) {
 			}
 			key = cv::waitKey();
 		}
-	} catch (cv::Exception& e) {
-		std::cerr << e.what() << std::endl;
-		if (e.code == cv::Error::GpuNotSupported) {
-			return 1;
-		} else {
-			return -1;
-		}
-	}
 
 	return 0;
 }
