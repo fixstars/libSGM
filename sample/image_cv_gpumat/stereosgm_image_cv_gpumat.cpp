@@ -51,10 +51,7 @@ static void execute(sgm::LibSGMWrapper& sgmw, const cv::Mat& _left, const cv::Ma
 }
 
 int main(int argc, char* argv[]) {
-	if (argc < 3) {
-		std::cerr << "usage: stereosgm left_img right_img" << std::endl;
-		std::exit(EXIT_FAILURE);
-	}
+	ASSERT_MSG(argc >= 3, "usage: stereosgm left_img right_img");
 
 	const cv::Mat left = cv::imread(argv[1], -1);
 	const cv::Mat right = cv::imread(argv[2], -1);
