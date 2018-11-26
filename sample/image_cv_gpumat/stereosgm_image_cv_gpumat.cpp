@@ -34,20 +34,20 @@ limitations under the License.
 		std::exit(EXIT_FAILURE); \
 	} \
 
-static void execute(sgm::LibSGMWrapper& sgmw, const cv::Mat& _left, const cv::Mat& _right, cv::Mat& dst) noexcept(false)
+static void execute(sgm::LibSGMWrapper& sgmw, const cv::Mat& h_left, const cv::Mat& h_right, cv::Mat& h_disparity) noexcept(false)
 {
-	cv::cuda::GpuMat left, right;
-	left.upload(_left);
-	right.upload(_right);
+	cv::cuda::GpuMat d_left, d_right;
+	d_left.upload(h_left);
+	d_right.upload(h_right);
 
-	cv::cuda::GpuMat output;
+	cv::cuda::GpuMat d_disparity;
 
-	sgmw.execute(left, right, output);
+	sgmw.execute(d_left, d_right, d_disparity);
 
 	// normalize result
-	cv::cuda::GpuMat processed;
-	output.convertTo(processed, CV_8UC1, 256. / sgm::LibSGMWrapper::DISPARITY_SIZE);
-	processed.download(dst);
+	cv::cuda::GpuMat d_normalized_disparity;
+	d_disparity.convertTo(d_normalized_disparity, CV_8UC1, 256. / sgm::LibSGMWrapper::DISPARITY_SIZE);
+	d_normalized_disparity.download(h_disparity);
 }
 
 int main(int argc, char* argv[]) {
@@ -60,9 +60,9 @@ int main(int argc, char* argv[]) {
 	ASSERT_MSG(left.type() == CV_8U || left.type() == CV_16U, "input image format must be CV_8U or CV_16U.");
 
 	sgm::LibSGMWrapper sgmw;
-	cv::Mat processed;
+	cv::Mat disparity;
 	try {
-		execute(sgmw, left, right, processed);
+		execute(sgmw, left, right, disparity);
 	} catch (const cv::Exception& e) {
 		std::cerr << e.what() << std::endl;
 		if (e.code == cv::Error::GpuNotSupported) {
@@ -74,8 +74,8 @@ int main(int argc, char* argv[]) {
 
 	// post-process for showing image
 	cv::Mat colored;
-	cv::applyColorMap(processed, colored, cv::COLORMAP_JET);
-	cv::imshow("image", processed);
+	cv::applyColorMap(disparity, colored, cv::COLORMAP_JET);
+	cv::imshow("image", disparity);
 
 	int key = cv::waitKey();
 	int mode = 0;
@@ -90,7 +90,7 @@ int main(int argc, char* argv[]) {
 					#if CV_MAJOR_VERSION == 3
 					cv::setWindowTitle("image", "disparity");
 					#endif
-					cv::imshow("image", processed);
+					cv::imshow("image", disparity);
 					break;
 				}
 			case 1:
