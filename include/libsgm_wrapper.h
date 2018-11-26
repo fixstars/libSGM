@@ -3,7 +3,7 @@
 
 #include "libsgm.h"
 #include <memory>
-#ifdef WITH_OPENCV
+#ifdef BUILD_OPENCV_WRAPPER
 #include <opencv2/core/cuda.hpp>
 #endif
 
@@ -21,7 +21,7 @@ namespace sgm {
 		LIBSGM_API LibSGMWrapper(const sgm::StereoSGM::Parameters& param = {});
 		LIBSGM_API ~LibSGMWrapper();
 
-#ifdef WITH_OPENCV
+#ifdef BUILD_OPENCV_WRAPPER
 		/**
 		 * Execute stereo semi global matching via wrapper class
 		 * @param I1        Input left image.  Image's type is must be CV_8U or CV_16U
@@ -42,7 +42,7 @@ namespace sgm {
 		 * Note that dst element value would be multiplied StereoSGM::SUBPIXEL_SCALE if subpixel option was enabled.
 		 */
 		LIBSGM_API void execute(const cv::Mat& I1, const cv::Mat& I2, cv::Mat& disparity);
-#endif // WITH_OPENCV
+#endif // BUILD_OPRENCV_WRAPPER
 
 	private:
 		struct Info;

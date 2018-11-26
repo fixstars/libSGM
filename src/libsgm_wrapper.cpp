@@ -42,7 +42,7 @@ namespace sgm {
 		}
 	};
 
-#ifdef WITH_OPENCV
+#ifdef BUILD_OPENCV_WRAPPER
 	void LibSGMWrapper::execute(const cv::cuda::GpuMat& I1, const cv::cuda::GpuMat& I2, cv::cuda::GpuMat& disparity) {
 		const cv::Size size = I1.size();
 		CV_Assert(size == I2.size());
@@ -89,5 +89,5 @@ namespace sgm {
 
 		sgm_->execute(I1.data, I2.data, disparity.data);
 	}
-#endif // WITH_OPENCV
+#endif // BUILD_OPENCV_WRAPPER
 }
