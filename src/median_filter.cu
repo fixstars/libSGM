@@ -101,11 +101,11 @@ namespace {
 
 		uint8_t buf[KSIZE_SQ];
 		for (int i = 0; i < KSIZE_SQ; i++)
-			buf[i] = src[(y - RADIUS + i / KSIZE) * w + (x - RADIUS + i % KSIZE)];
+			buf[i] = src[(y - RADIUS + i / KSIZE) * p + (x - RADIUS + i % KSIZE)];
 
 		median_selection_network_9(buf);
 
-		dst[y * w + x] = buf[KSIZE_SQ / 2];
+		dst[y * p + x] = buf[KSIZE_SQ / 2];
 	}
 
 	__global__ void median_kernel_3x3_16u(const uint16_t* src, uint16_t* dst, int w, int h, int p)
