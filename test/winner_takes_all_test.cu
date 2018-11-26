@@ -123,7 +123,7 @@ static void test_random_left(bool subpixel, size_t padding = 0)
 	const auto actual = to_host_vector(d_actual);
 
 	EXPECT_EQ(actual, expect);
-	debug_compare(actual.data(), expect.data(), width, height, 1);
+	debug_compare(actual.data(), expect.data(), pitch, height, 1);
 }
 
 
@@ -147,21 +147,22 @@ static void test_random_right(size_t padding = 0)
 {
 	static constexpr size_t width = 313, height = 237, disparity = 64;
 	static constexpr float uniqueness = 0.95f;
+	const size_t pitch = width + padding;
 	const auto input = generate_random_sequence<sgm::cost_type>(
 		width * height * disparity * NUM_PATHS);
 	const auto expect = winner_takes_all_right(
-		input, width, height, width, disparity, uniqueness);
+		input, width, height, pitch, disparity, uniqueness);
 
 	sgm::WinnerTakesAll<disparity> wta;
 	const auto d_input = to_device_vector(input);
-	wta.enqueue(d_input.data().get(), width, height, width, uniqueness, false, 0);
+	wta.enqueue(d_input.data().get(), width, height, static_cast<int>(pitch), uniqueness, false, 0);
 	cudaStreamSynchronize(0);
 
 	const thrust::device_vector<sgm::output_type> d_actual(
-		wta.get_right_output(), wta.get_right_output() + (width * height));
+		wta.get_right_output(), wta.get_right_output() + (pitch * height));
 	const auto actual = to_host_vector(d_actual);
 	EXPECT_EQ(actual, expect);
-	debug_compare(actual.data(), expect.data(), width, height, 1);
+	debug_compare(actual.data(), expect.data(), pitch, height, 1);
 }
 
 TEST(WinnerTakesAllTest, RandomRight){
