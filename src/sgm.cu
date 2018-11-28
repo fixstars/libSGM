@@ -49,6 +49,8 @@ public:
 		const input_type *src_right,
 		int width,
 		int height,
+		int src_pitch,
+		int dst_pitch,
 		unsigned int penalty1,
 		unsigned int penalty2,
 		float uniqueness,
@@ -56,9 +58,9 @@ public:
 		cudaStream_t stream)
 	{
 		m_census_left.enqueue(
-			src_left, width, height, stream);
+			src_left, width, height, src_pitch, stream);
 		m_census_right.enqueue(
-			src_right, width, height, stream);
+			src_right, width, height, src_pitch, stream);
 		m_path_aggregation.enqueue(
 			m_census_left.get_output(),
 			m_census_right.get_output(),
@@ -68,7 +70,7 @@ public:
 		m_winner_takes_all.enqueue(
 			dest_left, dest_right,
 			m_path_aggregation.get_output(),
-			width, height, uniqueness, subpixel,
+			width, height, dst_pitch, uniqueness, subpixel,
 			stream);
 	}
 
@@ -92,6 +94,8 @@ void SemiGlobalMatching<T, MAX_DISPARITY>::execute(
 	const input_type *src_right,
 	int width,
 	int height,
+	int src_pitch,
+	int dst_pitch,
 	unsigned int penalty1,
 	unsigned int penalty2,
 	float uniqueness,
@@ -101,6 +105,7 @@ void SemiGlobalMatching<T, MAX_DISPARITY>::execute(
 		dest_left, dest_right,
 		src_left, src_right,
 		width, height,
+		src_pitch, dst_pitch,
 		penalty1, penalty2,
 		uniqueness, subpixel,
 		0);
@@ -115,6 +120,8 @@ void SemiGlobalMatching<T, MAX_DISPARITY>::enqueue(
 	const input_type *src_right,
 	int width,
 	int height,
+	int src_pitch,
+	int dst_pitch,
 	unsigned int penalty1,
 	unsigned int penalty2,
 	float uniqueness,
@@ -125,6 +132,7 @@ void SemiGlobalMatching<T, MAX_DISPARITY>::enqueue(
 		dest_left, dest_right,
 		src_left, src_right,
 		width, height,
+		src_pitch, dst_pitch,
 		penalty1, penalty2,
 		uniqueness, subpixel,
 		stream);

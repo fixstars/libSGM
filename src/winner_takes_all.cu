@@ -142,6 +142,7 @@ __global__ void winner_takes_all_kernel(
 	const cost_type *src,
 	int width,
 	int height,
+	int pitch,
 	float uniqueness)
 {
 	static const unsigned int ACCUMULATION_PER_THREAD = 16u;
@@ -158,8 +159,8 @@ __global__ void winner_takes_all_kernel(
 
 	const unsigned int y = blockIdx.x * WARPS_PER_BLOCK + warp_id;
 	src += y * MAX_DISPARITY * width;
-	left_dest  += y * width;
-	right_dest += y * width;
+	left_dest  += y * pitch;
+	right_dest += y * pitch;
 
 	if(y >= height){
 		return;
@@ -270,6 +271,7 @@ void enqueue_winner_takes_all(
 	const cost_type *src,
 	int width,
 	int height,
+	int pitch,
 	float uniqueness,
 	bool subpixel,
 	cudaStream_t stream)
@@ -279,10 +281,10 @@ void enqueue_winner_takes_all(
 	const int bdim = BLOCK_SIZE;
 	if (subpixel) {
 		winner_takes_all_kernel<MAX_DISPARITY, compute_disparity_subpixel<MAX_DISPARITY>><<<gdim, bdim, 0, stream>>>(
-			left_dest, right_dest, src, width, height, uniqueness);
+			left_dest, right_dest, src, width, height, pitch, uniqueness);
 	} else {
 		winner_takes_all_kernel<MAX_DISPARITY, compute_disparity_normal<MAX_DISPARITY>><<<gdim, bdim, 0, stream>>>(
-			left_dest, right_dest, src, width, height, uniqueness);
+			left_dest, right_dest, src, width, height, pitch, uniqueness);
 	}
 }
 
@@ -300,15 +302,16 @@ void WinnerTakesAll<MAX_DISPARITY>::enqueue(
 	const cost_type *src,
 	int width,
 	int height,
+	int pitch,
 	float uniqueness,
 	bool subpixel,
 	cudaStream_t stream)
 {
-	if(m_left_buffer.size() != static_cast<size_t>(width * height)){
-		m_left_buffer = DeviceBuffer<output_type>(width * height);
+	if(m_left_buffer.size() != static_cast<size_t>(pitch * height)){
+		m_left_buffer = DeviceBuffer<output_type>(pitch * height);
 	}
-	if(m_right_buffer.size() != static_cast<size_t>(width * height)){
-		m_right_buffer = DeviceBuffer<output_type>(width * height);
+	if(m_right_buffer.size() != static_cast<size_t>(pitch * height)){
+		m_right_buffer = DeviceBuffer<output_type>(pitch * height);
 	}
 	enqueue_winner_takes_all<MAX_DISPARITY>(
 		m_left_buffer.data(),
@@ -316,6 +319,7 @@ void WinnerTakesAll<MAX_DISPARITY>::enqueue(
 		src,
 		width,
 		height,
+		pitch,
 		uniqueness,
 		subpixel,
 		stream);
@@ -328,6 +332,7 @@ void WinnerTakesAll<MAX_DISPARITY>::enqueue(
 	const cost_type *src,
 	int width,
 	int height,
+	int pitch,
 	float uniqueness,
 	bool subpixel,
 	cudaStream_t stream)
@@ -338,6 +343,7 @@ void WinnerTakesAll<MAX_DISPARITY>::enqueue(
 		src,
 		width,
 		height,
+		pitch,
 		uniqueness,
 		subpixel,
 		stream);

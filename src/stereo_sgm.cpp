@@ -29,7 +29,7 @@ namespace sgm {
 	public:
 		using output_type = sgm::output_type;
 		virtual void execute(output_type* dst_L, output_type* dst_R, const void* src_L, const void* src_R, 
-			int w, int h, unsigned int P1, unsigned int P2, float uniqueness, bool subpixel) = 0;
+			int w, int h, int sp, int dp, unsigned int P1, unsigned int P2, float uniqueness, bool subpixel) = 0;
 
 		virtual ~SemiGlobalMatchingBase() {}
 	};
@@ -38,9 +38,9 @@ namespace sgm {
 	class SemiGlobalMatchingImpl : public SemiGlobalMatchingBase {
 	public:
 		void execute(output_type* dst_L, output_type* dst_R, const void* src_L, const void* src_R,
-			int w, int h, unsigned int P1, unsigned int P2, float uniqueness, bool subpixel) override
+			int w, int h, int sp, int dp, unsigned int P1, unsigned int P2, float uniqueness, bool subpixel) override
 		{
-			sgm_engine_.execute(dst_L, dst_R, (const input_type*)src_L, (const input_type*)src_R, w, h, P1, P2, uniqueness, subpixel);
+			sgm_engine_.execute(dst_L, dst_R, (const input_type*)src_L, (const input_type*)src_R, w, h, sp, dp, P1, P2, uniqueness, subpixel);
 		}
 	private:
 		SemiGlobalMatching<input_type, DISP_SIZE> sgm_engine_;
@@ -56,7 +56,7 @@ namespace sgm {
 
 		SemiGlobalMatchingBase* sgm_engine;
 
-		CudaStereoSGMResources(int width_, int height_, int disparity_size_, int input_depth_bits_, int output_depth_bits_, EXECUTE_INOUT inout_type_) {
+		CudaStereoSGMResources(int width_, int height_, int disparity_size_, int input_depth_bits_, int output_depth_bits_, int src_pitch_, int dst_pitch_, EXECUTE_INOUT inout_type_) {
 
 			if (input_depth_bits_ == 8 && disparity_size_ == 64)
 				sgm_engine = new SemiGlobalMatchingImpl<uint8_t, 64>();
@@ -74,20 +74,20 @@ namespace sgm {
 				this->d_src_right = NULL;
 			}
 			else {
-				CudaSafeCall(cudaMalloc(&this->d_src_left, input_depth_bits_ / 8 * width_ * height_));
-				CudaSafeCall(cudaMalloc(&this->d_src_right, input_depth_bits_ / 8 * width_ * height_));
+				CudaSafeCall(cudaMalloc(&this->d_src_left, input_depth_bits_ / 8 * src_pitch_ * height_));
+				CudaSafeCall(cudaMalloc(&this->d_src_right, input_depth_bits_ / 8 * src_pitch_ * height_));
 			}
 			
-			CudaSafeCall(cudaMalloc(&this->d_left_disp, sizeof(uint16_t) * width_ * height_));
-			CudaSafeCall(cudaMalloc(&this->d_right_disp, sizeof(uint16_t) * width_ * height_));
+			CudaSafeCall(cudaMalloc(&this->d_left_disp, sizeof(uint16_t) * dst_pitch_ * height_));
+			CudaSafeCall(cudaMalloc(&this->d_right_disp, sizeof(uint16_t) * dst_pitch_ * height_));
 
-			CudaSafeCall(cudaMalloc(&this->d_tmp_left_disp, sizeof(uint16_t) * width_ * height_));
-			CudaSafeCall(cudaMalloc(&this->d_tmp_right_disp, sizeof(uint16_t) * width_ * height_));
+			CudaSafeCall(cudaMalloc(&this->d_tmp_left_disp, sizeof(uint16_t) * dst_pitch_ * height_));
+			CudaSafeCall(cudaMalloc(&this->d_tmp_right_disp, sizeof(uint16_t) * dst_pitch_ * height_));
 
-			CudaSafeCall(cudaMemset(this->d_left_disp, 0, sizeof(uint16_t) * width_ * height_));
-			CudaSafeCall(cudaMemset(this->d_right_disp, 0, sizeof(uint16_t) * width_ * height_));
-			CudaSafeCall(cudaMemset(this->d_tmp_left_disp, 0, sizeof(uint16_t) * width_ * height_));
-			CudaSafeCall(cudaMemset(this->d_tmp_right_disp, 0, sizeof(uint16_t) * width_ * height_));
+			CudaSafeCall(cudaMemset(this->d_left_disp, 0, sizeof(uint16_t) * dst_pitch_ * height_));
+			CudaSafeCall(cudaMemset(this->d_right_disp, 0, sizeof(uint16_t) * dst_pitch_ * height_));
+			CudaSafeCall(cudaMemset(this->d_tmp_left_disp, 0, sizeof(uint16_t) * dst_pitch_ * height_));
+			CudaSafeCall(cudaMemset(this->d_tmp_right_disp, 0, sizeof(uint16_t) * dst_pitch_ * height_));
 		}
 
 		~CudaStereoSGMResources() {
@@ -104,7 +104,10 @@ namespace sgm {
 		}
 	};
 
-	StereoSGM::StereoSGM(int width, int height, int disparity_size, int input_depth_bits, int output_depth_bits, 
+	StereoSGM::StereoSGM(int width, int height, int disparity_size, int input_depth_bits, int output_depth_bits,
+		EXECUTE_INOUT inout_type, const Parameters& param) : StereoSGM(width, height, disparity_size, input_depth_bits, output_depth_bits, width, width, inout_type, param) {}
+
+	StereoSGM::StereoSGM(int width, int height, int disparity_size, int input_depth_bits, int output_depth_bits, int src_pitch, int dst_pitch,
 		EXECUTE_INOUT inout_type, const Parameters& param) :
 		cu_res_(NULL),
 		width_(width),
@@ -112,6 +115,8 @@ namespace sgm {
 		disparity_size_(disparity_size),
 		input_depth_bits_(input_depth_bits),
 		output_depth_bits_(output_depth_bits),
+		src_pitch_(src_pitch),
+		dst_pitch_(dst_pitch),
 		inout_type_(inout_type),
 		param_(param)
 	{
@@ -129,7 +134,7 @@ namespace sgm {
 			throw std::logic_error("output depth bits must be 16 if sub-pixel option was enabled");
 		}
 
-		cu_res_ = new CudaStereoSGMResources(width_, height_, disparity_size_, input_depth_bits_, output_depth_bits_, inout_type_);
+		cu_res_ = new CudaStereoSGMResources(width_, height_, disparity_size_, input_depth_bits_, output_depth_bits_, src_pitch, dst_pitch, inout_type_);
 	}
 
 	StereoSGM::~StereoSGM() {
@@ -146,8 +151,8 @@ namespace sgm {
 			d_input_right = right_pixels;
 		}
 		else {
-			CudaSafeCall(cudaMemcpy(cu_res_->d_src_left, left_pixels, input_depth_bits_ / 8 * width_ * height_, cudaMemcpyHostToDevice));
-			CudaSafeCall(cudaMemcpy(cu_res_->d_src_right, right_pixels, input_depth_bits_ / 8 * width_ * height_, cudaMemcpyHostToDevice));
+			CudaSafeCall(cudaMemcpy(cu_res_->d_src_left, left_pixels, input_depth_bits_ / 8 * src_pitch_ * height_, cudaMemcpyHostToDevice));
+			CudaSafeCall(cudaMemcpy(cu_res_->d_src_right, right_pixels, input_depth_bits_ / 8 * src_pitch_ * height_, cudaMemcpyHostToDevice));
 			d_input_left = cu_res_->d_src_left;
 			d_input_right = cu_res_->d_src_right;
 		}
@@ -161,21 +166,21 @@ namespace sgm {
 			d_left_disp = dst; // when threre is no device-host copy or type conversion, use passed buffer
 		
 		cu_res_->sgm_engine->execute((uint16_t*)d_tmp_left_disp, (uint16_t*)d_tmp_right_disp,
-			d_input_left, d_input_right, width_, height_, param_.P1, param_.P2, param_.uniqueness, param_.subpixel);
+			d_input_left, d_input_right, width_, height_, src_pitch_, dst_pitch_, param_.P1, param_.P2, param_.uniqueness, param_.subpixel);
 
-		sgm::details::median_filter((uint16_t*)d_tmp_left_disp, (uint16_t*)d_left_disp, width_, height_);
-		sgm::details::median_filter((uint16_t*)d_tmp_right_disp, (uint16_t*)d_right_disp, width_, height_);
-		sgm::details::check_consistency((uint16_t*)d_left_disp, (uint16_t*)d_right_disp, d_input_left, width_, height_, input_depth_bits_, param_.subpixel);
+		sgm::details::median_filter((uint16_t*)d_tmp_left_disp, (uint16_t*)d_left_disp, width_, height_, dst_pitch_);
+		sgm::details::median_filter((uint16_t*)d_tmp_right_disp, (uint16_t*)d_right_disp, width_, height_, dst_pitch_);
+		sgm::details::check_consistency((uint16_t*)d_left_disp, (uint16_t*)d_right_disp, d_input_left, width_, height_, input_depth_bits_, src_pitch_, dst_pitch_, param_.subpixel);
 
 		if (!is_cuda_output(inout_type_) && output_depth_bits_ == 8) {
-			sgm::details::cast_16bit_8bit_array((const uint16_t*)d_left_disp, (uint8_t*)d_tmp_left_disp, width_ * height_);
-			CudaSafeCall(cudaMemcpy(dst, d_tmp_left_disp, sizeof(uint8_t) * width_ * height_, cudaMemcpyDeviceToHost));
+			sgm::details::cast_16bit_8bit_array((const uint16_t*)d_left_disp, (uint8_t*)d_tmp_left_disp, dst_pitch_ * height_);
+			CudaSafeCall(cudaMemcpy(dst, d_tmp_left_disp, sizeof(uint8_t) * dst_pitch_ * height_, cudaMemcpyDeviceToHost));
 		}
 		else if (is_cuda_output(inout_type_) && output_depth_bits_ == 8) {
-			sgm::details::cast_16bit_8bit_array((const uint16_t*)d_left_disp, (uint8_t*)dst, width_ * height_);
+			sgm::details::cast_16bit_8bit_array((const uint16_t*)d_left_disp, (uint8_t*)dst, dst_pitch_ * height_);
 		}
 		else if (!is_cuda_output(inout_type_) && output_depth_bits_ == 16) {
-			CudaSafeCall(cudaMemcpy(dst, d_left_disp, sizeof(uint16_t) * width_ * height_, cudaMemcpyDeviceToHost));
+			CudaSafeCall(cudaMemcpy(dst, d_left_disp, sizeof(uint16_t) * dst_pitch_ * height_, cudaMemcpyDeviceToHost));
 		}
 		else if (is_cuda_output(inout_type_) && output_depth_bits_ == 16) {
 			// optimize! no-copy!

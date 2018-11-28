@@ -85,6 +85,21 @@ namespace sgm {
 		LIBSGM_API StereoSGM(int width, int height, int disparity_size, int input_depth_bits, int output_depth_bits, 
 			EXECUTE_INOUT inout_type, const Parameters& param = Parameters());
 
+		/**
+		* @param width Processed image's width. It must be even.
+		* @param height Processed image's height. It must be even.
+		* @param disparity_size It must be 64 or 128.
+		* @param input_depth_bits Processed image's bits per pixel. It must be 8 or 16.
+		* @param output_depth_bits Disparity image's bits per pixel. It must be 8 or 16.
+		* @param src_pitch Source image's pitch (pixels).
+		* @param dst_pitch Destination image's pitch (pixels).
+		* @param inout_type 	Specify input/output pointer type. See sgm::EXECUTE_TYPE.
+		* @attention
+		* output_depth_bits must be set to 16 when subpixel is enabled.
+		*/
+		LIBSGM_API StereoSGM(int width, int height, int disparity_size, int input_depth_bits, int output_depth_bits, int src_pitch, int dst_pitch,
+			EXECUTE_INOUT inout_type, const Parameters& param = Parameters());
+
 		LIBSGM_API virtual ~StereoSGM();
 
 		/**
@@ -112,6 +127,8 @@ namespace sgm {
 		int disparity_size_;
 		int input_depth_bits_;
 		int output_depth_bits_;
+		int src_pitch_;
+		int dst_pitch_;
 		EXECUTE_INOUT inout_type_;
 		Parameters param_;
 	};

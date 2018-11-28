@@ -44,6 +44,7 @@ public:
 		const cost_type *src,
 		int width,
 		int height,
+		int pitch,
 		float uniqueness,
 		bool subpixel,
 		cudaStream_t stream);
@@ -54,6 +55,7 @@ public:
 		const cost_type *src,
 		int width,
 		int height,
+		int pitch,
 		float uniqueness,
 		bool subpixel,
 		cudaStream_t stream);
