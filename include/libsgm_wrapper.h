@@ -29,7 +29,7 @@ namespace sgm {
 		 * @param disparity Output image.  Its memory will be allocated automatically dependent on input image size.
 		 * @attention
 		 * type of output image `disparity` is CV_16U.
-		 * Note that dst element value would be multiplied StereoSGM::SUBPIXEL_SCALE if subpixel option was enabled.
+		 * Note that disparity element value would be multiplied StereoSGM::SUBPIXEL_SCALE if subpixel option was enabled.
 		 */
 		LIBSGM_API void execute(const cv::cuda::GpuMat& I1, const cv::cuda::GpuMat& I2, cv::cuda::GpuMat& disparity);
 		/**
@@ -39,7 +39,7 @@ namespace sgm {
 		 * @param disparity Output image.  Its memory will be allocated automatically dependent on input image size.
 		 * @attention
 		 * type of output image `disparity` is CV_16U.
-		 * Note that dst element value would be multiplied StereoSGM::SUBPIXEL_SCALE if subpixel option was enabled.
+		 * Note that disparity element value would be multiplied StereoSGM::SUBPIXEL_SCALE if subpixel option was enabled.
 		 */
 		LIBSGM_API void execute(const cv::Mat& I1, const cv::Mat& I2, cv::Mat& disparity);
 #endif // BUILD_OPRENCV_WRAPPER
