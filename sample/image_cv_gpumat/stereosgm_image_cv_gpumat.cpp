@@ -46,20 +46,22 @@ static void execute(sgm::LibSGMWrapper& sgmw, const cv::Mat& h_left, const cv::M
 
 	// normalize result
 	cv::cuda::GpuMat d_normalized_disparity;
-	d_disparity.convertTo(d_normalized_disparity, CV_8UC1, 256. / sgm::LibSGMWrapper::DISPARITY_SIZE);
+	d_disparity.convertTo(d_normalized_disparity, CV_8UC1, 256. / sgmw.getNumDisparities());
 	d_normalized_disparity.download(h_disparity);
 }
 
 int main(int argc, char* argv[]) {
-	ASSERT_MSG(argc >= 3, "usage: stereosgm left_img right_img");
+	ASSERT_MSG(argc >= 3, "usage: stereosgm left_img right_img [disp_size]");
 
 	const cv::Mat left = cv::imread(argv[1], -1);
 	const cv::Mat right = cv::imread(argv[2], -1);
+	const int disp_size = argc > 3 ? std::atoi(argv[3]) : 128;
 
 	ASSERT_MSG(left.size() == right.size() && left.type() == right.type(), "input images must be same size and type.");
 	ASSERT_MSG(left.type() == CV_8U || left.type() == CV_16U, "input image format must be CV_8U or CV_16U.");
+	ASSERT_MSG(disp_size == 64 || disp_size == 128, "disparity size must be 64 or 128.");
 
-	sgm::LibSGMWrapper sgmw;
+	sgm::LibSGMWrapper sgmw{disp_size};
 	cv::Mat disparity;
 	try {
 		execute(sgmw, left, right, disparity);

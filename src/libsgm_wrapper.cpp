@@ -17,8 +17,15 @@ limitations under the License.
 #include <libsgm_wrapper.h>
 
 namespace sgm {
-	LibSGMWrapper::LibSGMWrapper(const sgm::StereoSGM::Parameters& param) : sgm_(nullptr), param_(param), prev_(nullptr) {}
+	LibSGMWrapper::LibSGMWrapper(int numDisparity, int P1, int P2, int uniquenessRatio, bool subpixel)
+		: sgm_(nullptr), numDisparity_(numDisparity), uniquenessRatio_(uniquenessRatio), param_(P1, P2, (100 - uniquenessRatio) * 0.01f, subpixel), prev_(nullptr) {}
 	LibSGMWrapper::~LibSGMWrapper() = default;
+
+	int LibSGMWrapper::getNumDisparities() const { return numDisparity_; }
+	int LibSGMWrapper::getUniquenessRatio() const { return uniquenessRatio_; }
+	int LibSGMWrapper::getP1() const { return param_.P1; }
+	int LibSGMWrapper::getP2() const { return param_.P2; }
+	bool LibSGMWrapper::hasSubpixel() const { return param_.subpixel; }
 
 	struct LibSGMWrapper::Creator {
 		int width;
@@ -41,8 +48,8 @@ namespace sgm {
 			return !(*this == rhs);
 		}
 
-		StereoSGM* createStereoSGM(const StereoSGM::Parameters& param_) {
-			return new StereoSGM(width, height, DISPARITY_SIZE, input_depth_bits, OUTPUT_DEPTH_BITS, src_pitch, dst_pitch, inout_type, param_);
+		StereoSGM* createStereoSGM(int disparity_size, int output_depth_bits, const StereoSGM::Parameters& param_) {
+			return new StereoSGM(width, height, disparity_size, input_depth_bits, output_depth_bits, src_pitch, dst_pitch, inout_type, param_);
 		}
 
 #ifdef BUILD_OPENCV_WRAPPER
@@ -81,7 +88,7 @@ namespace sgm {
 		}
 		std::unique_ptr<Creator> creator(new Creator(I1, disparity));
 		if (!sgm_ || !prev_ || *creator != *prev_) {
-			sgm_.reset(creator->createStereoSGM(param_));
+			sgm_.reset(creator->createStereoSGM(numDisparity_, 16, param_));
 		}
 		prev_ = std::move(creator);
 
@@ -98,7 +105,7 @@ namespace sgm {
 		}
 		std::unique_ptr<Creator> creator(new Creator(I1, disparity));
 		if (!sgm_ || !prev_ || *creator != *prev_) {
-			sgm_.reset(creator->createStereoSGM(param_));
+			sgm_.reset(creator->createStereoSGM(numDisparity_, 16, param_));
 		}
 		prev_ = std::move(creator);
 
