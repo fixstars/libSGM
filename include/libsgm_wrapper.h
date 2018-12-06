@@ -45,10 +45,10 @@ namespace sgm {
 #endif // BUILD_OPRENCV_WRAPPER
 
 	private:
-		struct Info;
+		struct Creator;
 		std::unique_ptr<sgm::StereoSGM> sgm_;
 		sgm::StereoSGM::Parameters param_;
-		std::unique_ptr<Info> prev_;
+		std::unique_ptr<Creator> prev_;
 	};
 }
 

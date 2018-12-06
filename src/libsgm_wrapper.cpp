@@ -20,7 +20,7 @@ namespace sgm {
 	LibSGMWrapper::LibSGMWrapper(const sgm::StereoSGM::Parameters& param) : sgm_(nullptr), param_(param), prev_(nullptr) {}
 	LibSGMWrapper::~LibSGMWrapper() = default;
 
-	struct LibSGMWrapper::Info {
+	struct LibSGMWrapper::Creator {
 		int width;
 		int height;
 		int src_pitch;
@@ -28,7 +28,7 @@ namespace sgm {
 		int input_depth_bits;
 		sgm::EXECUTE_INOUT inout_type;
 
-		bool operator==(const sgm::LibSGMWrapper::Info& rhs) const {
+		bool operator==(const sgm::LibSGMWrapper::Creator& rhs) const {
 			return
 				width == rhs.width
 				&& height == rhs.height
@@ -37,7 +37,7 @@ namespace sgm {
 				&& input_depth_bits == rhs.input_depth_bits
 				&& inout_type == rhs.inout_type;
 		}
-		bool operator!=(const sgm::LibSGMWrapper::Info& rhs) const {
+		bool operator!=(const sgm::LibSGMWrapper::Creator& rhs) const {
 			return !(*this == rhs);
 		}
 	};
@@ -52,7 +52,7 @@ namespace sgm {
 		if (disparity.size() != size || disparity.depth() != CV_16U) {
 			disparity.create(size, CV_16U);
 		}
-		std::unique_ptr<Info> info(new Info());
+		std::unique_ptr<Creator> info(new Creator());
 		info->width = size.width;
 		info->height = size.height;
 		info->src_pitch = static_cast<int>(I1.step1());
@@ -75,7 +75,7 @@ namespace sgm {
 		if (disparity.size() != size || disparity.depth() != CV_16U) {
 			disparity.create(size, CV_16U);
 		}
-		std::unique_ptr<Info> info(new Info());
+		std::unique_ptr<Creator> info(new Creator());
 		info->width = size.width;
 		info->height = size.height;
 		info->src_pitch = static_cast<int>(I1.step1());
