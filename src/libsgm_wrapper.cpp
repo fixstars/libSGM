@@ -17,12 +17,12 @@ limitations under the License.
 #include <libsgm_wrapper.h>
 
 namespace sgm {
-	LibSGMWrapper::LibSGMWrapper(int numDisparity, int P1, int P2, int uniquenessRatio, bool subpixel)
-		: sgm_(nullptr), numDisparity_(numDisparity), uniquenessRatio_(uniquenessRatio), param_(P1, P2, (100 - uniquenessRatio) * 0.01f, subpixel), prev_(nullptr) {}
+	LibSGMWrapper::LibSGMWrapper(int numDisparity, int P1, int P2, float uniquenessRatio, bool subpixel)
+		: sgm_(nullptr), numDisparity_(numDisparity), param_(P1, P2, uniquenessRatio, subpixel), prev_(nullptr) {}
 	LibSGMWrapper::~LibSGMWrapper() = default;
 
 	int LibSGMWrapper::getNumDisparities() const { return numDisparity_; }
-	int LibSGMWrapper::getUniquenessRatio() const { return uniquenessRatio_; }
+	float LibSGMWrapper::getUniquenessRatio() const { return param_.uniqueness; }
 	int LibSGMWrapper::getP1() const { return param_.P1; }
 	int LibSGMWrapper::getP2() const { return param_.P2; }
 	bool LibSGMWrapper::hasSubpixel() const { return param_.subpixel; }

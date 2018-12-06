@@ -16,13 +16,13 @@ namespace sgm {
 		/**
 		 * @param param You can specify parameters.  See libsgm.h for more information.
 		 */
-		LIBSGM_API LibSGMWrapper(int numDisparity = 128, int P1 = 10, int P2 = 120, int uniquenessRatio = 5, bool subpixel = false);
+		LIBSGM_API LibSGMWrapper(int numDisparity = 128, int P1 = 10, int P2 = 120, float uniquenessRatio = 0.95f, bool subpixel = false);
 		LIBSGM_API ~LibSGMWrapper();
 
 		LIBSGM_API int getNumDisparities() const;
 		LIBSGM_API int getP1() const;
 		LIBSGM_API int getP2() const;
-		LIBSGM_API int getUniquenessRatio() const;
+		LIBSGM_API float getUniquenessRatio() const;
 		LIBSGM_API bool hasSubpixel() const;
 
 #ifdef BUILD_OPENCV_WRAPPER
@@ -52,7 +52,6 @@ namespace sgm {
 		struct Creator;
 		std::unique_ptr<sgm::StereoSGM> sgm_;
 		int numDisparity_;
-		int uniquenessRatio_;
 		sgm::StereoSGM::Parameters param_;
 		std::unique_ptr<Creator> prev_;
 	};
