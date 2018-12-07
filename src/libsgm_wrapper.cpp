@@ -33,6 +33,7 @@ namespace sgm {
 		int src_pitch;
 		int dst_pitch;
 		int input_depth_bits;
+		int output_depth_bits;
 		sgm::EXECUTE_INOUT inout_type;
 
 		bool operator==(const Creator& rhs) const {
@@ -42,13 +43,14 @@ namespace sgm {
 				&& src_pitch == rhs.src_pitch
 				&& dst_pitch == rhs.dst_pitch
 				&& input_depth_bits == rhs.input_depth_bits
+				&& output_depth_bits == rhs.output_depth_bits
 				&& inout_type == rhs.inout_type;
 		}
 		bool operator!=(const Creator& rhs) const {
 			return !(*this == rhs);
 		}
 
-		StereoSGM* createStereoSGM(int disparity_size, int output_depth_bits, const StereoSGM::Parameters& param_) {
+		StereoSGM* createStereoSGM(int disparity_size, const StereoSGM::Parameters& param_) {
 			return new StereoSGM(width, height, disparity_size, input_depth_bits, output_depth_bits, src_pitch, dst_pitch, inout_type, param_);
 		}
 
@@ -61,6 +63,7 @@ namespace sgm {
 			src_pitch = static_cast<int>(src.step1());
 			dst_pitch = static_cast<int>(dst.step1());
 			input_depth_bits = static_cast<int>(src.elemSize1()) * 8;
+			output_depth_bits = static_cast<int>(dst.elemSize1()) * 8;
 			inout_type = sgm::EXECUTE_INOUT_CUDA2CUDA;
 		}
 		Creator(const cv::Mat& src, const cv::Mat& dst) {
@@ -71,6 +74,7 @@ namespace sgm {
 			src_pitch = static_cast<int>(src.step1());
 			dst_pitch = static_cast<int>(dst.step1());
 			input_depth_bits = static_cast<int>(src.elemSize1()) * 8;
+			output_depth_bits = static_cast<int>(dst.elemSize1()) * 8;
 			inout_type = sgm::EXECUTE_INOUT_HOST2HOST;
 		}
 #endif // BUILD_OPRENCV_WRAPPER
@@ -88,7 +92,7 @@ namespace sgm {
 		}
 		std::unique_ptr<Creator> creator(new Creator(I1, disparity));
 		if (!sgm_ || !prev_ || *creator != *prev_) {
-			sgm_.reset(creator->createStereoSGM(numDisparity_, 16, param_));
+			sgm_.reset(creator->createStereoSGM(numDisparity_, param_));
 		}
 		prev_ = std::move(creator);
 
@@ -105,7 +109,7 @@ namespace sgm {
 		}
 		std::unique_ptr<Creator> creator(new Creator(I1, disparity));
 		if (!sgm_ || !prev_ || *creator != *prev_) {
-			sgm_.reset(creator->createStereoSGM(numDisparity_, 16, param_));
+			sgm_.reset(creator->createStereoSGM(numDisparity_, param_));
 		}
 		prev_ = std::move(creator);
 
