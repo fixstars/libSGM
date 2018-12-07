@@ -5,10 +5,11 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(CUDA_ARCH "-arch=sm_50" CACHE STRING "Value of the NVCC -arch option.")
 
-option(ENABLE_ZED_DEMO "Build a Demo using ZED Camera" OFF)
-option(ENABLE_SAMPLES  "Build samples" OFF)
-option(ENABLE_TESTS    "Test library" OFF)
-option(LIBSGM_SHARED   "Build a shared library" OFF)
+option(ENABLE_ZED_DEMO      "Build a Demo using ZED Camera" OFF)
+option(ENABLE_SAMPLES       "Build samples" OFF)
+option(ENABLE_TESTS         "Test library" OFF)
+option(LIBSGM_SHARED        "Build a shared library" OFF)
+option(BUILD_OPENCV_WRAPPER "Make library compatible with cv::Mat and cv::cuda::GpuMat of OpenCV" OFF)
 
 if(WIN32)
   set(ZED_SDK_LIB "C:\\Program Files (x86)\\ZED SDK\\lib\\sl_zed64.lib" CACHE STRING "ZED SDK library(sl_zed**.llb) path.")
@@ -19,6 +20,11 @@ else()
 endif()
 
 project(libSGM VERSION 2.2.0)
+
+if(BUILD_OPENCV_WRAPPER)
+	find_package(OpenCV REQUIRED core)
+	include_directories(${OpenCV_INCLUDE_DIRS})
+endif()
 
 configure_file(${CMAKE_SOURCE_DIR}/include/libsgm_config.h.in
                ${CMAKE_SOURCE_DIR}/include/libsgm_config.h
@@ -31,6 +37,9 @@ if(ENABLE_SAMPLES)
     add_subdirectory(sample/movie)
     add_subdirectory(sample/reprojection)
     add_subdirectory(sample/benchmark)
+    if(BUILD_OPENCV_WRAPPER)
+        add_subdirectory(sample/image_cv_gpumat)
+    endif()
 endif()
 
 if(ENABLE_TESTS)
