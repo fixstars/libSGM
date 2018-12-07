@@ -35,7 +35,7 @@ namespace sgm {
 		int input_depth_bits;
 		sgm::EXECUTE_INOUT inout_type;
 
-		bool operator==(const sgm::LibSGMWrapper::Creator& rhs) const {
+		bool operator==(const Creator& rhs) const {
 			return
 				width == rhs.width
 				&& height == rhs.height
@@ -44,7 +44,7 @@ namespace sgm {
 				&& input_depth_bits == rhs.input_depth_bits
 				&& inout_type == rhs.inout_type;
 		}
-		bool operator!=(const sgm::LibSGMWrapper::Creator& rhs) const {
+		bool operator!=(const Creator& rhs) const {
 			return !(*this == rhs);
 		}
 
