@@ -50,8 +50,8 @@ namespace sgm {
 			return !(*this == rhs);
 		}
 
-		StereoSGM* createStereoSGM(int disparity_size, const StereoSGM::Parameters& param_) {
-			return new StereoSGM(width, height, disparity_size, input_depth_bits, output_depth_bits, src_pitch, dst_pitch, inout_type, param_);
+		StereoSGM* createStereoSGM(int disparity_size, const StereoSGM::Parameters& param) {
+			return new StereoSGM(width, height, disparity_size, input_depth_bits, output_depth_bits, src_pitch, dst_pitch, inout_type, param);
 		}
 
 #ifdef BUILD_OPENCV_WRAPPER
