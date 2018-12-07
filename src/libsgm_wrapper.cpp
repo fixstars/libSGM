@@ -73,7 +73,7 @@ namespace sgm {
 			input_depth_bits = static_cast<int>(src.elemSize1()) * 8;
 			inout_type = sgm::EXECUTE_INOUT_HOST2HOST;
 		}
-#endif
+#endif // BUILD_OPRENCV_WRAPPER
 	};
 
 #ifdef BUILD_OPENCV_WRAPPER
