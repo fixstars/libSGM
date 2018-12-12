@@ -73,8 +73,8 @@ namespace sgm {
 		};
 
 		/**
-		* @param width Processed image's width. It must be even.
-		* @param height Processed image's height. It must be even.
+		* @param width Processed image's width.
+		* @param height Processed image's height.
 		* @param disparity_size It must be 64 or 128.
 		* @param input_depth_bits Processed image's bits per pixel. It must be 8 or 16.
 		* @param output_depth_bits Disparity image's bits per pixel. It must be 8 or 16.
@@ -86,8 +86,8 @@ namespace sgm {
 			EXECUTE_INOUT inout_type, const Parameters& param = Parameters());
 
 		/**
-		* @param width Processed image's width. It must be even.
-		* @param height Processed image's height. It must be even.
+		* @param width Processed image's width.
+		* @param height Processed image's height.
 		* @param disparity_size It must be 64 or 128.
 		* @param input_depth_bits Processed image's bits per pixel. It must be 8 or 16.
 		* @param output_depth_bits Disparity image's bits per pixel. It must be 8 or 16.
