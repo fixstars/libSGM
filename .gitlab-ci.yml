@@ -12,6 +12,7 @@ stages:
   tags:
     - docker
   script:
+    - ldconfig
     - cmake . -DBUILD_OPENCV_WRAPPER="ON" -DENABLE_SAMPLES=${build_samples} -DLIBSGM_SHARED=${build_shared} -DENABLE_TESTS=${build_tests}
     - make
 
@@ -59,6 +60,7 @@ test:
   tags:
     - nvidia-docker
   script:
+    - ldconfig
     - ./test/sgm-test
   dependencies:
     - build:test
