@@ -126,7 +126,7 @@ static void test_random_left(bool subpixel, size_t padding = 0)
 	debug_compare(actual.data(), expect.data(), pitch, height, 1);
 }
 
-static void test_corner_left(bool subpixel, size_t padding = 0)
+static void test_corner1_left(bool subpixel, size_t padding = 0)
 {
 	static constexpr size_t width = 1, height = 1, disparity = 64;
 	static constexpr float uniqueness = 0.95f;
@@ -139,6 +139,39 @@ static void test_corner_left(bool subpixel, size_t padding = 0)
 	}
 	for (int i = 0; i < NUM_PATHS; ++i) {
 		input[i * step] = 64;
+	}
+	const auto expect = winner_takes_all_left(
+		input, width, height, pitch, disparity, uniqueness, subpixel);
+
+	sgm::WinnerTakesAll<disparity> wta;
+	const auto d_input = to_device_vector(input);
+	wta.enqueue(d_input.data().get(), width, height, static_cast<int>(pitch), uniqueness, subpixel, 0);
+	cudaStreamSynchronize(0);
+
+	const thrust::device_vector<sgm::output_type> d_actual(
+		wta.get_left_output(), wta.get_left_output() + (pitch * height));
+	const auto actual = to_host_vector(d_actual);
+
+	EXPECT_EQ(actual, expect);
+	debug_compare(actual.data(), expect.data(), pitch, height, 1);
+}
+
+static void test_corner2_left(bool subpixel, size_t padding = 0)
+{
+	static constexpr size_t width = 1, height = 1, disparity = 64;
+	static constexpr float uniqueness = 0.95f;
+	const size_t pitch = width + padding;
+	static constexpr size_t n = width * height * disparity * NUM_PATHS;
+	static constexpr size_t step = width * height * disparity;
+	thrust::host_vector<sgm::cost_type> input(n);
+	for (auto& v : input) {
+		v = 64;
+	}
+	for (int i = 0; i < NUM_PATHS; ++i) {
+		input[i * step + 16] = 1;
+	}
+	for (int i = 0; i < NUM_PATHS; ++i) {
+		input[i * step + 32] = 1;
 	}
 	const auto expect = winner_takes_all_left(
 		input, width, height, pitch, disparity, uniqueness, subpixel);
@@ -172,12 +205,20 @@ TEST(WinnerTakesAllTest, RandomLeftSubpixelWithPitch){
 	test_random_left(true, 27);
 }
 
-TEST(WinnerTakesAllTest, CornerLeftNormal){
-	test_corner_left(false);
+TEST(WinnerTakesAllTest, Corner1LeftNormal){
+	test_corner1_left(false);
 }
 
-TEST(WinnerTakesAllTest, CornerLeftSubpixel){
-	test_corner_left(true);
+TEST(WinnerTakesAllTest, Corner1LeftSubpixel){
+	test_corner1_left(true);
+}
+
+TEST(WinnerTakesAllTest, Corner2LeftNormal){
+	test_corner2_left(false);
+}
+
+TEST(WinnerTakesAllTest, Corner2LeftSubpixel){
+	test_corner2_left(true);
 }
 
 static void test_random_right(size_t padding = 0)
