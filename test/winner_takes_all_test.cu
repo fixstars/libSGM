@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include <utility>
+#include <algorithm>
 #include <libsgm.h>
 #include "winner_takes_all.hpp"
 #include "generator.hpp"
@@ -31,33 +32,31 @@ thrust::host_vector<sgm::output_type> winner_takes_all_left(
 				}
 				v.emplace_back(cost_sum, static_cast<int>(k));
 			}
-			auto w = v;
-			sort(v.begin(), v.end());
-			if(v.size() < 2){
-				result[i * pitch + j] = 0;
-			}else{
-				const int cost0 = v[0].first;
-				const int cost1 = v[1].first;
-				const int disp0 = v[0].second;
-				const int disp1 = v[1].second;
-				sgm::output_type dst;
-				if (cost1 * uniqueness < cost0 && abs(disp0 - disp1) > 1) {
-					dst = 0;
-				} else {
-					dst = disp0;
-					if (subpixel) {
-						dst <<= sgm::StereoSGM::SUBPIXEL_SHIFT;
-						if (0 < disp0 && disp0 < static_cast<int>(disparity) - 1) {
-							const int left = w[disp0 - 1].first;
-							const int right = w[disp0 + 1].first;
-							const int numer = left - right;
-							const int denom = left - 2 * cost0 + right;
-							dst += ((numer << sgm::StereoSGM::SUBPIXEL_SHIFT) + denom) / (2 * denom);
-						}
-					}
+			const auto ite = std::min_element(v.begin(), v.end());
+			assert(ite != v.end());
+			const auto best = *ite;
+			const int best_cost = best.first;
+			sgm::output_type best_disp = best.second;
+			sgm::output_type dst = best_disp;
+			if (subpixel) {
+				dst <<= sgm::StereoSGM::SUBPIXEL_SHIFT;
+				if (0 < best_disp && best_disp < static_cast<int>(disparity) - 1) {
+					const int left = v[best_disp - 1].first;
+					const int right = v[best_disp + 1].first;
+					const int numer = left - right;
+					const int denom = left - 2 * best_cost + right;
+					dst += ((numer << sgm::StereoSGM::SUBPIXEL_SHIFT) + denom) / (2 * denom);
 				}
-				result[i * pitch + j] = dst;
 			}
+			for (const auto& p : v) {
+				const int cost = p.first;
+				const int disp = p.second;
+				if (cost * uniqueness < best_cost && abs(disp - best_disp) > 1) {
+					dst = 0;
+					break;
+				}
+			}
+			result[i * pitch + j] = dst;
 		}
 	}
 	return result;
@@ -83,19 +82,20 @@ thrust::host_vector<sgm::output_type> winner_takes_all_right(
 				}
 				v.emplace_back(cost_sum, static_cast<int>(k));
 			}
-			sort(v.begin(), v.end());
-			if(v.size() < 2){
-				result[i * pitch + j] = 0;
-			}else{
-				const int cost0 = v[0].first;
-				const int cost1 = v[1].first;
-				const int disp0 = v[0].second;
-				const int disp1 = v[1].second;
-				result[i * pitch + j] = static_cast<sgm::output_type>(
-					(cost1 * uniqueness < cost0 && abs(disp0 - disp1) > 1)
-						? 0
-						: disp0);
+			const auto ite = std::min_element(v.begin(), v.end());
+			assert(ite != v.end());
+			const auto best = *ite;
+			const int best_cost = best.first;
+			sgm::output_type best_disp = best.second;
+			for (const auto& p : v) {
+				const int cost = p.first;
+				const int disp = p.second;
+				if (cost * uniqueness < best_cost && abs(disp - best_disp) > 1) {
+					best_disp = 0;
+					break;
+				}
 			}
+			result[i * pitch + j] = best_disp;
 		}
 	}
 	return result;
