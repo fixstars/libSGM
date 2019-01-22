@@ -29,10 +29,29 @@ static constexpr unsigned int WARPS_PER_BLOCK = 8u;
 static constexpr unsigned int BLOCK_SIZE = WARPS_PER_BLOCK * WARP_SIZE;
 
 
-__device__ inline void update_top2(uint32_t& v0, uint32_t& v1, uint32_t x){
+__device__ uint32_t unpack_cost(uint32_t packed){
+	return packed >> 16;
+}
+
+__device__ int unpack_index(uint32_t packed){
+	return (packed >> 1) & 0x7fffu;
+}
+
+__device__ bool unpack_uniq(uint32_t packed){
+	return (packed & 1) > 0;
+}
+
+__device__ inline void check_uniq(uint32_t& v, uint32_t x, float uniqueness){
+	v &= ~((unpack_cost(x) * uniqueness >= unpack_cost(v) || abs(unpack_index(x) - unpack_index(v)) <= 1) ? 0 : 1);
+}
+
+__device__ inline void update_top2(uint32_t& v0, uint32_t& v1, uint32_t x, float uniqueness){
 	const uint32_t y = max(x, v0);
+	const uint32_t v2 = max(y, v1);
 	v0 = min(x, v0);
 	v1 = min(y, v1);
+	check_uniq(v0, v1, uniqueness);
+	check_uniq(v0, v2, uniqueness);
 }
 
 struct Top2 {
@@ -43,14 +62,14 @@ struct Top2 {
 		values[1] = 0xffffffffu;
 	}
 
-	__device__ void push(uint32_t x){
-		update_top2(values[0], values[1], x);
+	__device__ void push(uint32_t x, float uniqueness){
+		update_top2(values[0], values[1], x, uniqueness);
 	}
 };
 
 template <unsigned int GROUP_SIZE, unsigned int STEP>
 struct subgroup_merge_top2_impl {
-	static __device__ Top2 call(Top2 x){
+	static __device__ Top2 call(Top2 x, float uniqueness){
 #if CUDA_VERSION >= 9000
 		const uint32_t a = __shfl_xor_sync(0xffffffffu, x.values[0], STEP / 2, GROUP_SIZE);
 		const uint32_t b = __shfl_xor_sync(0xffffffffu, x.values[1], STEP / 2, GROUP_SIZE);
@@ -58,22 +77,22 @@ struct subgroup_merge_top2_impl {
 		const uint32_t a = __shfl_xor(x.values[0], STEP / 2, GROUP_SIZE);
 		const uint32_t b = __shfl_xor(x.values[1], STEP / 2, GROUP_SIZE);
 #endif
-		x.push(a);
-		x.push(b);
-		return subgroup_merge_top2_impl<GROUP_SIZE, STEP / 2>::call(x);
+		x.push(a, uniqueness);
+		x.push(b, uniqueness);
+		return subgroup_merge_top2_impl<GROUP_SIZE, STEP / 2>::call(x, uniqueness);
 	}
 };
 
 template <unsigned int GROUP_SIZE>
 struct subgroup_merge_top2_impl<GROUP_SIZE, 1u> {
-	static __device__ Top2 call(Top2 x){
+	static __device__ Top2 call(Top2 x, float){
 		return x;
 	}
 };
 
 template <unsigned int GROUP_SIZE>
-__device__ inline Top2 subgroup_merge_top2(Top2 x){
-	return subgroup_merge_top2_impl<GROUP_SIZE, GROUP_SIZE>::call(x);
+__device__ inline Top2 subgroup_merge_top2(Top2 x, float uniqueness){
+	return subgroup_merge_top2_impl<GROUP_SIZE, GROUP_SIZE>::call(x, uniqueness);
 }
 
 __device__ inline uint32_t pack_cost_index(uint32_t cost, uint32_t index){
@@ -81,17 +100,9 @@ __device__ inline uint32_t pack_cost_index(uint32_t cost, uint32_t index){
 		uint32_t uint32;
 		ushort2 uint16x2;
 	} u;
-	u.uint16x2.x = static_cast<uint16_t>(index);
+	u.uint16x2.x = static_cast<uint16_t>((index << 1) | 1);
 	u.uint16x2.y = static_cast<uint16_t>(cost);
 	return u.uint32;
-}
-
-__device__ uint32_t unpack_cost(uint32_t packed){
-	return packed >> 16;
-}
-
-__device__ uint32_t unpack_index(uint32_t packed){
-	return packed & 0xffffu;
 }
 
 using ComputeDisparity = uint32_t(*)(Top2, float, uint16_t*);
@@ -103,9 +114,7 @@ __device__ inline uint32_t compute_disparity_normal(Top2 t2, float uniqueness, u
 	const float cost1 = static_cast<float>(unpack_cost(t2.values[1]));
 	const int disp0 = static_cast<int>(unpack_index(t2.values[0]));
 	const int disp1 = static_cast<int>(unpack_index(t2.values[1]));
-	if(cost1 * uniqueness >= cost0){
-		return disp0;
-	}else if(abs(disp1 - disp0) <= 1){
+	if(unpack_uniq(t2.values[0])){
 		return disp0;
 	}else{
 		return 0;
@@ -119,8 +128,7 @@ __device__ inline uint32_t compute_disparity_subpixel(Top2 t2, float uniqueness,
 	const float cost1 = static_cast<float>(unpack_cost(t2.values[1]));
 	const int disp0 = static_cast<int>(unpack_index(t2.values[0]));
 	const int disp1 = static_cast<int>(unpack_index(t2.values[1]));
-	if(cost1 * uniqueness >= cost0
-		|| abs(disp1 - disp0) <= 1){
+	if(unpack_uniq(t2.values[0])){
 		int disp = disp0;
 		disp <<= sgm::StereoSGM::SUBPIXEL_SHIFT;
 		if (disp0 > 0 && disp0 < MAX_DISPARITY - 1) {
@@ -221,9 +229,9 @@ __global__ void winner_takes_all_kernel(
 				Top2 left_top2;
 				left_top2.initialize();
 				for(unsigned int i = 0; i < REDUCTION_PER_THREAD; ++i){
-					left_top2.push(local_packed_cost[i]);
+					left_top2.push(local_packed_cost[i], uniqueness);
 				}
-				left_top2 = subgroup_merge_top2<WARP_SIZE>(left_top2);
+				left_top2 = subgroup_merge_top2<WARP_SIZE>(left_top2, uniqueness);
 				if(lane_id == 0){
 					left_dest[x] = compute_disparity(left_top2, uniqueness, smem_cost_sum[warp_id][smem_x]);
 				}
@@ -244,7 +252,7 @@ __global__ void winner_takes_all_kernel(
 						d / REDUCTION_PER_THREAD,
 						WARP_SIZE);
 #endif
-					right_top2[i].push(recv);
+					right_top2[i].push(recv, uniqueness);
 					if(d == MAX_DISPARITY - 1){
 						if(0 <= p){
 							right_dest[p] = compute_disparity_normal<MAX_DISPARITY>(right_top2[i], uniqueness);
