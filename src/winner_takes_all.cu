@@ -50,7 +50,6 @@ __device__ inline void update_top2(uint32_t& v0, uint32_t& v1, uint32_t x, float
 	const uint32_t v2 = max(y, v1);
 	v0 = min(x, v0);
 	v1 = min(y, v1);
-	check_uniq(v0, v1, uniqueness);
 	check_uniq(v0, v2, uniqueness);
 }
 
@@ -114,6 +113,7 @@ __device__ inline uint32_t compute_disparity_normal(Top2 t2, float uniqueness, u
 	const float cost1 = static_cast<float>(unpack_cost(t2.values[1]));
 	const int disp0 = static_cast<int>(unpack_index(t2.values[0]));
 	const int disp1 = static_cast<int>(unpack_index(t2.values[1]));
+	check_uniq(t2.values[0], t2.values[1], uniqueness);
 	if(unpack_uniq(t2.values[0])){
 		return disp0;
 	}else{
@@ -128,6 +128,7 @@ __device__ inline uint32_t compute_disparity_subpixel(Top2 t2, float uniqueness,
 	const float cost1 = static_cast<float>(unpack_cost(t2.values[1]));
 	const int disp0 = static_cast<int>(unpack_index(t2.values[0]));
 	const int disp1 = static_cast<int>(unpack_index(t2.values[1]));
+	check_uniq(t2.values[0], t2.values[1], uniqueness);
 	if(unpack_uniq(t2.values[0])){
 		int disp = disp0;
 		disp <<= sgm::StereoSGM::SUBPIXEL_SHIFT;
