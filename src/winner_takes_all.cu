@@ -230,17 +230,6 @@ __global__ void winner_takes_all_kernel(
 					best = min(best, local_packed_cost[i]);
 				}
 				best = subgroup_min<WARP_SIZE>(best, 0xffffffffu);
-				const uint32_t bestCost = unpack_cost(best);
-				const int bestDisp = unpack_index(best);
-				bool uniq = true;
-				for(unsigned int i = 0; i < REDUCTION_PER_THREAD; ++i){
-					const uint32_t x = local_packed_cost[i];
-					uniq &= unpack_cost(x) * uniqueness >= bestCost || abs(unpack_index(x) - bestDisp) <= 1;
-				}
-				uniq = subgroup_and<WARP_SIZE>(uniq, 0xffffffffu);
-				if(lane_id == 0){
-					left_dest[x] = uniq ? compute_disparity(bestDisp, bestCost, smem_cost_sum[warp_id][smem_x]) : 0;
-				}
 				// Update right
 #pragma unroll
 				for(unsigned int i = 0; i < REDUCTION_PER_THREAD; ++i){
@@ -265,6 +254,19 @@ __global__ void winner_takes_all_kernel(
 						}
 						right_top2[i].initialize();
 					}
+				}
+				const uint32_t bestCost = unpack_cost(best);
+				const int bestDisp = unpack_index(best);
+				bool uniq = true;
+				for(unsigned int i = 0; i < REDUCTION_PER_THREAD; ++i){
+					const uint32_t x = local_packed_cost[i];
+					const bool uniq1 = unpack_cost(x) * uniqueness >= bestCost;
+					const bool uniq2 = abs(unpack_index(x) - bestDisp) <= 1;
+					uniq &= uniq1 || uniq2;
+				}
+				uniq = subgroup_and<WARP_SIZE>(uniq, 0xffffffffu);
+				if(lane_id == 0){
+					left_dest[x] = uniq ? compute_disparity(bestDisp, bestCost, smem_cost_sum[warp_id][smem_x]) : 0;
 				}
 			}
 		}
