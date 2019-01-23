@@ -104,9 +104,6 @@ __device__ inline uint32_t pack_cost_index(uint32_t cost, uint32_t index){
 	return u.uint32;
 }
 
-using ComputeDisparity = uint32_t(*)(Top2, float, uint16_t*);
-
-template <size_t MAX_DISPARITY>
 __device__ inline uint32_t compute_disparity_normal(Top2 t2, float uniqueness, uint16_t* smem = nullptr)
 {
 	const float cost0 = static_cast<float>(unpack_cost(t2.values[0]));
@@ -121,26 +118,27 @@ __device__ inline uint32_t compute_disparity_normal(Top2 t2, float uniqueness, u
 	}
 }
 
+using ComputeDisparity = uint32_t(*)(uint32_t, uint32_t, uint16_t*);
+
 template <size_t MAX_DISPARITY>
-__device__ inline uint32_t compute_disparity_subpixel(Top2 t2, float uniqueness, uint16_t* smem)
+__device__ inline uint32_t compute_disparity_normal(uint32_t disp, uint32_t cost = 0, uint16_t* smem = nullptr)
 {
-	const float cost0 = static_cast<float>(unpack_cost(t2.values[0]));
-	const float cost1 = static_cast<float>(unpack_cost(t2.values[1]));
-	const int disp0 = static_cast<int>(unpack_index(t2.values[0]));
-	const int disp1 = static_cast<int>(unpack_index(t2.values[1]));
-	check_uniq(t2.values[0], t2.values[1], uniqueness);
-	if(unpack_uniq(t2.values[0])){
-		int disp = disp0;
-		disp <<= sgm::StereoSGM::SUBPIXEL_SHIFT;
-		if (disp0 > 0 && disp0 < MAX_DISPARITY - 1) {
-			const int numer = smem[disp0 - 1] - smem[disp0 + 1];
-			const int denom = smem[disp0 - 1] - 2 * smem[disp0] + smem[disp0 + 1];
-			disp += ((numer << sgm::StereoSGM::SUBPIXEL_SHIFT) + denom) / (2 * denom);
-		}
-		return disp;
-	}else{
-		return 0;
+	return disp;
+}
+
+template <size_t MAX_DISPARITY>
+__device__ inline uint32_t compute_disparity_subpixel(uint32_t disp, uint32_t cost, uint16_t* smem)
+{
+	int subp = disp;
+	subp <<= sgm::StereoSGM::SUBPIXEL_SHIFT;
+	if (disp > 0 && disp < MAX_DISPARITY - 1) {
+		const int left = smem[disp - 1];
+		const int right = smem[disp + 1];
+		const int numer = left - right;
+		const int denom = left - 2 * cost + right;
+		subp += ((numer << sgm::StereoSGM::SUBPIXEL_SHIFT) + denom) / (2 * denom);
 	}
+	return subp;
 }
 
 
@@ -227,14 +225,21 @@ __global__ void winner_takes_all_kernel(
 					local_packed_cost[i] = pack_cost_index(local_cost_sum[i], k0 + i);
 				}
 				// Update left
-				Top2 left_top2;
-				left_top2.initialize();
+				uint32_t best = 0xffffffffu;
 				for(unsigned int i = 0; i < REDUCTION_PER_THREAD; ++i){
-					left_top2.push(local_packed_cost[i], uniqueness);
+					best = min(best, local_packed_cost[i]);
 				}
-				left_top2 = subgroup_merge_top2<WARP_SIZE>(left_top2, uniqueness);
+				best = subgroup_min<WARP_SIZE>(best, 0xffffffffu);
+				const uint32_t bestCost = unpack_cost(best);
+				const int bestDisp = unpack_index(best);
+				bool uniq = true;
+				for(unsigned int i = 0; i < REDUCTION_PER_THREAD; ++i){
+					const uint32_t x = local_packed_cost[i];
+					uniq &= unpack_cost(x) * uniqueness >= bestCost || abs(unpack_index(x) - bestDisp) <= 1;
+				}
+				uniq = subgroup_and<WARP_SIZE>(uniq, 0xffffffffu);
 				if(lane_id == 0){
-					left_dest[x] = compute_disparity(left_top2, uniqueness, smem_cost_sum[warp_id][smem_x]);
+					left_dest[x] = uniq ? compute_disparity(bestDisp, bestCost, smem_cost_sum[warp_id][smem_x]) : 0;
 				}
 				// Update right
 #pragma unroll
@@ -256,7 +261,7 @@ __global__ void winner_takes_all_kernel(
 					right_top2[i].push(recv, uniqueness);
 					if(d == MAX_DISPARITY - 1){
 						if(0 <= p){
-							right_dest[p] = compute_disparity_normal<MAX_DISPARITY>(right_top2[i], uniqueness);
+							right_dest[p] = compute_disparity_normal(right_top2[i], uniqueness);
 						}
 						right_top2[i].initialize();
 					}
@@ -268,7 +273,7 @@ __global__ void winner_takes_all_kernel(
 		const unsigned int k = lane_id * REDUCTION_PER_THREAD + i;
 		const int p = static_cast<int>(((width - k) & ~(MAX_DISPARITY - 1)) + k);
 		if(p < width){
-			right_dest[p] = compute_disparity_normal<MAX_DISPARITY>(right_top2[i], uniqueness);
+			right_dest[p] = compute_disparity_normal(right_top2[i], uniqueness);
 		}
 	}
 }

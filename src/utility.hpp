@@ -41,6 +41,23 @@ namespace detail {
 			return x;
 		}
 	};
+	template <unsigned int GROUP_SIZE, unsigned int STEP>
+	struct subgroup_and_impl {
+		static __device__ bool call(bool x, uint32_t mask){
+#if CUDA_VERSION >= 9000
+			x &= __shfl_xor_sync(mask, x, STEP / 2, GROUP_SIZE);
+#else
+			x &= __shfl_xor(x, STEP / 2, GROUP_SIZE);
+#endif
+			return subgroup_and_impl<GROUP_SIZE, STEP / 2>::call(x, mask);
+		}
+	};
+	template <unsigned int GROUP_SIZE>
+	struct subgroup_and_impl<GROUP_SIZE, 1u> {
+		static __device__ bool call(bool x, uint32_t){
+			return x;
+		}
+	};
 }
 
 template <unsigned int GROUP_SIZE, typename T>
@@ -48,6 +65,10 @@ __device__ inline T subgroup_min(T x, uint32_t mask){
 	return detail::subgroup_min_impl<T, GROUP_SIZE, GROUP_SIZE>::call(x, mask);
 }
 
+template <unsigned int GROUP_SIZE>
+__device__ inline bool subgroup_and(bool x, uint32_t mask){
+	return detail::subgroup_and_impl<GROUP_SIZE, GROUP_SIZE>::call(x, mask);
+}
 
 template <typename T, typename S>
 __device__ inline T load_as(const S *p){
