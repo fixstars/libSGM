@@ -178,7 +178,7 @@ __global__ void winner_takes_all_kernel(
 					right_best[i] = min(right_best[i], recv);
 					if(d == MAX_DISPARITY - 1){
 						if(0 <= p){
-							right_dest[p] = compute_disparity_normal(right_best[i]);
+							right_dest[p] = compute_disparity_normal(unpack_index(right_best[i]));
 						}
 						right_best[i] = 0xffffffffu;
 					}
@@ -203,7 +203,7 @@ __global__ void winner_takes_all_kernel(
 		const unsigned int k = lane_id * REDUCTION_PER_THREAD + i;
 		const int p = static_cast<int>(((width - k) & ~(MAX_DISPARITY - 1)) + k);
 		if(p < width){
-			right_dest[p] = compute_disparity_normal(right_best[i]);
+			right_dest[p] = compute_disparity_normal(unpack_index(right_best[i]));
 		}
 	}
 }
