@@ -49,7 +49,6 @@ __device__ inline uint32_t pack_cost_index(uint32_t cost, uint32_t index){
 
 using ComputeDisparity = uint32_t(*)(uint32_t, uint32_t, uint16_t*);
 
-template <size_t MAX_DISPARITY>
 __device__ inline uint32_t compute_disparity_normal(uint32_t disp, uint32_t cost = 0, uint16_t* smem = nullptr)
 {
 	return disp;
@@ -71,7 +70,7 @@ __device__ inline uint32_t compute_disparity_subpixel(uint32_t disp, uint32_t co
 }
 
 
-template <unsigned int MAX_DISPARITY, ComputeDisparity compute_disparity = compute_disparity_normal<MAX_DISPARITY>>
+template <unsigned int MAX_DISPARITY, ComputeDisparity compute_disparity = compute_disparity_normal>
 __global__ void winner_takes_all_kernel(
 	output_type *left_dest,
 	output_type *right_dest,
@@ -228,7 +227,7 @@ void enqueue_winner_takes_all(
 		winner_takes_all_kernel<MAX_DISPARITY, compute_disparity_subpixel<MAX_DISPARITY>><<<gdim, bdim, 0, stream>>>(
 			left_dest, right_dest, src, width, height, pitch, uniqueness);
 	} else {
-		winner_takes_all_kernel<MAX_DISPARITY, compute_disparity_normal<MAX_DISPARITY>><<<gdim, bdim, 0, stream>>>(
+		winner_takes_all_kernel<MAX_DISPARITY, compute_disparity_normal><<<gdim, bdim, 0, stream>>>(
 			left_dest, right_dest, src, width, height, pitch, uniqueness);
 	}
 }
