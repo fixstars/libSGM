@@ -183,6 +183,7 @@ __global__ void winner_takes_all_kernel(
 						right_best[i] = 0xffffffffu;
 					}
 				}
+				// Resume updating left to avoid execution dependency
 				const uint32_t bestCost = unpack_cost(best);
 				const int bestDisp = unpack_index(best);
 				bool uniq = true;
