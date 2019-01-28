@@ -127,7 +127,7 @@ static void test_corner1_left(bool subpixel, size_t padding = 0)
 	for (auto& v : input) {
 		v = 1;
 	}
-	for (int i = 0; i < NUM_PATHS; ++i) {
+	for (size_t i = 0; i < NUM_PATHS; ++i) {
 		input[i * step] = 64;
 	}
 	const auto expect = winner_takes_all_left(
@@ -157,10 +157,10 @@ static void test_corner2_left(bool subpixel, size_t padding = 0)
 	for (auto& v : input) {
 		v = 64;
 	}
-	for (int i = 0; i < NUM_PATHS; ++i) {
+	for (size_t i = 0; i < NUM_PATHS; ++i) {
 		input[i * step + 16] = 1;
 	}
-	for (int i = 0; i < NUM_PATHS; ++i) {
+	for (size_t i = 0; i < NUM_PATHS; ++i) {
 		input[i * step + 32] = 1;
 	}
 	const auto expect = winner_takes_all_left(
