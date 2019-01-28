@@ -85,17 +85,7 @@ thrust::host_vector<sgm::output_type> winner_takes_all_right(
 			const auto ite = std::min_element(v.begin(), v.end());
 			assert(ite != v.end());
 			const auto best = *ite;
-			const int best_cost = best.first;
-			sgm::output_type best_disp = best.second;
-			for (const auto& p : v) {
-				const int cost = p.first;
-				const int disp = p.second;
-				if (cost * uniqueness < best_cost && abs(disp - best_disp) > 1) {
-					best_disp = 0;
-					break;
-				}
-			}
-			result[i * pitch + j] = best_disp;
+			result[i * pitch + j] = best.second;
 		}
 	}
 	return result;
