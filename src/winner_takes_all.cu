@@ -34,64 +34,7 @@ __device__ uint32_t unpack_cost(uint32_t packed){
 }
 
 __device__ int unpack_index(uint32_t packed){
-	return (packed >> 1) & 0x7fffu;
-}
-
-__device__ bool unpack_uniq(uint32_t packed){
-	return (packed & 1) > 0;
-}
-
-__device__ inline void check_uniq(uint32_t& v, uint32_t x, float uniqueness){
-	v &= ~((unpack_cost(x) * uniqueness >= unpack_cost(v) || abs(unpack_index(x) - unpack_index(v)) <= 1) ? 0 : 1);
-}
-
-__device__ inline void update_top2(uint32_t& v0, uint32_t& v1, uint32_t x, float uniqueness){
-	const uint32_t y = max(x, v0);
-	const uint32_t v2 = max(y, v1);
-	v0 = min(x, v0);
-	v1 = min(y, v1);
-	check_uniq(v0, v2, uniqueness);
-}
-
-struct Top2 {
-	uint32_t values[2];
-
-	__device__ void initialize(){
-		values[0] = 0xffffffffu;
-		values[1] = 0xffffffffu;
-	}
-
-	__device__ void push(uint32_t x, float uniqueness){
-		update_top2(values[0], values[1], x, uniqueness);
-	}
-};
-
-template <unsigned int GROUP_SIZE, unsigned int STEP>
-struct subgroup_merge_top2_impl {
-	static __device__ Top2 call(Top2 x, float uniqueness){
-#if CUDA_VERSION >= 9000
-		const uint32_t a = __shfl_xor_sync(0xffffffffu, x.values[0], STEP / 2, GROUP_SIZE);
-		const uint32_t b = __shfl_xor_sync(0xffffffffu, x.values[1], STEP / 2, GROUP_SIZE);
-#else
-		const uint32_t a = __shfl_xor(x.values[0], STEP / 2, GROUP_SIZE);
-		const uint32_t b = __shfl_xor(x.values[1], STEP / 2, GROUP_SIZE);
-#endif
-		x.push(a, uniqueness);
-		x.push(b, uniqueness);
-		return subgroup_merge_top2_impl<GROUP_SIZE, STEP / 2>::call(x, uniqueness);
-	}
-};
-
-template <unsigned int GROUP_SIZE>
-struct subgroup_merge_top2_impl<GROUP_SIZE, 1u> {
-	static __device__ Top2 call(Top2 x, float){
-		return x;
-	}
-};
-
-template <unsigned int GROUP_SIZE>
-__device__ inline Top2 subgroup_merge_top2(Top2 x, float uniqueness){
-	return subgroup_merge_top2_impl<GROUP_SIZE, GROUP_SIZE>::call(x, uniqueness);
+	return packed & 0xffffu;
 }
 
 __device__ inline uint32_t pack_cost_index(uint32_t cost, uint32_t index){
@@ -99,23 +42,9 @@ __device__ inline uint32_t pack_cost_index(uint32_t cost, uint32_t index){
 		uint32_t uint32;
 		ushort2 uint16x2;
 	} u;
-	u.uint16x2.x = static_cast<uint16_t>((index << 1) | 1);
+	u.uint16x2.x = static_cast<uint16_t>(index);
 	u.uint16x2.y = static_cast<uint16_t>(cost);
 	return u.uint32;
-}
-
-__device__ inline uint32_t compute_disparity_normal(Top2 t2, float uniqueness, uint16_t* smem = nullptr)
-{
-	const float cost0 = static_cast<float>(unpack_cost(t2.values[0]));
-	const float cost1 = static_cast<float>(unpack_cost(t2.values[1]));
-	const int disp0 = static_cast<int>(unpack_index(t2.values[0]));
-	const int disp1 = static_cast<int>(unpack_index(t2.values[1]));
-	check_uniq(t2.values[0], t2.values[1], uniqueness);
-	if(unpack_uniq(t2.values[0])){
-		return disp0;
-	}else{
-		return 0;
-	}
 }
 
 using ComputeDisparity = uint32_t(*)(uint32_t, uint32_t, uint16_t*);
@@ -175,9 +104,9 @@ __global__ void winner_takes_all_kernel(
 
 	__shared__ uint16_t smem_cost_sum[WARPS_PER_BLOCK][ACCUMULATION_INTERVAL][MAX_DISPARITY];
 
-	Top2 right_top2[REDUCTION_PER_THREAD];
+	uint32_t right_best[REDUCTION_PER_THREAD];
 	for(unsigned int i = 0; i < REDUCTION_PER_THREAD; ++i){
-		right_top2[i].initialize();
+		right_best[i] = 0xffffffffu;
 	}
 
 	for(unsigned int x0 = 0; x0 < width; x0 += UNROLL_DEPTH){
@@ -247,12 +176,12 @@ __global__ void winner_takes_all_kernel(
 						d / REDUCTION_PER_THREAD,
 						WARP_SIZE);
 #endif
-					right_top2[i].push(recv, uniqueness);
+					right_best[i] = min(right_best[i], recv);
 					if(d == MAX_DISPARITY - 1){
 						if(0 <= p){
-							right_dest[p] = compute_disparity_normal(right_top2[i], uniqueness);
+							right_dest[p] = compute_disparity_normal(right_best[i]);
 						}
-						right_top2[i].initialize();
+						right_best[i] = 0xffffffffu;
 					}
 				}
 				const uint32_t bestCost = unpack_cost(best);
@@ -275,7 +204,7 @@ __global__ void winner_takes_all_kernel(
 		const unsigned int k = lane_id * REDUCTION_PER_THREAD + i;
 		const int p = static_cast<int>(((width - k) & ~(MAX_DISPARITY - 1)) + k);
 		if(p < width){
-			right_dest[p] = compute_disparity_normal(right_top2[i], uniqueness);
+			right_dest[p] = compute_disparity_normal(right_best[i]);
 		}
 	}
 }
