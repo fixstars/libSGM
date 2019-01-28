@@ -29,14 +29,6 @@ static constexpr unsigned int WARPS_PER_BLOCK = 8u;
 static constexpr unsigned int BLOCK_SIZE = WARPS_PER_BLOCK * WARP_SIZE;
 
 
-__device__ uint32_t unpack_cost(uint32_t packed){
-	return packed >> 16;
-}
-
-__device__ int unpack_index(uint32_t packed){
-	return packed & 0xffffu;
-}
-
 __device__ inline uint32_t pack_cost_index(uint32_t cost, uint32_t index){
 	union {
 		uint32_t uint32;
@@ -45,6 +37,14 @@ __device__ inline uint32_t pack_cost_index(uint32_t cost, uint32_t index){
 	u.uint16x2.x = static_cast<uint16_t>(index);
 	u.uint16x2.y = static_cast<uint16_t>(cost);
 	return u.uint32;
+}
+
+__device__ uint32_t unpack_cost(uint32_t packed){
+	return packed >> 16;
+}
+
+__device__ int unpack_index(uint32_t packed){
+	return packed & 0xffffu;
 }
 
 using ComputeDisparity = uint32_t(*)(uint32_t, uint32_t, uint16_t*);
