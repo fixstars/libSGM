@@ -29,53 +29,6 @@ static constexpr unsigned int WARPS_PER_BLOCK = 8u;
 static constexpr unsigned int BLOCK_SIZE = WARPS_PER_BLOCK * WARP_SIZE;
 
 
-__device__ inline void update_top2(uint32_t& v0, uint32_t& v1, uint32_t x){
-	const uint32_t y = max(x, v0);
-	v0 = min(x, v0);
-	v1 = min(y, v1);
-}
-
-struct Top2 {
-	uint32_t values[2];
-
-	__device__ void initialize(){
-		values[0] = 0xffffffffu;
-		values[1] = 0xffffffffu;
-	}
-
-	__device__ void push(uint32_t x){
-		update_top2(values[0], values[1], x);
-	}
-};
-
-template <unsigned int GROUP_SIZE, unsigned int STEP>
-struct subgroup_merge_top2_impl {
-	static __device__ Top2 call(Top2 x){
-#if CUDA_VERSION >= 9000
-		const uint32_t a = __shfl_xor_sync(0xffffffffu, x.values[0], STEP / 2, GROUP_SIZE);
-		const uint32_t b = __shfl_xor_sync(0xffffffffu, x.values[1], STEP / 2, GROUP_SIZE);
-#else
-		const uint32_t a = __shfl_xor(x.values[0], STEP / 2, GROUP_SIZE);
-		const uint32_t b = __shfl_xor(x.values[1], STEP / 2, GROUP_SIZE);
-#endif
-		x.push(a);
-		x.push(b);
-		return subgroup_merge_top2_impl<GROUP_SIZE, STEP / 2>::call(x);
-	}
-};
-
-template <unsigned int GROUP_SIZE>
-struct subgroup_merge_top2_impl<GROUP_SIZE, 1u> {
-	static __device__ Top2 call(Top2 x){
-		return x;
-	}
-};
-
-template <unsigned int GROUP_SIZE>
-__device__ inline Top2 subgroup_merge_top2(Top2 x){
-	return subgroup_merge_top2_impl<GROUP_SIZE, GROUP_SIZE>::call(x);
-}
-
 __device__ inline uint32_t pack_cost_index(uint32_t cost, uint32_t index){
 	union {
 		uint32_t uint32;
@@ -90,52 +43,34 @@ __device__ uint32_t unpack_cost(uint32_t packed){
 	return packed >> 16;
 }
 
-__device__ uint32_t unpack_index(uint32_t packed){
+__device__ int unpack_index(uint32_t packed){
 	return packed & 0xffffu;
 }
 
-using ComputeDisparity = uint32_t(*)(Top2, float, uint16_t*);
+using ComputeDisparity = uint32_t(*)(uint32_t, uint32_t, uint16_t*);
 
-template <size_t MAX_DISPARITY>
-__device__ inline uint32_t compute_disparity_normal(Top2 t2, float uniqueness, uint16_t* smem = nullptr)
+__device__ inline uint32_t compute_disparity_normal(uint32_t disp, uint32_t cost = 0, uint16_t* smem = nullptr)
 {
-	const float cost0 = static_cast<float>(unpack_cost(t2.values[0]));
-	const float cost1 = static_cast<float>(unpack_cost(t2.values[1]));
-	const int disp0 = static_cast<int>(unpack_index(t2.values[0]));
-	const int disp1 = static_cast<int>(unpack_index(t2.values[1]));
-	if(cost1 * uniqueness >= cost0){
-		return disp0;
-	}else if(abs(disp1 - disp0) <= 1){
-		return disp0;
-	}else{
-		return 0;
-	}
+	return disp;
 }
 
 template <size_t MAX_DISPARITY>
-__device__ inline uint32_t compute_disparity_subpixel(Top2 t2, float uniqueness, uint16_t* smem)
+__device__ inline uint32_t compute_disparity_subpixel(uint32_t disp, uint32_t cost, uint16_t* smem)
 {
-	const float cost0 = static_cast<float>(unpack_cost(t2.values[0]));
-	const float cost1 = static_cast<float>(unpack_cost(t2.values[1]));
-	const int disp0 = static_cast<int>(unpack_index(t2.values[0]));
-	const int disp1 = static_cast<int>(unpack_index(t2.values[1]));
-	if(cost1 * uniqueness >= cost0
-		|| abs(disp1 - disp0) <= 1){
-		int disp = disp0;
-		disp <<= sgm::StereoSGM::SUBPIXEL_SHIFT;
-		if (disp0 > 0 && disp0 < MAX_DISPARITY - 1) {
-			const int numer = smem[disp0 - 1] - smem[disp0 + 1];
-			const int denom = smem[disp0 - 1] - 2 * smem[disp0] + smem[disp0 + 1];
-			disp += ((numer << sgm::StereoSGM::SUBPIXEL_SHIFT) + denom) / (2 * denom);
-		}
-		return disp;
-	}else{
-		return 0;
+	int subp = disp;
+	subp <<= sgm::StereoSGM::SUBPIXEL_SHIFT;
+	if (disp > 0 && disp < MAX_DISPARITY - 1) {
+		const int left = smem[disp - 1];
+		const int right = smem[disp + 1];
+		const int numer = left - right;
+		const int denom = left - 2 * cost + right;
+		subp += ((numer << sgm::StereoSGM::SUBPIXEL_SHIFT) + denom) / (2 * denom);
 	}
+	return subp;
 }
 
 
-template <unsigned int MAX_DISPARITY, ComputeDisparity compute_disparity = compute_disparity_normal<MAX_DISPARITY>>
+template <unsigned int MAX_DISPARITY, ComputeDisparity compute_disparity = compute_disparity_normal>
 __global__ void winner_takes_all_kernel(
 	output_type *left_dest,
 	output_type *right_dest,
@@ -168,9 +103,9 @@ __global__ void winner_takes_all_kernel(
 
 	__shared__ uint16_t smem_cost_sum[WARPS_PER_BLOCK][ACCUMULATION_INTERVAL][MAX_DISPARITY];
 
-	Top2 right_top2[REDUCTION_PER_THREAD];
+	uint32_t right_best[REDUCTION_PER_THREAD];
 	for(unsigned int i = 0; i < REDUCTION_PER_THREAD; ++i){
-		right_top2[i].initialize();
+		right_best[i] = 0xffffffffu;
 	}
 
 	for(unsigned int x0 = 0; x0 < width; x0 += UNROLL_DEPTH){
@@ -218,15 +153,11 @@ __global__ void winner_takes_all_kernel(
 					local_packed_cost[i] = pack_cost_index(local_cost_sum[i], k0 + i);
 				}
 				// Update left
-				Top2 left_top2;
-				left_top2.initialize();
+				uint32_t best = 0xffffffffu;
 				for(unsigned int i = 0; i < REDUCTION_PER_THREAD; ++i){
-					left_top2.push(local_packed_cost[i]);
+					best = min(best, local_packed_cost[i]);
 				}
-				left_top2 = subgroup_merge_top2<WARP_SIZE>(left_top2);
-				if(lane_id == 0){
-					left_dest[x] = compute_disparity(left_top2, uniqueness, smem_cost_sum[warp_id][smem_x]);
-				}
+				best = subgroup_min<WARP_SIZE>(best, 0xffffffffu);
 				// Update right
 #pragma unroll
 				for(unsigned int i = 0; i < REDUCTION_PER_THREAD; ++i){
@@ -244,13 +175,27 @@ __global__ void winner_takes_all_kernel(
 						d / REDUCTION_PER_THREAD,
 						WARP_SIZE);
 #endif
-					right_top2[i].push(recv);
+					right_best[i] = min(right_best[i], recv);
 					if(d == MAX_DISPARITY - 1){
 						if(0 <= p){
-							right_dest[p] = compute_disparity_normal<MAX_DISPARITY>(right_top2[i], uniqueness);
+							right_dest[p] = compute_disparity_normal(unpack_index(right_best[i]));
 						}
-						right_top2[i].initialize();
+						right_best[i] = 0xffffffffu;
 					}
+				}
+				// Resume updating left to avoid execution dependency
+				const uint32_t bestCost = unpack_cost(best);
+				const int bestDisp = unpack_index(best);
+				bool uniq = true;
+				for(unsigned int i = 0; i < REDUCTION_PER_THREAD; ++i){
+					const uint32_t x = local_packed_cost[i];
+					const bool uniq1 = unpack_cost(x) * uniqueness >= bestCost;
+					const bool uniq2 = abs(unpack_index(x) - bestDisp) <= 1;
+					uniq &= uniq1 || uniq2;
+				}
+				uniq = subgroup_and<WARP_SIZE>(uniq, 0xffffffffu);
+				if(lane_id == 0){
+					left_dest[x] = uniq ? compute_disparity(bestDisp, bestCost, smem_cost_sum[warp_id][smem_x]) : 0;
 				}
 			}
 		}
@@ -259,7 +204,7 @@ __global__ void winner_takes_all_kernel(
 		const unsigned int k = lane_id * REDUCTION_PER_THREAD + i;
 		const int p = static_cast<int>(((width - k) & ~(MAX_DISPARITY - 1)) + k);
 		if(p < width){
-			right_dest[p] = compute_disparity_normal<MAX_DISPARITY>(right_top2[i], uniqueness);
+			right_dest[p] = compute_disparity_normal(unpack_index(right_best[i]));
 		}
 	}
 }
@@ -283,7 +228,7 @@ void enqueue_winner_takes_all(
 		winner_takes_all_kernel<MAX_DISPARITY, compute_disparity_subpixel<MAX_DISPARITY>><<<gdim, bdim, 0, stream>>>(
 			left_dest, right_dest, src, width, height, pitch, uniqueness);
 	} else {
-		winner_takes_all_kernel<MAX_DISPARITY, compute_disparity_normal<MAX_DISPARITY>><<<gdim, bdim, 0, stream>>>(
+		winner_takes_all_kernel<MAX_DISPARITY, compute_disparity_normal><<<gdim, bdim, 0, stream>>>(
 			left_dest, right_dest, src, width, height, pitch, uniqueness);
 	}
 }
