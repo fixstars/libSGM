@@ -28,7 +28,7 @@ benchmarkサンプルで計測した処理時間を示します
 ## Requirements
 libSGMはCUDA (compute capabilities >= 3.0)を必要とします。  
 また、サンプルをビルドする際には以下のライブラリが必要となります。
-- OpenCV
+- OpenCV 3.0 以降
 - CMake 3.10 以降
 
 ## build
