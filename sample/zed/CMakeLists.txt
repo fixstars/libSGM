@@ -4,14 +4,14 @@ set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../movie/cmake)
 
 message(STATUS ${CMAKE_MODULE_PATH})
 
+set(CMAKE_FIND_PACKAGE_SORT_ORDER NATURAL)
+
 find_package(ZED 2 REQUIRED)
 find_package(CUDA ${ZED_CUDA_VERSION} REQUIRED)
 
-find_package(OpenCV REQUIRED core) # dummy
-if(OpenCV_VERSION VERSION_LESS 3.0) 
-	find_package(OpenCV REQUIRED core highgui imgproc)  # 2.x
-else()
-	find_package(OpenCV REQUIRED core highgui imgproc imgcodecs videoio) # 3.x
+find_package(OpenCV REQUIRED core highgui imgproc imgcodecs)
+if (OpenCV_VERSION VERSION_LESS 3.0)
+	message(FATAL_ERROR "Error: OpenCV version requires at least 3.0")
 endif()
 
 include_directories(../../include)
