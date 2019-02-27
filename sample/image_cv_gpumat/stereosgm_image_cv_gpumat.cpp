@@ -22,9 +22,6 @@ limitations under the License.
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/core/version.hpp>
-#if CV_MAJOR_VERSION == 2
-#include <opencv2/contrib/contrib.hpp>
-#endif
 
 #include <libsgm.h>
 
@@ -89,25 +86,19 @@ int main(int argc, char* argv[]) {
 			switch (mode) {
 			case 0:
 				{
-					#if CV_MAJOR_VERSION == 3
 					cv::setWindowTitle("image", "disparity");
-					#endif
 					cv::imshow("image", disparity);
 					break;
 				}
 			case 1:
 				{
-					#if CV_MAJOR_VERSION == 3
 					cv::setWindowTitle("image", "disparity color");
-					#endif
 					cv::imshow("image", colored);
 					break;
 				}
 			case 2:
 				{
-					#if CV_MAJOR_VERSION == 3
 					cv::setWindowTitle("image", "input");
-					#endif
 					cv::imshow("image", left);
 					break;
 				}
