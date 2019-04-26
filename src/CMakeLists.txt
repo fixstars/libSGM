@@ -2,6 +2,13 @@ cmake_minimum_required(VERSION 3.1)
 
 find_package(CUDA REQUIRED)
 
+if(${CMAKE_VERSION} VERSION_LESS 3.7)
+	SET(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};${CUDA_ARCH}")
+else()
+	CUDA_SELECT_NVCC_ARCH_FLAGS(ARCH_FLAGS "Auto")
+	LIST(APPEND CUDA_NVCC_FLAGS ${ARCH_FLAGS})
+endif()
+
 include_directories(../include)
 
 if (CMAKE_COMPILER_IS_GNUCXX)
@@ -9,7 +16,6 @@ if (CMAKE_COMPILER_IS_GNUCXX)
 	set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -std=c++11")
 endif()
 
-SET(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} ${CUDA_ARCH}")
 
 file(GLOB STEREOSRCS "*.cu" "*.cpp")
 
