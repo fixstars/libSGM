@@ -2,11 +2,14 @@ cmake_minimum_required(VERSION 3.1)
 
 find_package(CUDA REQUIRED)
 
-if(${CMAKE_VERSION} VERSION_LESS 3.7)
+if(NOT DEFINED AUTO_DETECT_ARCH OR NOT "${AUTO_DETECT_ARCH}"
+   OR ${CMAKE_VERSION} VERSION_LESS 3.7)
 	SET(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};${CUDA_ARCH}")
+	message(STATUS "User specified variable CUDA_ARCH: ${CUDA_ARCH} is used.")
 else()
 	CUDA_SELECT_NVCC_ARCH_FLAGS(ARCH_FLAGS "Auto")
 	LIST(APPEND CUDA_NVCC_FLAGS ${ARCH_FLAGS})
+	message(STATUS "Automatically generated flag \"${ARCH_FLAGS}\" is used.")
 endif()
 
 include_directories(../include)
