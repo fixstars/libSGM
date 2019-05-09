@@ -2,14 +2,14 @@ cmake_minimum_required(VERSION 3.1)
 
 find_package(CUDA REQUIRED)
 
-if(NOT DEFINED AUTO_DETECT_ARCH OR NOT "${AUTO_DETECT_ARCH}"
-   OR ${CMAKE_VERSION} VERSION_LESS 3.7)
-	SET(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};${CUDA_ARCH}")
-	message(STATUS "User specified variable CUDA_ARCH: ${CUDA_ARCH} is used.")
-else()
+if(DEFINED AUTO_DETECT_ARCH AND "${AUTO_DETECT_ARCH}")
 	CUDA_SELECT_NVCC_ARCH_FLAGS(ARCH_FLAGS "Auto")
-	LIST(APPEND CUDA_NVCC_FLAGS ${ARCH_FLAGS})
-	message(STATUS "Automatically generated flag \"${ARCH_FLAGS}\" is used.")
+	message(STATUS "Automatically generated flag: \"${ARCH_FLAGS}\"")
+	set(CUDA_ARCH_TMP "${CUDA_ARCH}")
+	set(CUDA_ARCH "${ARCH_FLAGS}" CACHE STRING "Value of the NVCC -arch option." FORCE)
+	if(NOT "${CUDA_ARCH}" STREQUAL "${CUDA_ARCH_TMP}")
+		message(STATUS "CUDA_ARCH variable is overwritten bacause of AUTO_DETECT_ARCH: ${AUTO_DETECT_ARCH}")
+	endif()
 endif()
 
 include_directories(../include)
@@ -19,6 +19,7 @@ if (CMAKE_COMPILER_IS_GNUCXX)
 	set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -std=c++11")
 endif()
 
+SET(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} ${CUDA_ARCH}")
 
 file(GLOB STEREOSRCS "*.cu" "*.cpp")
 
