@@ -19,6 +19,8 @@ limitations under the License.
 
 #include <cstddef>
 
+#include "internal.h"
+
 namespace sgm {
 
 template <typename T>
@@ -41,7 +43,7 @@ public:
 		: m_data(nullptr)
 		, m_size(n)
 	{
-		cudaMalloc(reinterpret_cast<void **>(&m_data), sizeof(T) * n);
+		CudaSafeCall(cudaMalloc(reinterpret_cast<void **>(&m_data), sizeof(T) * n));
 	}
 
 	DeviceBuffer(const DeviceBuffer&) = delete;
@@ -55,7 +57,7 @@ public:
 	}
 
 	~DeviceBuffer(){
-		cudaFree(m_data);
+		CudaSafeCall(cudaFree(m_data));
 	}
 
 
