@@ -19,6 +19,7 @@ limitations under the License.
 #include <libsgm.h>
 
 #include "internal.h"
+#include "device_buffer.hpp"
 #include "sgm.hpp"
 
 namespace sgm {
@@ -49,10 +50,10 @@ namespace sgm {
 	struct CudaStereoSGMResources {
 		void* d_src_left;
 		void* d_src_right;
-		void* d_left_disp;
-		void* d_right_disp;
-		void* d_tmp_left_disp;
-		void* d_tmp_right_disp;
+		DeviceBuffer<uint16_t> d_left_disp;
+		DeviceBuffer<uint16_t> d_right_disp;
+		DeviceBuffer<uint16_t> d_tmp_left_disp;
+		DeviceBuffer<uint16_t> d_tmp_right_disp;
 
 		SemiGlobalMatchingBase* sgm_engine;
 
@@ -78,27 +79,21 @@ namespace sgm {
 				CudaSafeCall(cudaMalloc(&this->d_src_right, input_depth_bits_ / 8 * src_pitch_ * height_));
 			}
 			
-			CudaSafeCall(cudaMalloc(&this->d_left_disp, sizeof(uint16_t) * dst_pitch_ * height_));
-			CudaSafeCall(cudaMalloc(&this->d_right_disp, sizeof(uint16_t) * dst_pitch_ * height_));
+			this->d_left_disp = DeviceBuffer<output_type>(dst_pitch_ * height_);
+			this->d_right_disp = DeviceBuffer<output_type>(dst_pitch_ * height_);
 
-			CudaSafeCall(cudaMalloc(&this->d_tmp_left_disp, sizeof(uint16_t) * dst_pitch_ * height_));
-			CudaSafeCall(cudaMalloc(&this->d_tmp_right_disp, sizeof(uint16_t) * dst_pitch_ * height_));
+			this->d_tmp_left_disp = DeviceBuffer<output_type>(dst_pitch_ * height_);
+			this->d_tmp_right_disp = DeviceBuffer<output_type>(dst_pitch_ * height_);
 
-			CudaSafeCall(cudaMemset(this->d_left_disp, 0, sizeof(uint16_t) * dst_pitch_ * height_));
-			CudaSafeCall(cudaMemset(this->d_right_disp, 0, sizeof(uint16_t) * dst_pitch_ * height_));
-			CudaSafeCall(cudaMemset(this->d_tmp_left_disp, 0, sizeof(uint16_t) * dst_pitch_ * height_));
-			CudaSafeCall(cudaMemset(this->d_tmp_right_disp, 0, sizeof(uint16_t) * dst_pitch_ * height_));
+			CudaSafeCall(cudaMemset(this->d_left_disp.data(), 0, this->d_left_disp.size()));
+			CudaSafeCall(cudaMemset(this->d_right_disp.data(), 0, this->d_right_disp.size()));
+			CudaSafeCall(cudaMemset(this->d_tmp_left_disp.data(), 0, this->d_tmp_left_disp.size()));
+			CudaSafeCall(cudaMemset(this->d_tmp_right_disp.data(), 0, this->d_tmp_right_disp.size()));
 		}
 
 		~CudaStereoSGMResources() {
 			CudaSafeCall(cudaFree(this->d_src_left));
 			CudaSafeCall(cudaFree(this->d_src_right));
-
-			CudaSafeCall(cudaFree(this->d_left_disp));
-			CudaSafeCall(cudaFree(this->d_right_disp));
-
-			CudaSafeCall(cudaFree(this->d_tmp_left_disp));
-			CudaSafeCall(cudaFree(this->d_tmp_right_disp));
 
 			delete sgm_engine;
 		}
@@ -157,10 +152,10 @@ namespace sgm {
 			d_input_right = cu_res_->d_src_right;
 		}
 
-		void* d_tmp_left_disp = cu_res_->d_tmp_left_disp;
-		void* d_tmp_right_disp = cu_res_->d_tmp_right_disp;
-		void* d_left_disp = cu_res_->d_left_disp;
-		void* d_right_disp = cu_res_->d_right_disp;
+		void* d_tmp_left_disp = cu_res_->d_tmp_left_disp.data();
+		void* d_tmp_right_disp = cu_res_->d_tmp_right_disp.data();
+		void* d_left_disp = cu_res_->d_left_disp.data();
+		void* d_right_disp = cu_res_->d_right_disp.data();
 
 		if (is_cuda_output(inout_type_) && output_depth_bits_ == 16)
 			d_left_disp = dst; // when threre is no device-host copy or type conversion, use passed buffer
