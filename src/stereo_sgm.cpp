@@ -81,10 +81,10 @@ namespace sgm {
 			this->d_tmp_left_disp.allocate(dst_pitch_ * height_);
 			this->d_tmp_right_disp.allocate(dst_pitch_ * height_);
 
-			CudaSafeCall(cudaMemset(this->d_left_disp.data(), 0, this->d_left_disp.size()));
-			CudaSafeCall(cudaMemset(this->d_right_disp.data(), 0, this->d_right_disp.size()));
-			CudaSafeCall(cudaMemset(this->d_tmp_left_disp.data(), 0, this->d_tmp_left_disp.size()));
-			CudaSafeCall(cudaMemset(this->d_tmp_right_disp.data(), 0, this->d_tmp_right_disp.size()));
+			this->d_left_disp.fill(0);
+			this->d_right_disp.fill(0);
+			this->d_tmp_left_disp.fill(0);
+			this->d_tmp_right_disp.fill(0);
 		}
 
 		~CudaStereoSGMResources() {

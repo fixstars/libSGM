@@ -80,6 +80,11 @@ public:
 		m_size = 0;
 	}
 
+	void fill(int value)
+	{
+		CudaSafeCall(cudaMemset(m_data, value, m_size));
+	}
+
 	DeviceBuffer& operator=(const DeviceBuffer&) = delete;
 
 	DeviceBuffer& operator=(DeviceBuffer&& obj){
