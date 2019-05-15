@@ -48,8 +48,8 @@ namespace sgm {
 	};
 
 	struct CudaStereoSGMResources {
-		void* d_src_left;
-		void* d_src_right;
+		DeviceBuffer<uint8_t> d_src_left;
+		DeviceBuffer<uint8_t> d_src_right;
 		DeviceBuffer<uint16_t> d_left_disp;
 		DeviceBuffer<uint16_t> d_right_disp;
 		DeviceBuffer<uint16_t> d_tmp_left_disp;
@@ -70,13 +70,9 @@ namespace sgm {
 			else
 				throw std::logic_error("depth bits must be 8 or 16, and disparity size must be 64 or 128");
 
-			if (is_cuda_input(inout_type_)) {
-				this->d_src_left = NULL;
-				this->d_src_right = NULL;
-			}
-			else {
-				CudaSafeCall(cudaMalloc(&this->d_src_left, input_depth_bits_ / 8 * src_pitch_ * height_));
-				CudaSafeCall(cudaMalloc(&this->d_src_right, input_depth_bits_ / 8 * src_pitch_ * height_));
+			if (!is_cuda_input(inout_type_)) {
+				this->d_src_left  = DeviceBuffer<uint8_t>(input_depth_bits_ / 8 * src_pitch_ * height_);
+				this->d_src_right = DeviceBuffer<uint8_t>(input_depth_bits_ / 8 * src_pitch_ * height_);
 			}
 			
 			this->d_left_disp = DeviceBuffer<output_type>(dst_pitch_ * height_);
@@ -92,9 +88,6 @@ namespace sgm {
 		}
 
 		~CudaStereoSGMResources() {
-			CudaSafeCall(cudaFree(this->d_src_left));
-			CudaSafeCall(cudaFree(this->d_src_right));
-
 			delete sgm_engine;
 		}
 	};
@@ -146,10 +139,10 @@ namespace sgm {
 			d_input_right = right_pixels;
 		}
 		else {
-			CudaSafeCall(cudaMemcpy(cu_res_->d_src_left, left_pixels, input_depth_bits_ / 8 * src_pitch_ * height_, cudaMemcpyHostToDevice));
-			CudaSafeCall(cudaMemcpy(cu_res_->d_src_right, right_pixels, input_depth_bits_ / 8 * src_pitch_ * height_, cudaMemcpyHostToDevice));
-			d_input_left = cu_res_->d_src_left;
-			d_input_right = cu_res_->d_src_right;
+			CudaSafeCall(cudaMemcpy(cu_res_->d_src_left.data(), left_pixels, cu_res_->d_src_left.size(), cudaMemcpyHostToDevice));
+			CudaSafeCall(cudaMemcpy(cu_res_->d_src_right.data(), right_pixels, cu_res_->d_src_right.size(), cudaMemcpyHostToDevice));
+			d_input_left = cu_res_->d_src_left.data();
+			d_input_right = cu_res_->d_src_right.data();
 		}
 
 		void* d_tmp_left_disp = cu_res_->d_tmp_left_disp.data();
