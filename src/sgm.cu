@@ -25,8 +25,6 @@ template <typename T, size_t MAX_DISPARITY>
 class SemiGlobalMatching<T, MAX_DISPARITY>::Impl {
 
 private:
-	DeviceBuffer<T> m_input_left;
-	DeviceBuffer<T> m_input_right;
 	CensusTransform<T> m_census_left;
 	CensusTransform<T> m_census_right;
 	PathAggregation<MAX_DISPARITY> m_path_aggregation;
@@ -34,9 +32,7 @@ private:
 
 public:
 	Impl()
-		: m_input_left()
-		, m_input_right()
-		, m_census_left()
+		: m_census_left()
 		, m_census_right()
 		, m_path_aggregation()
 		, m_winner_takes_all()
