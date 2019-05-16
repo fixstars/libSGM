@@ -44,6 +44,14 @@ build:samples_off:static:
     build_tests: "OFF"
   <<: *build_definition
 
+build:with_opencv4:
+  image: adaskit/libsgm:0.3-opencv4
+  variables:
+    build_samples: "ON"
+    build_shared: "ON"
+    build_tests: "OFF"
+  <<: *build_definition
+
 build:test:
   variables:
     build_samples: "OFF"
