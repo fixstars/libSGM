@@ -30,7 +30,7 @@ public:
 	using value_type = T;
 
 private:
-	T *m_data;
+	value_type *m_data;
 	size_t m_size;
 
 public:
@@ -67,7 +67,7 @@ public:
 			return;
 
 		destroy();
-		CudaSafeCall(cudaMalloc(reinterpret_cast<void **>(&m_data), sizeof(T) * n));
+		CudaSafeCall(cudaMalloc(reinterpret_cast<void **>(&m_data), sizeof(value_type) * n));
 		m_size = n;
 	}
 
@@ -82,7 +82,7 @@ public:
 
 	void fillZero()
 	{
-		CudaSafeCall(cudaMemset(m_data, 0, sizeof(T) * m_size));
+		CudaSafeCall(cudaMemset(m_data, 0, sizeof(value_type) * m_size));
 	}
 
 	DeviceBuffer& operator=(const DeviceBuffer&) = delete;
