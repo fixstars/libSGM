@@ -71,15 +71,15 @@ namespace sgm {
 				throw std::logic_error("depth bits must be 8 or 16, and disparity size must be 64 or 128");
 
 			if (!is_cuda_input(inout_type_)) {
-				this->d_src_left  = DeviceBuffer<uint8_t>(input_depth_bits_ / 8 * src_pitch_ * height_);
-				this->d_src_right = DeviceBuffer<uint8_t>(input_depth_bits_ / 8 * src_pitch_ * height_);
+				this->d_src_left.allocate(input_depth_bits_ / 8 * src_pitch_ * height_);
+				this->d_src_right.allocate(input_depth_bits_ / 8 * src_pitch_ * height_);
 			}
 			
-			this->d_left_disp = DeviceBuffer<output_type>(dst_pitch_ * height_);
-			this->d_right_disp = DeviceBuffer<output_type>(dst_pitch_ * height_);
+			this->d_left_disp.allocate(dst_pitch_ * height_);
+			this->d_right_disp.allocate(dst_pitch_ * height_);
 
-			this->d_tmp_left_disp = DeviceBuffer<output_type>(dst_pitch_ * height_);
-			this->d_tmp_right_disp = DeviceBuffer<output_type>(dst_pitch_ * height_);
+			this->d_tmp_left_disp.allocate(dst_pitch_ * height_);
+			this->d_tmp_right_disp.allocate(dst_pitch_ * height_);
 
 			CudaSafeCall(cudaMemset(this->d_left_disp.data(), 0, this->d_left_disp.size()));
 			CudaSafeCall(cudaMemset(this->d_right_disp.data(), 0, this->d_right_disp.size()));

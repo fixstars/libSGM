@@ -41,9 +41,9 @@ public:
 
 	explicit DeviceBuffer(size_t n)
 		: m_data(nullptr)
-		, m_size(n)
+		, m_size(0)
 	{
-		CudaSafeCall(cudaMalloc(reinterpret_cast<void **>(&m_data), sizeof(T) * n));
+		allocate(n);
 	}
 
 	DeviceBuffer(const DeviceBuffer&) = delete;
@@ -57,9 +57,28 @@ public:
 	}
 
 	~DeviceBuffer(){
-		CudaSafeCall(cudaFree(m_data));
+		destroy();
 	}
 
+
+	void allocate(size_t n)
+	{
+		if (m_data && m_size >= n)
+			return;
+
+		destroy();
+		CudaSafeCall(cudaMalloc(reinterpret_cast<void **>(&m_data), sizeof(T) * n));
+		m_size = n;
+	}
+
+	void destroy()
+	{
+		if (m_data)
+			CudaSafeCall(cudaFree(m_data));
+
+		m_data = nullptr;
+		m_size = 0;
+	}
 
 	DeviceBuffer& operator=(const DeviceBuffer&) = delete;
 
