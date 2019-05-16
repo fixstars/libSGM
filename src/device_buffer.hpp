@@ -82,7 +82,7 @@ public:
 
 	void fillZero()
 	{
-		CudaSafeCall(cudaMemset(m_data, 0, m_size));
+		CudaSafeCall(cudaMemset(m_data, 0, sizeof(T) * m_size));
 	}
 
 	DeviceBuffer& operator=(const DeviceBuffer&) = delete;
