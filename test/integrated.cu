@@ -88,4 +88,3 @@ INSTANTIATE_TEST_CASE_P(LibSGM_Test, LibSGM, testing::Combine(
 		sgm::EXECUTE_INOUT_CUDA2CUDA
 	)
 ));
-
