@@ -7,8 +7,7 @@
 static bool is_cuda_input(sgm::EXECUTE_INOUT type) { return (type & 0x1) > 0; }
 static bool is_cuda_output(sgm::EXECUTE_INOUT type) { return (type & 0x2) > 0; }
 
-class LibSGM : public testing::TestWithParam<std::tuple<int, int, int, sgm::EXECUTE_INOUT>>
-{
+class LibSGM : public testing::TestWithParam<std::tuple<int, int, int, sgm::EXECUTE_INOUT>> {
 public:
 	static constexpr int WIDTH = 1024, HEIGHT = 440;
 	int input_depth_bits_;
@@ -20,8 +19,7 @@ public:
 	thrust::device_vector<uint8_t> d_src_left_, d_src_right_, d_dst_;
 	thrust::host_vector<uint8_t>   h_src_left_, h_src_right_, h_dst_;
 
-	virtual void SetUp()
-	{
+	virtual void SetUp(){
 		std::tie(input_depth_bits_, output_depth_bits_, disparity_size_, inout_type_) = GetParam();
 		src_size_ = WIDTH * HEIGHT * input_depth_bits_ / 8;
 		dst_size_ = WIDTH * HEIGHT * output_depth_bits_ / 8;
@@ -29,45 +27,33 @@ public:
 		h_src_left_  = generate_random_sequence<uint8_t>(src_size_);
 		h_src_right_ = generate_random_sequence<uint8_t>(src_size_);
 
-		if(is_cuda_input(inout_type_))
-		{
+		if(is_cuda_input(inout_type_)){
 			d_src_left_ = h_src_left_;
 			d_src_right_ = h_src_right_;
 		}
 
-		if(is_cuda_output(inout_type_))
-		{
+		if(is_cuda_output(inout_type_)){
 			d_dst_.resize(dst_size_);
-		}
-		else
-		{
+		}else{
 			h_dst_.resize(dst_size_);
 		}
 	}
 };
 
-TEST_P(LibSGM, Integrated)
-{
-
+TEST_P(LibSGM, Integrated){
 	void *src_left, *src_right;
-	if(is_cuda_input(inout_type_))
-	{
+	if(is_cuda_input(inout_type_)){
 		src_left = d_src_left_.data().get();
 		src_right = d_src_right_.data().get();
-	}
-	else
-	{
+	}else{
 		src_left = h_src_left_.data();
 		src_right = h_src_right_.data();
 	}
 
 	void *dst;
-	if(is_cuda_output(inout_type_))
-	{
+	if(is_cuda_output(inout_type_)){
 		dst = d_dst_.data().get();
-	}
-	else
-	{
+	}else{
 		dst = h_dst_.data();
 	}
 

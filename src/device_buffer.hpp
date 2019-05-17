@@ -61,9 +61,8 @@ public:
 	}
 
 
-	void allocate(size_t n)
-	{
-		if (m_data && m_size >= n)
+	void allocate(size_t n){
+		if(m_data && m_size >= n)
 			return;
 
 		destroy();
@@ -71,17 +70,15 @@ public:
 		m_size = n;
 	}
 
-	void destroy()
-	{
-		if (m_data)
+	void destroy(){
+		if(m_data)
 			CudaSafeCall(cudaFree(m_data));
 
 		m_data = nullptr;
 		m_size = 0;
 	}
 
-	void fillZero()
-	{
+	void fillZero(){
 		CudaSafeCall(cudaMemset(m_data, 0, sizeof(value_type) * m_size));
 	}
 
