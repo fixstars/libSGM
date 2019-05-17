@@ -4,13 +4,9 @@ find_package(CUDA REQUIRED)
 
 if(DEFINED AUTO_DETECT_ARCH AND "${AUTO_DETECT_ARCH}")
 	CUDA_SELECT_NVCC_ARCH_FLAGS(ARCH_FLAGS "Auto")
-	message(STATUS "Automatically generated flag: \"${ARCH_FLAGS}\"")
-	set(CUDA_ARCH_TMP "${CUDA_ARCH}")
 	set(CUDA_ARCH "${ARCH_FLAGS}" CACHE STRING "Value of the NVCC -arch option." FORCE)
-	if(NOT "${CUDA_ARCH}" STREQUAL "${CUDA_ARCH_TMP}")
-		message(STATUS "CUDA_ARCH variable is overwritten bacause of AUTO_DETECT_ARCH: ${AUTO_DETECT_ARCH}")
-	endif()
 endif()
+message(STATUS "CUDA_ARCH: \"${CUDA_ARCH}\"")
 
 include_directories(../include)
 
