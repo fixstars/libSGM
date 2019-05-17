@@ -203,7 +203,7 @@ __global__ void winner_takes_all_kernel(
 	for(unsigned int i = 0; i < REDUCTION_PER_THREAD; ++i){
 		const unsigned int k = lane_id * REDUCTION_PER_THREAD + i;
 		const int p = static_cast<int>(((width - k) & ~(MAX_DISPARITY - 1)) + k);
-		if(p < width){
+		if(0 <= p && p < width){
 			right_dest[p] = compute_disparity_normal(unpack_index(right_best[i]));
 		}
 	}
