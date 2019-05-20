@@ -181,26 +181,25 @@ int main(int argc, char* argv[])
 
 	cv::Mat I1 = cv::imread(format_string(argv[1], first_frame), -1);
 	cv::Mat I2 = cv::imread(format_string(argv[2], first_frame), -1);
-	const cv::FileStorage cvfs(argv[3], cv::FileStorage::READ);
+	const cv::FileStorage fs(argv[3], cv::FileStorage::READ);
 	const int disp_size = argc >= 5 ? std::stoi(argv[4]) : 128;
 	const bool subpixel = argc >= 6 ? std::stoi(argv[5]) != 0 : true;
 	const int output_depth = 16;
 
 	ASSERT_MSG(!I1.empty() && !I2.empty(), "imread failed.");
-	ASSERT_MSG(cvfs.isOpened(), "camera.xml read failed.");
+	ASSERT_MSG(fs.isOpened(), "camera.xml read failed.");
 	ASSERT_MSG(I1.size() == I2.size() && I1.type() == I2.type(), "input images must be same size and type.");
 	ASSERT_MSG(I1.type() == CV_8U || I1.type() == CV_16U, "input image format must be CV_8U or CV_16U.");
 	ASSERT_MSG(disp_size == 64 || disp_size == 128, "disparity size must be 64 or 128.");
 
 	// read camera parameters
-	const cv::FileNode node(cvfs.fs, NULL);
 	CameraParameters camera;
-	camera.fu = node["FocalLengthX"];
-	camera.fv = node["FocalLengthY"];
-	camera.u0 = node["CenterX"];
-	camera.v0 = node["CenterY"];
-	camera.baseline = node["BaseLine"];
-	camera.tilt = node["Tilt"];
+	camera.fu = fs["FocalLengthX"];
+	camera.fv = fs["FocalLengthY"];
+	camera.u0 = fs["CenterX"];
+	camera.v0 = fs["CenterY"];
+	camera.baseline = fs["BaseLine"];
+	camera.tilt = fs["Tilt"];
 
 	const int width = I1.cols;
 	const int height = I1.rows;
