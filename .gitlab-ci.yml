@@ -69,6 +69,6 @@ test:
     - nvidia-docker
   script:
     - ldconfig
-    - ./test/sgm-test
+    - cuda-memcheck --leak-check full ./test/sgm-test
   dependencies:
     - build:test
