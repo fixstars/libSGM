@@ -19,6 +19,7 @@ limitations under the License.
 #include <libsgm.h>
 
 #include "internal.h"
+#include "device_buffer.hpp"
 #include "sgm.hpp"
 
 namespace sgm {
@@ -47,12 +48,12 @@ namespace sgm {
 	};
 
 	struct CudaStereoSGMResources {
-		void* d_src_left;
-		void* d_src_right;
-		void* d_left_disp;
-		void* d_right_disp;
-		void* d_tmp_left_disp;
-		void* d_tmp_right_disp;
+		DeviceBuffer<uint8_t> d_src_left;
+		DeviceBuffer<uint8_t> d_src_right;
+		DeviceBuffer<uint16_t> d_left_disp;
+		DeviceBuffer<uint16_t> d_right_disp;
+		DeviceBuffer<uint16_t> d_tmp_left_disp;
+		DeviceBuffer<uint16_t> d_tmp_right_disp;
 
 		SemiGlobalMatchingBase* sgm_engine;
 
@@ -69,37 +70,24 @@ namespace sgm {
 			else
 				throw std::logic_error("depth bits must be 8 or 16, and disparity size must be 64 or 128");
 
-			if (is_cuda_input(inout_type_)) {
-				this->d_src_left = NULL;
-				this->d_src_right = NULL;
-			}
-			else {
-				CudaSafeCall(cudaMalloc(&this->d_src_left, input_depth_bits_ / 8 * src_pitch_ * height_));
-				CudaSafeCall(cudaMalloc(&this->d_src_right, input_depth_bits_ / 8 * src_pitch_ * height_));
+			if (!is_cuda_input(inout_type_)) {
+				this->d_src_left.allocate(input_depth_bits_ / 8 * src_pitch_ * height_);
+				this->d_src_right.allocate(input_depth_bits_ / 8 * src_pitch_ * height_);
 			}
 			
-			CudaSafeCall(cudaMalloc(&this->d_left_disp, sizeof(uint16_t) * dst_pitch_ * height_));
-			CudaSafeCall(cudaMalloc(&this->d_right_disp, sizeof(uint16_t) * dst_pitch_ * height_));
+			this->d_left_disp.allocate(dst_pitch_ * height_);
+			this->d_right_disp.allocate(dst_pitch_ * height_);
 
-			CudaSafeCall(cudaMalloc(&this->d_tmp_left_disp, sizeof(uint16_t) * dst_pitch_ * height_));
-			CudaSafeCall(cudaMalloc(&this->d_tmp_right_disp, sizeof(uint16_t) * dst_pitch_ * height_));
+			this->d_tmp_left_disp.allocate(dst_pitch_ * height_);
+			this->d_tmp_right_disp.allocate(dst_pitch_ * height_);
 
-			CudaSafeCall(cudaMemset(this->d_left_disp, 0, sizeof(uint16_t) * dst_pitch_ * height_));
-			CudaSafeCall(cudaMemset(this->d_right_disp, 0, sizeof(uint16_t) * dst_pitch_ * height_));
-			CudaSafeCall(cudaMemset(this->d_tmp_left_disp, 0, sizeof(uint16_t) * dst_pitch_ * height_));
-			CudaSafeCall(cudaMemset(this->d_tmp_right_disp, 0, sizeof(uint16_t) * dst_pitch_ * height_));
+			this->d_left_disp.fillZero();
+			this->d_right_disp.fillZero();
+			this->d_tmp_left_disp.fillZero();
+			this->d_tmp_right_disp.fillZero();
 		}
 
 		~CudaStereoSGMResources() {
-			CudaSafeCall(cudaFree(this->d_src_left));
-			CudaSafeCall(cudaFree(this->d_src_right));
-
-			CudaSafeCall(cudaFree(this->d_left_disp));
-			CudaSafeCall(cudaFree(this->d_right_disp));
-
-			CudaSafeCall(cudaFree(this->d_tmp_left_disp));
-			CudaSafeCall(cudaFree(this->d_tmp_right_disp));
-
 			delete sgm_engine;
 		}
 	};
@@ -151,16 +139,16 @@ namespace sgm {
 			d_input_right = right_pixels;
 		}
 		else {
-			CudaSafeCall(cudaMemcpy(cu_res_->d_src_left, left_pixels, input_depth_bits_ / 8 * src_pitch_ * height_, cudaMemcpyHostToDevice));
-			CudaSafeCall(cudaMemcpy(cu_res_->d_src_right, right_pixels, input_depth_bits_ / 8 * src_pitch_ * height_, cudaMemcpyHostToDevice));
-			d_input_left = cu_res_->d_src_left;
-			d_input_right = cu_res_->d_src_right;
+			CudaSafeCall(cudaMemcpy(cu_res_->d_src_left.data(), left_pixels, cu_res_->d_src_left.size(), cudaMemcpyHostToDevice));
+			CudaSafeCall(cudaMemcpy(cu_res_->d_src_right.data(), right_pixels, cu_res_->d_src_right.size(), cudaMemcpyHostToDevice));
+			d_input_left = cu_res_->d_src_left.data();
+			d_input_right = cu_res_->d_src_right.data();
 		}
 
-		void* d_tmp_left_disp = cu_res_->d_tmp_left_disp;
-		void* d_tmp_right_disp = cu_res_->d_tmp_right_disp;
-		void* d_left_disp = cu_res_->d_left_disp;
-		void* d_right_disp = cu_res_->d_right_disp;
+		void* d_tmp_left_disp = cu_res_->d_tmp_left_disp.data();
+		void* d_tmp_right_disp = cu_res_->d_tmp_right_disp.data();
+		void* d_left_disp = cu_res_->d_left_disp.data();
+		void* d_right_disp = cu_res_->d_right_disp.data();
 
 		if (is_cuda_output(inout_type_) && output_depth_bits_ == 16)
 			d_left_disp = dst; // when threre is no device-host copy or type conversion, use passed buffer

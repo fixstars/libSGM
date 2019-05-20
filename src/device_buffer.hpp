@@ -19,6 +19,8 @@ limitations under the License.
 
 #include <cstddef>
 
+#include "internal.h"
+
 namespace sgm {
 
 template <typename T>
@@ -28,7 +30,7 @@ public:
 	using value_type = T;
 
 private:
-	T *m_data;
+	value_type *m_data;
 	size_t m_size;
 
 public:
@@ -39,9 +41,9 @@ public:
 
 	explicit DeviceBuffer(size_t n)
 		: m_data(nullptr)
-		, m_size(n)
+		, m_size(0)
 	{
-		cudaMalloc(reinterpret_cast<void **>(&m_data), sizeof(T) * n);
+		allocate(n);
 	}
 
 	DeviceBuffer(const DeviceBuffer&) = delete;
@@ -55,9 +57,30 @@ public:
 	}
 
 	~DeviceBuffer(){
-		cudaFree(m_data);
+		destroy();
 	}
 
+
+	void allocate(size_t n){
+		if(m_data && m_size >= n)
+			return;
+
+		destroy();
+		CudaSafeCall(cudaMalloc(reinterpret_cast<void **>(&m_data), sizeof(value_type) * n));
+		m_size = n;
+	}
+
+	void destroy(){
+		if(m_data)
+			CudaSafeCall(cudaFree(m_data));
+
+		m_data = nullptr;
+		m_size = 0;
+	}
+
+	void fillZero(){
+		CudaSafeCall(cudaMemset(m_data, 0, sizeof(value_type) * m_size));
+	}
 
 	DeviceBuffer& operator=(const DeviceBuffer&) = delete;
 
