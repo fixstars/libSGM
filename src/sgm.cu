@@ -47,10 +47,7 @@ public:
 		int height,
 		int src_pitch,
 		int dst_pitch,
-		unsigned int penalty1,
-		unsigned int penalty2,
-		float uniqueness,
-		bool subpixel,
+		const StereoSGM::Parameters& param,
 		cudaStream_t stream)
 	{
 		m_census_left.enqueue(
@@ -61,12 +58,13 @@ public:
 			m_census_left.get_output(),
 			m_census_right.get_output(),
 			width, height,
-			penalty1, penalty2,
+			param.path_type, param.P1, param.P2,
 			stream);
 		m_winner_takes_all.enqueue(
 			dest_left, dest_right,
 			m_path_aggregation.get_output(),
-			width, height, dst_pitch, uniqueness, subpixel,
+			width, height, dst_pitch,
+			param.uniqueness, param.subpixel, param.path_type,
 			stream);
 	}
 
@@ -92,18 +90,14 @@ void SemiGlobalMatching<T, MAX_DISPARITY>::execute(
 	int height,
 	int src_pitch,
 	int dst_pitch,
-	unsigned int penalty1,
-	unsigned int penalty2,
-	float uniqueness,
-	bool subpixel)
+	const StereoSGM::Parameters& param)
 {
 	m_impl->enqueue(
 		dest_left, dest_right,
 		src_left, src_right,
 		width, height,
 		src_pitch, dst_pitch,
-		penalty1, penalty2,
-		uniqueness, subpixel,
+		param,
 		0);
 	cudaStreamSynchronize(0);
 }
@@ -118,10 +112,7 @@ void SemiGlobalMatching<T, MAX_DISPARITY>::enqueue(
 	int height,
 	int src_pitch,
 	int dst_pitch,
-	unsigned int penalty1,
-	unsigned int penalty2,
-	float uniqueness,
-	bool subpixel,
+	const StereoSGM::Parameters& param,
 	cudaStream_t stream)
 {
 	m_impl->enqueue(
@@ -129,8 +120,7 @@ void SemiGlobalMatching<T, MAX_DISPARITY>::enqueue(
 		src_left, src_right,
 		width, height,
 		src_pitch, dst_pitch,
-		penalty1, penalty2,
-		uniqueness, subpixel,
+		param,
 		stream);
 }
 

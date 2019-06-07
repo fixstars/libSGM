@@ -56,6 +56,11 @@ namespace sgm {
 		EXECUTE_INOUT_CUDA2CUDA = (1 << 1) | 1,
 	};
 
+	enum class PathType {
+		SCAN_4PATH,
+		SCAN_8PATH
+	};
+
 	/**
 	* @brief StereoSGM class
 	*/
@@ -69,7 +74,14 @@ namespace sgm {
 			int P2;
 			float uniqueness;
 			bool subpixel;
-			Parameters(int P1 = 10, int P2 = 120, float uniqueness = 0.95f, bool subpixel = false) : P1(P1), P2(P2), uniqueness(uniqueness), subpixel(subpixel) {}
+			PathType path_type;
+			Parameters(int P1 = 10, int P2 = 120, float uniqueness = 0.95f, bool subpixel = false, PathType path_type = PathType::SCAN_8PATH)
+				: P1(P1)
+				, P2(P2)
+				, uniqueness(uniqueness)
+				, subpixel(subpixel)
+				, path_type(path_type)
+			{ }
 		};
 
 		/**
