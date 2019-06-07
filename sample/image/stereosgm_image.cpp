@@ -32,7 +32,7 @@ limitations under the License.
 
 int main(int argc, char* argv[]) {
 	if (argc < 3) {
-		std::cerr << "usage: stereosgm left_img right_img [disp_size]" << std::endl;
+		std::cerr << "usage: stereosgm left_img right_img [disp_size] [num_paths]" << std::endl;
 		std::exit(EXIT_FAILURE);
 	}
 
@@ -43,10 +43,21 @@ int main(int argc, char* argv[]) {
 	if (argc >= 4) {
 		disp_size = atoi(argv[3]);
 	}
+	int num_paths = 8;
+	if (argc >= 5) {
+		num_paths = atoi(argv[4]);
+	}
 
 	ASSERT_MSG(left.size() == right.size() && left.type() == right.type(), "input images must be same size and type.");
 	ASSERT_MSG(left.type() == CV_8U || left.type() == CV_16U, "input image format must be CV_8U or CV_16U.");
 	ASSERT_MSG(disp_size == 64 || disp_size == 128, "disparity size must be 64 or 128.");
+	ASSERT_MSG(num_paths == 4 || num_paths == 8, "number of scan path must be 4 or 8.");
+
+	sgm::PathType path_type = sgm::PathType::SCAN_8PATH;
+	if (num_paths == 4)
+	{
+		path_type = sgm::PathType::SCAN_4PATH;
+	}
 
 	int bits = 0;
 
@@ -58,7 +69,7 @@ int main(int argc, char* argv[]) {
 		std::exit(EXIT_FAILURE);
 	}
 
-	sgm::StereoSGM ssgm(left.cols, left.rows, disp_size, bits, 8, sgm::EXECUTE_INOUT_HOST2HOST);
+	sgm::StereoSGM ssgm(left.cols, left.rows, disp_size, bits, 8, sgm::EXECUTE_INOUT_HOST2HOST, {10, 120, 0.95f, false, path_type});
 
 	cv::Mat output(cv::Size(left.cols, left.rows), CV_8UC1);
 
