@@ -42,7 +42,7 @@ struct device_buffer
 int main(int argc, char* argv[])
 {
 	if (argc < 3) {
-		std::cout << "usage: " << argv[0] << " left_img right_img [disp_size] [out_depth] [subpixel_enable(0: false, 1:true)] [iterations]" << std::endl;
+		std::cout << "usage: " << argv[0] << " left_img right_img [disp_size] [out_depth] [subpixel_enable(0: false, 1:true)] [num_paths] [iterations]" << std::endl;
 		std::exit(EXIT_FAILURE);
 	}
 
@@ -63,7 +63,10 @@ int main(int argc, char* argv[])
 	} else {
 		ASSERT_MSG(out_depth == 8 || out_depth == 16, "output depth bits must be 8 or 16");
 	}
-	const int iterations = argc > 6 ? std::stoi(argv[6]) : 100;
+	const int num_paths = argc > 6 ? std::stoi(argv[6]) : 8;
+	ASSERT_MSG(num_paths == 4 || num_paths == 8, "number of scan path must be 4 or 8");
+
+	const int iterations = argc > 7 ? std::stoi(argv[7]) : 100;
 
 	const int width = I1.cols;
 	const int height = I1.rows;
@@ -72,7 +75,13 @@ int main(int argc, char* argv[])
 	const int input_bytes = input_depth * width * height / 8;
 	const int output_bytes = out_depth * width * height / 8;
 
-	const sgm::StereoSGM::Parameters params{10, 120, 0.95f, subpixel};
+	sgm::PathType path_type = sgm::PathType::SCAN_8PATH;
+	if (num_paths == 4)
+	{
+		path_type = sgm::PathType::SCAN_4PATH;
+	}
+
+	const sgm::StereoSGM::Parameters params{10, 120, 0.95f, subpixel, path_type};
 
 	sgm::StereoSGM sgm(width, height, disp_size, input_depth, out_depth, sgm::EXECUTE_INOUT_CUDA2CUDA, params);
 
@@ -93,7 +102,7 @@ int main(int argc, char* argv[])
 	std::cout << "disparity size      : " << disp_size << std::endl;
 	std::cout << "output depth        : " << out_depth << std::endl;
 	std::cout << "subpixel option     : " << (subpixel ? "true" : "false") << std::endl;
-	std::cout << "sgm path            : " << "8 path" << std::endl;
+	std::cout << "sgm path            : " << num_paths << " path" << std::endl;
 	std::cout << "iterations          : " << iterations << std::endl;
 	std::cout << std::endl;
 
