@@ -53,11 +53,7 @@ int main(int argc, char* argv[]) {
 	ASSERT_MSG(disp_size == 64 || disp_size == 128, "disparity size must be 64 or 128.");
 	ASSERT_MSG(num_paths == 4 || num_paths == 8, "number of scan path must be 4 or 8.");
 
-	sgm::PathType path_type = sgm::PathType::SCAN_8PATH;
-	if (num_paths == 4)
-	{
-		path_type = sgm::PathType::SCAN_4PATH;
-	}
+	const sgm::PathType path_type = num_paths == 8 ? sgm::PathType::SCAN_8PATH : sgm::PathType::SCAN_4PATH;
 
 	int bits = 0;
 

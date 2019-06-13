@@ -75,11 +75,7 @@ int main(int argc, char* argv[])
 	const int input_bytes = input_depth * width * height / 8;
 	const int output_bytes = out_depth * width * height / 8;
 
-	sgm::PathType path_type = sgm::PathType::SCAN_8PATH;
-	if (num_paths == 4)
-	{
-		path_type = sgm::PathType::SCAN_4PATH;
-	}
+	const sgm::PathType path_type = num_paths == 8 ? sgm::PathType::SCAN_8PATH : sgm::PathType::SCAN_4PATH;
 
 	const sgm::StereoSGM::Parameters params{10, 120, 0.95f, subpixel, path_type};
 

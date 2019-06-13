@@ -51,13 +51,7 @@ void PathAggregation<MAX_DISPARITY>::enqueue(
 	unsigned int p2,
 	cudaStream_t stream)
 {
-	unsigned int num_paths;
-	if (path_type == PathType::SCAN_4PATH)
-	{
-		num_paths = 4;
-	} else {
-		num_paths = 8;
-	}
+	const unsigned int num_paths = path_type == PathType::SCAN_4PATH ? 4 : 8;
 
 	const size_t buffer_size = width * height * MAX_DISPARITY * num_paths;
 	if(m_cost_buffer.size() != buffer_size){
