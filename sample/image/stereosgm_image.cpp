@@ -65,7 +65,10 @@ int main(int argc, char* argv[]) {
 		std::exit(EXIT_FAILURE);
 	}
 
-	sgm::StereoSGM ssgm(left.cols, left.rows, disp_size, bits, 8, sgm::EXECUTE_INOUT_HOST2HOST, {10, 120, 0.95f, false, path_type});
+	sgm::StereoSGM ssgm(
+		left.cols, left.rows, disp_size,
+		bits, 8, sgm::EXECUTE_INOUT_HOST2HOST,
+		sgm::StereoSGM::Parameters(10, 120, 0.95f, false, path_type));
 
 	cv::Mat output(cv::Size(left.cols, left.rows), CV_8UC1);
 
