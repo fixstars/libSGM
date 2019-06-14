@@ -42,14 +42,14 @@ struct device_buffer
 int main(int argc, char* argv[])
 {
 	cv::CommandLineParser parser(argc, argv,
-		"{@left_img  | <none> | path to input left image                                                            }"
-		"{@right_img | <none> | path to input right image                                                           }"
-		"{disp_size  |    128 | maximum possible disparity value                                                    }"
-		"{out_depth  |     16 | disparity image's bits per pixel                                                    }"
-		"{subpixel   |        | enable subpixel estimation                                                          }"
-		"{num_paths  |      8 | number of scanline used in optimization of cost function                            }"
-		"{iterations |    100 | margin in ratio by which the best cost function value should be at least second one }"
-		"{help h     |        | display this help and exit                                                          }");
+		"{@left_img  | <none> | path to input left image                                 }"
+		"{@right_img | <none> | path to input right image                                }"
+		"{disp_size  |    128 | maximum possible disparity value                         }"
+		"{out_depth  |     16 | disparity image's bits per pixel                         }"
+		"{subpixel   |        | enable subpixel estimation                               }"
+		"{num_paths  |      8 | number of scanline used in optimization of cost function }"
+		"{iterations |    100 | number of iterations for measuring performance           }"
+		"{help h     |        | display this help and exit                               }");
 
 	if (parser.has("help")) {
 		parser.printMessage();
