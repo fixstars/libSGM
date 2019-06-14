@@ -17,8 +17,8 @@ limitations under the License.
 #include <libsgm_wrapper.h>
 
 namespace sgm {
-	LibSGMWrapper::LibSGMWrapper(int numDisparity, int P1, int P2, float uniquenessRatio, bool subpixel)
-		: sgm_(nullptr), numDisparity_(numDisparity), param_(P1, P2, uniquenessRatio, subpixel), prev_(nullptr) {}
+	LibSGMWrapper::LibSGMWrapper(int numDisparity, int P1, int P2, float uniquenessRatio, bool subpixel, PathType pathType)
+		: sgm_(nullptr), numDisparity_(numDisparity), param_(P1, P2, uniquenessRatio, subpixel, pathType), prev_(nullptr) {}
 	LibSGMWrapper::~LibSGMWrapper() = default;
 
 	int LibSGMWrapper::getNumDisparities() const { return numDisparity_; }
@@ -26,6 +26,7 @@ namespace sgm {
 	int LibSGMWrapper::getP1() const { return param_.P1; }
 	int LibSGMWrapper::getP2() const { return param_.P2; }
 	bool LibSGMWrapper::hasSubpixel() const { return param_.subpixel; }
+	PathType LibSGMWrapper::getPathType() const { return param_.path_type; }
 
 	struct LibSGMWrapper::Creator {
 		int width;
