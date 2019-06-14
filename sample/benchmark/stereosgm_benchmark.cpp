@@ -47,7 +47,7 @@ int main(int argc, char* argv[])
 		"{disp_size  |    128 | maximum possible disparity value                                                    }"
 		"{out_depth  |     16 | disparity image's bits per pixel                                                    }"
 		"{subpixel   |        | enable subpixel estimation                                                          }"
-		"{num_paths  |      8 | number of scanline used in optimizization of cost function                          }"
+		"{num_paths  |      8 | number of scanline used in optimization of cost function                            }"
 		"{iterations |    100 | margin in ratio by which the best cost function value should be at least second one }"
 		"{help h     |        | display this help and exit                                                          }");
 

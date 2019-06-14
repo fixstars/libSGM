@@ -38,7 +38,7 @@ int main(int argc, char* argv[]) {
 		"{P1         |     10 | penalty on the disparity change by plus or minus 1 between nieghbor pixels          }"
 		"{P2         |    120 | penalty on the disparity change by more than 1 between neighbor pixels              }"
 		"{uniqueness |   0.95 | margin in ratio by which the best cost function value should be at least second one }"
-		"{num_paths  |      8 | number of scanline used in optimizization of cost function                          }"
+		"{num_paths  |      8 | number of scanline used in optimization of cost function                            }"
 		"{help h     |        | display this help and exit                                                          }");
 	
 	if (parser.has("help")) {
