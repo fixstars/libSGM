@@ -53,7 +53,7 @@ int main(int argc, char* argv[])
 
 	if (parser.has("help")) {
 		parser.printMessage();
-		return EXIT_SUCCESS;
+		return 0;
 	}
 
 	const cv::Mat I1 = cv::imread(parser.get<cv::String>( "@left_img"), -1);
@@ -62,7 +62,7 @@ int main(int argc, char* argv[])
 	if (!parser.check()) {
 		parser.printErrors();
 		parser.printMessage();
-		return EXIT_FAILURE;
+		std::exit(EXIT_FAILURE);
 	}
 
 	ASSERT_MSG(!I1.empty() && !I2.empty(), "imread failed.");

@@ -43,7 +43,7 @@ int main(int argc, char* argv[]) {
 	
 	if (parser.has("help")) {
 		parser.printMessage();
-		return EXIT_SUCCESS;
+		return 0;
 	}
 
 	const cv::Mat  left = cv::imread(parser.get<cv::String>( "@left_img"), -1);
@@ -52,7 +52,7 @@ int main(int argc, char* argv[]) {
 	if (!parser.check()) {
 		parser.printErrors();
 		parser.printMessage();
-		return EXIT_FAILURE;
+		std::exit(EXIT_FAILURE);
 	}
 
 	const int disp_size = parser.get<int>("disp_size");
