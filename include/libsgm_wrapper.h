@@ -19,7 +19,7 @@ namespace sgm {
 		 * @param P2 Penalty on the disparity change by more than 1 between neighbor pixels
 		 * @param uniquenessRatio Margin in ratio by which the best cost function value should be at least second one
 		 * @param subpixel Disparity value has 4 fractional bits if subpixel option is enabled
-		 * @param pathType Method of scanline for optimizing cost function
+		 * @param pathType Number of scanlines used in cost aggregation
 		 */
 		LIBSGM_API LibSGMWrapper(int numDisparity = 128, int P1 = 10, int P2 = 120, float uniquenessRatio = 0.95f, bool subpixel = false, PathType pathType = PathType::SCAN_8PATH);
 		LIBSGM_API ~LibSGMWrapper();
