@@ -17,6 +17,7 @@ limitations under the License.
 #ifndef SGM_WINNER_TAKES_ALL_HPP
 #define SGM_WINNER_TAKES_ALL_HPP
 
+#include <libsgm.h>
 #include "device_buffer.hpp"
 #include "types.hpp"
 
@@ -47,6 +48,7 @@ public:
 		int pitch,
 		float uniqueness,
 		bool subpixel,
+		PathType path_type,
 		cudaStream_t stream);
 
 	void enqueue(
@@ -58,6 +60,7 @@ public:
 		int pitch,
 		float uniqueness,
 		bool subpixel,
+		PathType path_type,
 		cudaStream_t stream);
 
 };

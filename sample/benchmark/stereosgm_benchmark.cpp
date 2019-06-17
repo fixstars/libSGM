@@ -41,21 +41,39 @@ struct device_buffer
 
 int main(int argc, char* argv[])
 {
-	if (argc < 3) {
-		std::cout << "usage: " << argv[0] << " left_img right_img [disp_size] [out_depth] [subpixel_enable(0: false, 1:true)] [iterations]" << std::endl;
-		std::exit(EXIT_FAILURE);
+	cv::CommandLineParser parser(argc, argv,
+		"{@left_img  | <none> | path to input left image                       }"
+		"{@right_img | <none> | path to input right image                      }"
+		"{disp_size  |    128 | maximum possible disparity value               }"
+		"{out_depth  |      8 | disparity image's bits per pixel               }"
+		"{subpixel   |        | enable subpixel estimation                     }"
+		"{num_paths  |      8 | number of scanlines used in cost aggregation   }"
+		"{iterations |    100 | number of iterations for measuring performance }"
+		"{help h     |        | display this help and exit                     }");
+
+	if (parser.has("help")) {
+		parser.printMessage();
+		return 0;
 	}
 
-	cv::Mat I1 = cv::imread(argv[1], -1);
-	cv::Mat I2 = cv::imread(argv[2], -1);
+	const cv::Mat I1 = cv::imread(parser.get<cv::String>( "@left_img"), -1);
+	const cv::Mat I2 = cv::imread(parser.get<cv::String>("@right_img"), -1);
+
+	if (!parser.check()) {
+		parser.printErrors();
+		parser.printMessage();
+		std::exit(EXIT_FAILURE);
+	}
 
 	ASSERT_MSG(!I1.empty() && !I2.empty(), "imread failed.");
 	ASSERT_MSG(I1.size() == I2.size() && I1.type() == I2.type(), "input images must be same size and type.");
 	ASSERT_MSG(I1.type() == CV_8U || I1.type() == CV_16U, "input image format must be CV_8U or CV_16U.");
 
-	const int disp_size = argc > 3 ? std::stoi(argv[3]) : 128;
-	const int out_depth = argc > 4 ? std::stoi(argv[4]) : 8;
-	const bool subpixel = argc > 5 ? std::stoi(argv[5]) != 0 : false;
+	const int disp_size = parser.get<int>("disp_size");
+	const int out_depth = parser.get<int>("out_depth");
+	const bool subpixel = parser.has("subpixel");
+	const int num_paths = parser.get<int>("num_paths");
+	const int iterations = parser.get<int>("iterations");
 
 	ASSERT_MSG(disp_size == 64 || disp_size == 128, "disparity size must be 64 or 128.");
 	if (subpixel) {
@@ -63,7 +81,7 @@ int main(int argc, char* argv[])
 	} else {
 		ASSERT_MSG(out_depth == 8 || out_depth == 16, "output depth bits must be 8 or 16");
 	}
-	const int iterations = argc > 6 ? std::stoi(argv[6]) : 100;
+	ASSERT_MSG(num_paths == 4 || num_paths == 8, "number of scanlines must be 4 or 8");
 
 	const int width = I1.cols;
 	const int height = I1.rows;
@@ -72,7 +90,9 @@ int main(int argc, char* argv[])
 	const int input_bytes = input_depth * width * height / 8;
 	const int output_bytes = out_depth * width * height / 8;
 
-	const sgm::StereoSGM::Parameters params{10, 120, 0.95f, subpixel};
+	const sgm::PathType path_type = num_paths == 8 ? sgm::PathType::SCAN_8PATH : sgm::PathType::SCAN_4PATH;
+
+	const sgm::StereoSGM::Parameters params{10, 120, 0.95f, subpixel, path_type};
 
 	sgm::StereoSGM sgm(width, height, disp_size, input_depth, out_depth, sgm::EXECUTE_INOUT_CUDA2CUDA, params);
 
@@ -93,7 +113,7 @@ int main(int argc, char* argv[])
 	std::cout << "disparity size      : " << disp_size << std::endl;
 	std::cout << "output depth        : " << out_depth << std::endl;
 	std::cout << "subpixel option     : " << (subpixel ? "true" : "false") << std::endl;
-	std::cout << "sgm path            : " << "8 path" << std::endl;
+	std::cout << "sgm path            : " << num_paths << " path" << std::endl;
 	std::cout << "iterations          : " << iterations << std::endl;
 	std::cout << std::endl;
 

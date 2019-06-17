@@ -105,7 +105,7 @@ static void test_random_left(bool subpixel, size_t padding = 0)
 
 	sgm::WinnerTakesAll<disparity> wta;
 	const auto d_input = to_device_vector(input);
-	wta.enqueue(d_input.data().get(), width, height, static_cast<int>(pitch), uniqueness, subpixel, 0);
+	wta.enqueue(d_input.data().get(), width, height, static_cast<int>(pitch), uniqueness, subpixel, sgm::PathType::SCAN_8PATH, 0);
 	cudaStreamSynchronize(0);
 
 	const thrust::device_vector<sgm::output_type> d_actual(
@@ -135,7 +135,7 @@ static void test_corner1_left(bool subpixel, size_t padding = 0)
 
 	sgm::WinnerTakesAll<disparity> wta;
 	const auto d_input = to_device_vector(input);
-	wta.enqueue(d_input.data().get(), width, height, static_cast<int>(pitch), uniqueness, subpixel, 0);
+	wta.enqueue(d_input.data().get(), width, height, static_cast<int>(pitch), uniqueness, subpixel, sgm::PathType::SCAN_8PATH, 0);
 	cudaStreamSynchronize(0);
 
 	const thrust::device_vector<sgm::output_type> d_actual(
@@ -168,7 +168,7 @@ static void test_corner2_left(bool subpixel, size_t padding = 0)
 
 	sgm::WinnerTakesAll<disparity> wta;
 	const auto d_input = to_device_vector(input);
-	wta.enqueue(d_input.data().get(), width, height, static_cast<int>(pitch), uniqueness, subpixel, 0);
+	wta.enqueue(d_input.data().get(), width, height, static_cast<int>(pitch), uniqueness, subpixel, sgm::PathType::SCAN_8PATH, 0);
 	cudaStreamSynchronize(0);
 
 	const thrust::device_vector<sgm::output_type> d_actual(
@@ -223,7 +223,7 @@ static void test_random_right(size_t padding = 0)
 
 	sgm::WinnerTakesAll<disparity> wta;
 	const auto d_input = to_device_vector(input);
-	wta.enqueue(d_input.data().get(), width, height, static_cast<int>(pitch), uniqueness, false, 0);
+	wta.enqueue(d_input.data().get(), width, height, static_cast<int>(pitch), uniqueness, false, sgm::PathType::SCAN_8PATH, 0);
 	cudaStreamSynchronize(0);
 
 	const thrust::device_vector<sgm::output_type> d_actual(

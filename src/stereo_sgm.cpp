@@ -30,7 +30,7 @@ namespace sgm {
 	public:
 		using output_type = sgm::output_type;
 		virtual void execute(output_type* dst_L, output_type* dst_R, const void* src_L, const void* src_R, 
-			int w, int h, int sp, int dp, unsigned int P1, unsigned int P2, float uniqueness, bool subpixel) = 0;
+			int w, int h, int sp, int dp, StereoSGM::Parameters& param) = 0;
 
 		virtual ~SemiGlobalMatchingBase() {}
 	};
@@ -39,9 +39,9 @@ namespace sgm {
 	class SemiGlobalMatchingImpl : public SemiGlobalMatchingBase {
 	public:
 		void execute(output_type* dst_L, output_type* dst_R, const void* src_L, const void* src_R,
-			int w, int h, int sp, int dp, unsigned int P1, unsigned int P2, float uniqueness, bool subpixel) override
+			int w, int h, int sp, int dp, StereoSGM::Parameters& param) override
 		{
-			sgm_engine_.execute(dst_L, dst_R, (const input_type*)src_L, (const input_type*)src_R, w, h, sp, dp, P1, P2, uniqueness, subpixel);
+			sgm_engine_.execute(dst_L, dst_R, (const input_type*)src_L, (const input_type*)src_R, w, h, sp, dp, param);
 		}
 	private:
 		SemiGlobalMatching<input_type, DISP_SIZE> sgm_engine_;
@@ -121,6 +121,10 @@ namespace sgm {
 			width_ = height_ = input_depth_bits_ = output_depth_bits_ = disparity_size_ = 0;
 			throw std::logic_error("output depth bits must be 16 if sub-pixel option was enabled");
 		}
+		if (param_.path_type != PathType::SCAN_4PATH && param_.path_type != PathType::SCAN_8PATH) {
+			width_ = height_ = input_depth_bits_ = output_depth_bits_ = disparity_size_ = 0;
+			throw std::logic_error("Path type must be PathType::SCAN_4PATH or PathType::SCAN_8PATH");
+		}
 
 		cu_res_ = new CudaStereoSGMResources(width_, height_, disparity_size_, input_depth_bits_, output_depth_bits_, src_pitch, dst_pitch, inout_type_);
 	}
@@ -154,7 +158,7 @@ namespace sgm {
 			d_left_disp = dst; // when threre is no device-host copy or type conversion, use passed buffer
 		
 		cu_res_->sgm_engine->execute((uint16_t*)d_tmp_left_disp, (uint16_t*)d_tmp_right_disp,
-			d_input_left, d_input_right, width_, height_, src_pitch_, dst_pitch_, param_.P1, param_.P2, param_.uniqueness, param_.subpixel);
+			d_input_left, d_input_right, width_, height_, src_pitch_, dst_pitch_, param_);
 
 		sgm::details::median_filter((uint16_t*)d_tmp_left_disp, (uint16_t*)d_left_disp, width_, height_, dst_pitch_);
 		sgm::details::median_filter((uint16_t*)d_tmp_right_disp, (uint16_t*)d_right_disp, width_, height_, dst_pitch_);

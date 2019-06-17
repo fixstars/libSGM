@@ -25,7 +25,7 @@ template <size_t MAX_DISPARITY>
 PathAggregation<MAX_DISPARITY>::PathAggregation()
 	: m_cost_buffer()
 {
-	for(unsigned int i = 0; i < NUM_PATHS; ++i){
+	for(unsigned int i = 0; i < MAX_NUM_PATHS; ++i){
 		cudaStreamCreate(&m_streams[i]);
 		cudaEventCreate(&m_events[i]);
 	}
@@ -33,7 +33,7 @@ PathAggregation<MAX_DISPARITY>::PathAggregation()
 
 template <size_t MAX_DISPARITY>
 PathAggregation<MAX_DISPARITY>::~PathAggregation(){
-	for(unsigned int i = 0; i < NUM_PATHS; ++i){
+	for(unsigned int i = 0; i < MAX_NUM_PATHS; ++i){
 		cudaStreamSynchronize(m_streams[i]);
 		cudaStreamDestroy(m_streams[i]);
 		cudaEventDestroy(m_events[i]);
@@ -46,16 +46,20 @@ void PathAggregation<MAX_DISPARITY>::enqueue(
 	const feature_type *right,
 	int width,
 	int height,
+	PathType path_type,
 	unsigned int p1,
 	unsigned int p2,
 	cudaStream_t stream)
 {
-	const size_t buffer_size = width * height * MAX_DISPARITY * NUM_PATHS;
+	const unsigned int num_paths = path_type == PathType::SCAN_4PATH ? 4 : 8;
+
+	const size_t buffer_size = width * height * MAX_DISPARITY * num_paths;
 	if(m_cost_buffer.size() != buffer_size){
 		m_cost_buffer = DeviceBuffer<cost_type>(buffer_size);
 	}
 	const size_t buffer_step = width * height * MAX_DISPARITY;
 	cudaStreamSynchronize(stream);
+
 	path_aggregation::enqueue_aggregate_up2down_path<MAX_DISPARITY>(
 		m_cost_buffer.data() + 0 * buffer_step,
 		left, right, width, height, p1, p2, m_streams[0]);
@@ -68,19 +72,23 @@ void PathAggregation<MAX_DISPARITY>::enqueue(
 	path_aggregation::enqueue_aggregate_right2left_path<MAX_DISPARITY>(
 		m_cost_buffer.data() + 3 * buffer_step,
 		left, right, width, height, p1, p2, m_streams[3]);
-	path_aggregation::enqueue_aggregate_upleft2downright_path<MAX_DISPARITY>(
-		m_cost_buffer.data() + 4 * buffer_step,
-		left, right, width, height, p1, p2, m_streams[4]);
-	path_aggregation::enqueue_aggregate_upright2downleft_path<MAX_DISPARITY>(
-		m_cost_buffer.data() + 5 * buffer_step,
-		left, right, width, height, p1, p2, m_streams[5]);
-	path_aggregation::enqueue_aggregate_downright2upleft_path<MAX_DISPARITY>(
-		m_cost_buffer.data() + 6 * buffer_step,
-		left, right, width, height, p1, p2, m_streams[6]);
-	path_aggregation::enqueue_aggregate_downleft2upright_path<MAX_DISPARITY>(
-		m_cost_buffer.data() + 7 * buffer_step,
-		left, right, width, height, p1, p2, m_streams[7]);
-	for(unsigned int i = 0; i < NUM_PATHS; ++i){
+
+	if (path_type == PathType::SCAN_8PATH) {
+		path_aggregation::enqueue_aggregate_upleft2downright_path<MAX_DISPARITY>(
+			m_cost_buffer.data() + 4 * buffer_step,
+			left, right, width, height, p1, p2, m_streams[4]);
+		path_aggregation::enqueue_aggregate_upright2downleft_path<MAX_DISPARITY>(
+			m_cost_buffer.data() + 5 * buffer_step,
+			left, right, width, height, p1, p2, m_streams[5]);
+		path_aggregation::enqueue_aggregate_downright2upleft_path<MAX_DISPARITY>(
+			m_cost_buffer.data() + 6 * buffer_step,
+			left, right, width, height, p1, p2, m_streams[6]);
+		path_aggregation::enqueue_aggregate_downleft2upright_path<MAX_DISPARITY>(
+			m_cost_buffer.data() + 7 * buffer_step,
+			left, right, width, height, p1, p2, m_streams[7]);
+	}
+
+	for(unsigned int i = 0; i < MAX_NUM_PATHS; ++i){
 		cudaEventRecord(m_events[i], m_streams[i]);
 		cudaStreamWaitEvent(stream, m_events[i], 0);
 	}

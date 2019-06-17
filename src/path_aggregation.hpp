@@ -17,6 +17,7 @@ limitations under the License.
 #ifndef SGM_PATH_AGGREGATION_HPP
 #define SGM_PATH_AGGREGATION_HPP
 
+#include <libsgm.h>
 #include "device_buffer.hpp"
 #include "types.hpp"
 
@@ -26,11 +27,11 @@ template <size_t MAX_DISPARITY>
 class PathAggregation {
 
 private:
-	static const unsigned int NUM_PATHS = 8;
+	static const unsigned int MAX_NUM_PATHS = 8;
 
 	DeviceBuffer<cost_type> m_cost_buffer;
-	cudaStream_t m_streams[NUM_PATHS];
-	cudaEvent_t m_events[NUM_PATHS];
+	cudaStream_t m_streams[MAX_NUM_PATHS];
+	cudaEvent_t m_events[MAX_NUM_PATHS];
 	
 public:
 	PathAggregation();
@@ -45,6 +46,7 @@ public:
 		const feature_type *right,
 		int width,
 		int height,
+		PathType path_type,
 		unsigned int p1,
 		unsigned int p2,
 		cudaStream_t stream);

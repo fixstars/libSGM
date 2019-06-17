@@ -31,22 +31,43 @@ limitations under the License.
 	} \
 
 int main(int argc, char* argv[]) {
-	if (argc < 3) {
-		std::cerr << "usage: stereosgm left_img right_img [disp_size]" << std::endl;
+	cv::CommandLineParser parser(argc, argv,
+		"{@left_img  | <none> | path to input left image                                                            }"
+		"{@right_img | <none> | path to input right image                                                           }"
+		"{disp_size  |     64 | maximum possible disparity value                                                    }"
+		"{P1         |     10 | penalty on the disparity change by plus or minus 1 between nieghbor pixels          }"
+		"{P2         |    120 | penalty on the disparity change by more than 1 between neighbor pixels              }"
+		"{uniqueness |   0.95 | margin in ratio by which the best cost function value should be at least second one }"
+		"{num_paths  |      8 | number of scanlines used in cost aggregation                                        }"
+		"{help h     |        | display this help and exit                                                          }");
+	
+	if (parser.has("help")) {
+		parser.printMessage();
+		return 0;
+	}
+
+	const cv::Mat  left = cv::imread(parser.get<cv::String>( "@left_img"), -1);
+	const cv::Mat right = cv::imread(parser.get<cv::String>("@right_img"), -1);
+
+	if (!parser.check()) {
+		parser.printErrors();
+		parser.printMessage();
 		std::exit(EXIT_FAILURE);
 	}
 
-	cv::Mat left = cv::imread(argv[1], -1);
-	cv::Mat right = cv::imread(argv[2], -1);
+	const int disp_size = parser.get<int>("disp_size");
+	const int P1 = parser.get<int>("P1");
+	const int P2 = parser.get<int>("P2");
+	const float uniqueness = parser.get<float>("uniqueness");
+	const int num_paths = parser.get<int>("num_paths");
 
-	int disp_size = 64;
-	if (argc >= 4) {
-		disp_size = atoi(argv[3]);
-	}
-
+	ASSERT_MSG(!left.empty() && !right.empty(), "imread failed.");
 	ASSERT_MSG(left.size() == right.size() && left.type() == right.type(), "input images must be same size and type.");
 	ASSERT_MSG(left.type() == CV_8U || left.type() == CV_16U, "input image format must be CV_8U or CV_16U.");
 	ASSERT_MSG(disp_size == 64 || disp_size == 128, "disparity size must be 64 or 128.");
+	ASSERT_MSG(num_paths == 4 || num_paths == 8, "number of scanlines must be 4 or 8.");
+
+	const sgm::PathType path_type = num_paths == 8 ? sgm::PathType::SCAN_8PATH : sgm::PathType::SCAN_4PATH;
 
 	int bits = 0;
 
@@ -58,7 +79,10 @@ int main(int argc, char* argv[]) {
 		std::exit(EXIT_FAILURE);
 	}
 
-	sgm::StereoSGM ssgm(left.cols, left.rows, disp_size, bits, 8, sgm::EXECUTE_INOUT_HOST2HOST);
+	sgm::StereoSGM ssgm(
+		left.cols, left.rows, disp_size,
+		bits, 8, sgm::EXECUTE_INOUT_HOST2HOST,
+		sgm::StereoSGM::Parameters(P1, P2, uniqueness, false, path_type));
 
 	cv::Mat output(cv::Size(left.cols, left.rows), CV_8UC1);
 

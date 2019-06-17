@@ -19,6 +19,7 @@ limitations under the License.
 
 #include <memory>
 #include <cstdint>
+#include <libsgm.h>
 #include "types.hpp"
 
 namespace sgm {
@@ -47,10 +48,7 @@ public:
 		int height,
 		int src_pitch,
 		int dst_pitch,
-		unsigned int penalty1,
-		unsigned int penalty2,
-		float uniqueness,
-		bool subpixel);
+		const StereoSGM::Parameters& param);
 
 	void enqueue(
 		output_type *dest_left,
@@ -61,10 +59,7 @@ public:
 		int height,
 		int src_pitch,
 		int dst_pitch,
-		unsigned int penalty1,
-		unsigned int penalty2,
-		float uniqueness,
-		bool subpixel,
+		const StereoSGM::Parameters& param,
 		cudaStream_t stream);
 
 };
