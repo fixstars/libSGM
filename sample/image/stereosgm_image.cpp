@@ -20,7 +20,6 @@ limitations under the License.
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
-#include <opencv2/core/version.hpp>
 
 #include <libsgm.h>
 
@@ -30,7 +29,8 @@ limitations under the License.
 		std::exit(EXIT_FAILURE); \
 	} \
 
-int main(int argc, char* argv[]) {
+int main(int argc, char* argv[])
+{
 	cv::CommandLineParser parser(argc, argv,
 		"{@left_img  | <none> | path to input left image                                                            }"
 		"{@right_img | <none> | path to input right image                                                           }"
@@ -40,14 +40,14 @@ int main(int argc, char* argv[]) {
 		"{uniqueness |   0.95 | margin in ratio by which the best cost function value should be at least second one }"
 		"{num_paths  |      8 | number of scanlines used in cost aggregation                                        }"
 		"{help h     |        | display this help and exit                                                          }");
-	
+
 	if (parser.has("help")) {
 		parser.printMessage();
 		return 0;
 	}
 
-	const cv::Mat  left = cv::imread(parser.get<cv::String>( "@left_img"), -1);
-	const cv::Mat right = cv::imread(parser.get<cv::String>("@right_img"), -1);
+	cv::Mat  left = cv::imread(parser.get<cv::String>("@left_img"), -1);
+	cv::Mat right = cv::imread(parser.get<cv::String>("@right_img"), -1);
 
 	if (!parser.check()) {
 		parser.printErrors();
@@ -68,59 +68,41 @@ int main(int argc, char* argv[]) {
 	ASSERT_MSG(num_paths == 4 || num_paths == 8, "number of scanlines must be 4 or 8.");
 
 	const sgm::PathType path_type = num_paths == 8 ? sgm::PathType::SCAN_8PATH : sgm::PathType::SCAN_4PATH;
+	const int input_depth = left.type() == CV_8U ? 8 : 16;
+	const int output_depth = 8;
 
-	int bits = 0;
+	const sgm::StereoSGM::Parameters param(P1, P2, uniqueness, false, path_type);
+	sgm::StereoSGM ssgm(left.cols, left.rows, disp_size, input_depth, output_depth, sgm::EXECUTE_INOUT_HOST2HOST, param);
 
-	switch (left.type()) {
-	case CV_8UC1: bits = 8; break;
-	case CV_16UC1: bits = 16; break;
-	default:
-		std::cerr << "invalid input image color format" << left.type() << std::endl;
-		std::exit(EXIT_FAILURE);
-	}
+	cv::Mat disparity(left.size(), CV_8U);
 
-	sgm::StereoSGM ssgm(
-		left.cols, left.rows, disp_size,
-		bits, 8, sgm::EXECUTE_INOUT_HOST2HOST,
-		sgm::StereoSGM::Parameters(P1, P2, uniqueness, false, path_type));
+	ssgm.execute(left.data, right.data, disparity.data);
 
-	cv::Mat output(cv::Size(left.cols, left.rows), CV_8UC1);
-
-	ssgm.execute(left.data, right.data, output.data);
 	// show image
-	cv::imshow("image", output * 256 / disp_size);
-	
-	int key = cv::waitKey();
-	int mode = 0;
-	while (key != 27) {
-		if (key == 's') {
-			mode += 1;
-			if (mode >= 3) mode = 0;
+	cv::Mat disparity_color;
+	disparity *= (255. / disp_size);
+	cv::applyColorMap(disparity, disparity_color, cv::COLORMAP_JET);
+	if (left.type() != CV_8U)
+		cv::normalize(left, left, 0, 255, cv::NORM_MINMAX, CV_8U);
 
-			switch (mode) {
-			case 0:
-				{
-					cv::setWindowTitle("image", "disparity");
-					cv::imshow("image", output * 256 / disp_size);
-					break;
-				}
-			case 1:
-				{
-					cv::Mat m;
-					cv::applyColorMap(output * 256 / disp_size, m, cv::COLORMAP_JET);
-					cv::setWindowTitle("image", "disparity color");
-					cv::imshow("image", m);
-					break;
-				}
-			case 2:
-				{
-					cv::setWindowTitle("image", "input");
-					cv::imshow("image", left);
-					break;
-				}
-			}
-		}
-		key = cv::waitKey();
+	std::vector<cv::Mat> images = { disparity, disparity_color, left };
+	std::vector<std::string> titles = { "disparity", "disparity color", "input" };
+
+	std::cout << "Hot keys:" << std::endl;
+	std::cout << "\tESC - quit the program" << std::endl;
+	std::cout << "\ts - switch display (disparity | colored disparity | input image)" << std::endl;
+
+	int mode = 0;
+	while (true) {
+
+		cv::setWindowTitle("image", titles[mode]);
+		cv::imshow("image", images[mode]);
+
+		const char c = cv::waitKey(0);
+		if (c == 's')
+			mode = (mode < 2 ? mode + 1 : 0);
+		if (c == 27)
+			break;
 	}
 
 	return 0;
