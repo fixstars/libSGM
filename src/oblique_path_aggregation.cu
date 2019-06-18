@@ -215,6 +215,16 @@ template void enqueue_aggregate_upleft2downright_path<128u>(
 	unsigned int p2,
 	cudaStream_t stream);
 
+template void enqueue_aggregate_upleft2downright_path<256u>(
+	cost_type *dest,
+	const feature_type *left,
+	const feature_type *right,
+	int width,
+	int height,
+	unsigned int p1,
+	unsigned int p2,
+	cudaStream_t stream);
+
 template void enqueue_aggregate_upright2downleft_path<64u>(
 	cost_type *dest,
 	const feature_type *left,
@@ -226,6 +236,16 @@ template void enqueue_aggregate_upright2downleft_path<64u>(
 	cudaStream_t stream);
 
 template void enqueue_aggregate_upright2downleft_path<128u>(
+	cost_type *dest,
+	const feature_type *left,
+	const feature_type *right,
+	int width,
+	int height,
+	unsigned int p1,
+	unsigned int p2,
+	cudaStream_t stream);
+
+template void enqueue_aggregate_upright2downleft_path<256u>(
 	cost_type *dest,
 	const feature_type *left,
 	const feature_type *right,
@@ -255,6 +275,16 @@ template void enqueue_aggregate_downright2upleft_path<128u>(
 	unsigned int p2,
 	cudaStream_t stream);
 
+template void enqueue_aggregate_downright2upleft_path<256u>(
+	cost_type *dest,
+	const feature_type *left,
+	const feature_type *right,
+	int width,
+	int height,
+	unsigned int p1,
+	unsigned int p2,
+	cudaStream_t stream);
+
 template void enqueue_aggregate_downleft2upright_path<64u>(
 	cost_type *dest,
 	const feature_type *left,
@@ -266,6 +296,16 @@ template void enqueue_aggregate_downleft2upright_path<64u>(
 	cudaStream_t stream);
 
 template void enqueue_aggregate_downleft2upright_path<128u>(
+	cost_type *dest,
+	const feature_type *left,
+	const feature_type *right,
+	int width,
+	int height,
+	unsigned int p1,
+	unsigned int p2,
+	cudaStream_t stream);
+
+template void enqueue_aggregate_downleft2upright_path<256u>(
 	cost_type *dest,
 	const feature_type *left,
 	const feature_type *right,

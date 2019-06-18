@@ -127,7 +127,9 @@ void SemiGlobalMatching<T, MAX_DISPARITY>::enqueue(
 
 template class SemiGlobalMatching<uint8_t,   64>;
 template class SemiGlobalMatching<uint8_t,  128>;
+template class SemiGlobalMatching<uint8_t,  256>;
 template class SemiGlobalMatching<uint16_t,  64>;
 template class SemiGlobalMatching<uint16_t, 128>;
+template class SemiGlobalMatching<uint16_t, 256>;
 
 }

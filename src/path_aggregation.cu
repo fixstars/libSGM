@@ -97,5 +97,6 @@ void PathAggregation<MAX_DISPARITY>::enqueue(
 
 template class PathAggregation< 64>;
 template class PathAggregation<128>;
+template class PathAggregation<256>;
 
 }
