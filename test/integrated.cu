@@ -67,7 +67,7 @@ TEST_P(LibSGM, Integrated){
 INSTANTIATE_TEST_CASE_P(LibSGM_Test, LibSGM, testing::Combine(
 	testing::Values(8, 16),
 	testing::Values(8, 16),
-	testing::Values(64, 128),
+	testing::Values(64, 128, 256),
 	testing::Values(sgm::PathType::SCAN_4PATH, sgm::PathType::SCAN_8PATH),
 	testing::Values(
 		sgm::EXECUTE_INOUT_HOST2HOST,
