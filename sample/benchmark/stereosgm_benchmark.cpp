@@ -75,7 +75,7 @@ int main(int argc, char* argv[])
 	const int num_paths = parser.get<int>("num_paths");
 	const int iterations = parser.get<int>("iterations");
 
-	ASSERT_MSG(disp_size == 64 || disp_size == 128, "disparity size must be 64 or 128.");
+	ASSERT_MSG(disp_size == 64 || disp_size == 128 || disp_size == 256, "disparity size must be 64, 128 or 256.");
 	if (subpixel) {
 		ASSERT_MSG(out_depth == 16, "output depth bits must be 16 if subpixel option is enabled.");
 	} else {
