@@ -57,7 +57,7 @@ __global__ void aggregate_horizontal_path_kernel(
 	const unsigned int group_id = threadIdx.x % WARP_SIZE / SUBGROUP_SIZE;
 	const unsigned int lane_id  = threadIdx.x % SUBGROUP_SIZE;
 	const unsigned int shfl_mask =
-		((1u << SUBGROUP_SIZE) - 1u) << (group_id * SUBGROUP_SIZE);
+		generate_mask<SUBGROUP_SIZE>() << (group_id * SUBGROUP_SIZE);
 
 	const unsigned int y0 =
 		PATHS_PER_BLOCK * blockIdx.x +

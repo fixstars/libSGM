@@ -92,6 +92,13 @@ struct DynamicProgramming {
 	}
 };
 
+template <unsigned int SIZE>
+__device__ unsigned int generate_mask()
+{
+	static_assert(SIZE <= 32, "SIZE must be less than or equal to 32");
+	return static_cast<unsigned int>((1ull << SIZE) - 1u);
+}
+
 }
 }
 
