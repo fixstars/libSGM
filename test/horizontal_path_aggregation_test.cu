@@ -21,7 +21,7 @@ TEST(HorizontalPathAggregationTest, RandomLeft2Right){
 		d_cost.data().get(),
 		d_left.data().get(),
 		d_right.data().get(),
-		width, height, p1, p2, 0);
+		width, height, p1, p2, 0, 0);
 	cudaStreamSynchronize(0);
 
 	const auto actual = to_host_vector(d_cost);
@@ -44,7 +44,7 @@ TEST(HorizontalPathAggregationTest, RandomRight2Left){
 		d_cost.data().get(),
 		d_left.data().get(),
 		d_right.data().get(),
-		width, height, p1, p2, 0);
+		width, height, p1, p2, 0, 0);
 	cudaStreamSynchronize(0);
 
 	const auto actual = to_host_vector(d_cost);
