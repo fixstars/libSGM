@@ -49,6 +49,7 @@ public:
 		float uniqueness,
 		bool subpixel,
 		PathType path_type,
+		int min_disp,
 		cudaStream_t stream);
 
 	void enqueue(
@@ -61,6 +62,7 @@ public:
 		float uniqueness,
 		bool subpixel,
 		PathType path_type,
+		int min_disp,
 		cudaStream_t stream);
 
 };

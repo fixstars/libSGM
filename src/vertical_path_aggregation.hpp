@@ -31,6 +31,7 @@ void enqueue_aggregate_up2down_path(
 	int height,
 	unsigned int p1,
 	unsigned int p2,
+	int min_disp,
 	cudaStream_t stream);
 
 template <unsigned int MAX_DISPARITY>
@@ -42,6 +43,7 @@ void enqueue_aggregate_down2up_path(
 	int height,
 	unsigned int p1,
 	unsigned int p2,
+	int min_disp,
 	cudaStream_t stream);
 
 }

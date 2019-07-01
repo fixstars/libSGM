@@ -75,12 +75,14 @@ namespace sgm {
 			float uniqueness;
 			bool subpixel;
 			PathType path_type;
-			Parameters(int P1 = 10, int P2 = 120, float uniqueness = 0.95f, bool subpixel = false, PathType path_type = PathType::SCAN_8PATH)
+			int min_disp;
+			Parameters(int P1 = 10, int P2 = 120, float uniqueness = 0.95f, bool subpixel = false, PathType path_type = PathType::SCAN_8PATH, int min_disparity = 0)
 				: P1(P1)
 				, P2(P2)
 				, uniqueness(uniqueness)
 				, subpixel(subpixel)
 				, path_type(path_type)
+				, min_disp(min_disp)
 			{ }
 		};
 

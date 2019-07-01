@@ -36,7 +36,8 @@ __global__ void aggregate_horizontal_path_kernel(
 	int width,
 	int height,
 	unsigned int p1,
-	unsigned int p2)
+	unsigned int p2,
+	int min_disp)
 {
 	static const unsigned int SUBGROUP_SIZE = MAX_DISPARITY / DP_BLOCK_SIZE;
 	static const unsigned int SUBGROUPS_PER_WARP = WARP_SIZE / SUBGROUP_SIZE;
@@ -83,7 +84,7 @@ __global__ void aggregate_horizontal_path_kernel(
 	}else{
 		for(unsigned int i = 0; i < DP_BLOCKS_PER_THREAD; ++i){
 			for(unsigned int j = 0; j < DP_BLOCK_SIZE; ++j){
-				const int x = static_cast<int>(width - (j + dp_offset));
+				const int x = static_cast<int>(width - (min_disp + j + dp_offset));
 				if(0 <= x && x < static_cast<int>(width)){
 					right_buffer[i][j] = __ldg(&right[i * feature_step + x]);
 				}else{
@@ -116,9 +117,9 @@ __global__ void aggregate_horizontal_path_kernel(
 #else
 					right_buffer[j][0] = __shfl_up(t, 1, SUBGROUP_SIZE);
 #endif
-					if(lane_id == 0){
+					if(lane_id == 0 && x >= min_disp){
 						right_buffer[j][0] =
-							__ldg(&right[j * feature_step + x - dp_offset]);
+							__ldg(&right[j * feature_step + x - min_disp]);
 					}
 				}else{
 					const feature_type t = right_buffer[j][0];
@@ -132,9 +133,9 @@ __global__ void aggregate_horizontal_path_kernel(
 					right_buffer[j][DP_BLOCK_SIZE - 1] = __shfl_down(t, 1, SUBGROUP_SIZE);
 #endif
 					if(lane_id + 1 == SUBGROUP_SIZE){
-						if(x >= dp_offset + DP_BLOCK_SIZE - 1){
+						if(x >= min_disp + dp_offset + DP_BLOCK_SIZE - 1){
 							right_buffer[j][DP_BLOCK_SIZE - 1] =
-								__ldg(&right[j * feature_step + x - (dp_offset + DP_BLOCK_SIZE - 1)]);
+								__ldg(&right[j * feature_step + x - (min_disp + dp_offset + DP_BLOCK_SIZE - 1)]);
 						}else{
 							right_buffer[j][DP_BLOCK_SIZE - 1] = 0;
 						}
@@ -164,6 +165,7 @@ void enqueue_aggregate_left2right_path(
 	int height,
 	unsigned int p1,
 	unsigned int p2,
+	int min_disp,
 	cudaStream_t stream)
 {
 	static const unsigned int SUBGROUP_SIZE = MAX_DISPARITY / DP_BLOCK_SIZE;
@@ -173,7 +175,7 @@ void enqueue_aggregate_left2right_path(
 	const int gdim = (height + PATHS_PER_BLOCK - 1) / PATHS_PER_BLOCK;
 	const int bdim = BLOCK_SIZE;
 	aggregate_horizontal_path_kernel<1, MAX_DISPARITY><<<gdim, bdim, 0, stream>>>(
-		dest, left, right, width, height, p1, p2);
+		dest, left, right, width, height, p1, p2, min_disp);
 }
 
 template <unsigned int MAX_DISPARITY>
@@ -185,6 +187,7 @@ void enqueue_aggregate_right2left_path(
 	int height,
 	unsigned int p1,
 	unsigned int p2,
+	int min_disp,
 	cudaStream_t stream)
 {
 	static const unsigned int SUBGROUP_SIZE = MAX_DISPARITY / DP_BLOCK_SIZE;
@@ -194,7 +197,7 @@ void enqueue_aggregate_right2left_path(
 	const int gdim = (height + PATHS_PER_BLOCK - 1) / PATHS_PER_BLOCK;
 	const int bdim = BLOCK_SIZE;
 	aggregate_horizontal_path_kernel<-1, MAX_DISPARITY><<<gdim, bdim, 0, stream>>>(
-		dest, left, right, width, height, p1, p2);
+		dest, left, right, width, height, p1, p2, min_disp);
 }
 
 
@@ -206,6 +209,7 @@ template void enqueue_aggregate_left2right_path<64u>(
 	int height,
 	unsigned int p1,
 	unsigned int p2,
+	int min_disp,
 	cudaStream_t stream);
 
 template void enqueue_aggregate_left2right_path<128u>(
@@ -216,6 +220,7 @@ template void enqueue_aggregate_left2right_path<128u>(
 	int height,
 	unsigned int p1,
 	unsigned int p2,
+	int min_disp,
 	cudaStream_t stream);
 
 template void enqueue_aggregate_left2right_path<256u>(
@@ -236,6 +241,7 @@ template void enqueue_aggregate_right2left_path<64u>(
 	int height,
 	unsigned int p1,
 	unsigned int p2,
+	int min_disp,
 	cudaStream_t stream);
 
 template void enqueue_aggregate_right2left_path<128u>(
@@ -246,6 +252,7 @@ template void enqueue_aggregate_right2left_path<128u>(
 	int height,
 	unsigned int p1,
 	unsigned int p2,
+	int min_disp,
 	cudaStream_t stream);
 
 template void enqueue_aggregate_right2left_path<256u>(
