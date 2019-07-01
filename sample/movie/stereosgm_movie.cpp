@@ -67,7 +67,7 @@ int main(int argc, char* argv[])
 	ASSERT_MSG(!I1.empty() && !I2.empty(), "imread failed.");
 	ASSERT_MSG(I1.size() == I2.size() && I1.type() == I2.type(), "input images must be same size and type.");
 	ASSERT_MSG(I1.type() == CV_8U || I1.type() == CV_16U, "input image format must be CV_8U or CV_16U.");
-	ASSERT_MSG(disp_size == 64 || disp_size == 128, "disparity size must be 64 or 128.");
+	ASSERT_MSG(disp_size == 64 || disp_size == 128 || disp_size == 256, "disparity size must be 64, 128 or 256.");
 
 	const int width = I1.cols;
 	const int height = I1.rows;

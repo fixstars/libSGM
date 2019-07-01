@@ -53,7 +53,7 @@ __global__ void aggregate_vertical_path_kernel(
 	const unsigned int group_id = threadIdx.x % WARP_SIZE / SUBGROUP_SIZE;
 	const unsigned int lane_id  = threadIdx.x % SUBGROUP_SIZE;
 	const unsigned int shfl_mask =
-		((1u << SUBGROUP_SIZE) - 1u) << (group_id * SUBGROUP_SIZE);
+		generate_mask<SUBGROUP_SIZE>() << (group_id * SUBGROUP_SIZE);
 
 	const unsigned int x =
 		blockIdx.x * PATHS_PER_BLOCK +
@@ -172,6 +172,16 @@ template void enqueue_aggregate_up2down_path<128u>(
 	unsigned int p2,
 	cudaStream_t stream);
 
+template void enqueue_aggregate_up2down_path<256u>(
+	cost_type *dest,
+	const feature_type *left,
+	const feature_type *right,
+	int width,
+	int height,
+	unsigned int p1,
+	unsigned int p2,
+	cudaStream_t stream);
+
 template void enqueue_aggregate_down2up_path<64u>(
 	cost_type *dest,
 	const feature_type *left,
@@ -183,6 +193,16 @@ template void enqueue_aggregate_down2up_path<64u>(
 	cudaStream_t stream);
 
 template void enqueue_aggregate_down2up_path<128u>(
+	cost_type *dest,
+	const feature_type *left,
+	const feature_type *right,
+	int width,
+	int height,
+	unsigned int p1,
+	unsigned int p2,
+	cudaStream_t stream);
+
+template void enqueue_aggregate_down2up_path<256u>(
 	cost_type *dest,
 	const feature_type *left,
 	const feature_type *right,
