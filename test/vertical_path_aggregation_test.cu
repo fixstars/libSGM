@@ -12,7 +12,7 @@ TEST(VerticalPathAggregationTest, RandomUp2Down){
 	const auto left  = generate_random_sequence<sgm::feature_type>(width * height);
 	const auto right = generate_random_sequence<sgm::feature_type>(width * height);
 	const auto expect = path_aggregation(
-		left, right, width, height, disparity, p1, p2, 0, 1);
+		left, right, width, height, disparity, 0, p1, p2, 0, 1);
 
 	const auto d_left = to_device_vector(left);
 	const auto d_right = to_device_vector(right);
@@ -35,7 +35,7 @@ TEST(VerticalPathAggregationTest, RandomDown2Up){
 	const auto left  = generate_random_sequence<sgm::feature_type>(width * height);
 	const auto right = generate_random_sequence<sgm::feature_type>(width * height);
 	const auto expect = path_aggregation(
-		left, right, width, height, disparity, p1, p2, 0, -1);
+		left, right, width, height, disparity, 0, p1, p2, 0, -1);
 
 	const auto d_left = to_device_vector(left);
 	const auto d_right = to_device_vector(right);
