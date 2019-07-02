@@ -6,13 +6,13 @@
 
 #include "debug.hpp"
 
-TEST(ObliquePathAggregationTest, RandomUpLeft2DownRight){
+TEST_P(PathAggregationTest, RandomUpLeft2DownRight){
 	static constexpr size_t width = 631, height = 479, disparity = 128;
-	static constexpr unsigned int p1 = 20, p2 = 100;
+
 	const auto left  = generate_random_sequence<sgm::feature_type>(width * height);
 	const auto right = generate_random_sequence<sgm::feature_type>(width * height);
 	const auto expect = path_aggregation(
-		left, right, width, height, disparity, 0, p1, p2, 1, 1);
+		left, right, width, height, disparity, min_disp_, p1_, p2_, 1, 1);
 
 	const auto d_left = to_device_vector(left);
 	const auto d_right = to_device_vector(right);
@@ -21,7 +21,7 @@ TEST(ObliquePathAggregationTest, RandomUpLeft2DownRight){
 		d_cost.data().get(),
 		d_left.data().get(),
 		d_right.data().get(),
-		width, height, p1, p2, 0, 0);
+		width, height, p1_, p2_, 0, 0);
 	cudaStreamSynchronize(0);
 
 	const auto actual = to_host_vector(d_cost);
@@ -29,13 +29,13 @@ TEST(ObliquePathAggregationTest, RandomUpLeft2DownRight){
 	debug_compare(actual.data(), expect.data(), width, height, disparity);
 }
 
-TEST(ObliquePathAggregationTest, RandomUpRight2DownLeft){
+TEST_P(PathAggregationTest, RandomUpRight2DownLeft){
 	static constexpr size_t width = 640, height = 479, disparity = 64;
-	static constexpr unsigned int p1 = 20, p2 = 40;
+
 	const auto left  = generate_random_sequence<sgm::feature_type>(width * height);
 	const auto right = generate_random_sequence<sgm::feature_type>(width * height);
 	const auto expect = path_aggregation(
-		left, right, width, height, disparity, 0, p1, p2, -1, 1);
+		left, right, width, height, disparity, min_disp_, p1_, p2_, -1, 1);
 
 	const auto d_left = to_device_vector(left);
 	const auto d_right = to_device_vector(right);
@@ -44,7 +44,7 @@ TEST(ObliquePathAggregationTest, RandomUpRight2DownLeft){
 		d_cost.data().get(),
 		d_left.data().get(),
 		d_right.data().get(),
-		width, height, p1, p2, 0, 0);
+		width, height, p1_, p2_, 0, 0);
 	cudaStreamSynchronize(0);
 
 	const auto actual = to_host_vector(d_cost);
@@ -52,13 +52,13 @@ TEST(ObliquePathAggregationTest, RandomUpRight2DownLeft){
 	debug_compare(actual.data(), expect.data(), width, height, disparity);
 }
 
-TEST(ObliquePathAggregationTest, RandomDownRight2UpLeft){
+TEST_P(PathAggregationTest, RandomDownRight2UpLeft){
 	static constexpr size_t width = 631, height = 479, disparity = 128;
-	static constexpr unsigned int p1 = 20, p2 = 100;
+
 	const auto left  = generate_random_sequence<sgm::feature_type>(width * height);
 	const auto right = generate_random_sequence<sgm::feature_type>(width * height);
 	const auto expect = path_aggregation(
-		left, right, width, height, disparity, 0, p1, p2, -1, -1);
+		left, right, width, height, disparity, min_disp_, p1_, p2_, -1, -1);
 
 	const auto d_left = to_device_vector(left);
 	const auto d_right = to_device_vector(right);
@@ -67,7 +67,7 @@ TEST(ObliquePathAggregationTest, RandomDownRight2UpLeft){
 		d_cost.data().get(),
 		d_left.data().get(),
 		d_right.data().get(),
-		width, height, p1, p2, 0, 0);
+		width, height, p1_, p2_, 0, 0);
 	cudaStreamSynchronize(0);
 
 	const auto actual = to_host_vector(d_cost);
@@ -75,13 +75,13 @@ TEST(ObliquePathAggregationTest, RandomDownRight2UpLeft){
 	debug_compare(actual.data(), expect.data(), width, height, disparity);
 }
 
-TEST(ObliquePathAggregationTest, RandomDownLeft2UpRight){
+TEST_P(PathAggregationTest, RandomDownLeft2UpRight){
 	static constexpr size_t width = 640, height = 479, disparity = 64;
-	static constexpr unsigned int p1 = 20, p2 = 40;
+
 	const auto left  = generate_random_sequence<sgm::feature_type>(width * height);
 	const auto right = generate_random_sequence<sgm::feature_type>(width * height);
 	const auto expect = path_aggregation(
-		left, right, width, height, disparity, 0, p1, p2, 1, -1);
+		left, right, width, height, disparity, min_disp_, p1_, p2_, 1, -1);
 
 	const auto d_left = to_device_vector(left);
 	const auto d_right = to_device_vector(right);
@@ -90,7 +90,7 @@ TEST(ObliquePathAggregationTest, RandomDownLeft2UpRight){
 		d_cost.data().get(),
 		d_left.data().get(),
 		d_right.data().get(),
-		width, height, p1, p2, 0, 0);
+		width, height, p1_, p2_, 0, 0);
 	cudaStreamSynchronize(0);
 
 	const auto actual = to_host_vector(d_cost);

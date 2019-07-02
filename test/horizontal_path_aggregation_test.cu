@@ -54,9 +54,3 @@ TEST_P(PathAggregationTest, RandomRight2Left){
 	EXPECT_EQ(actual, expect);
 	debug_compare(actual.data(), expect.data(), width, height, disparity);
 }
-
-INSTANTIATE_TEST_CASE_P(HorizontalPathAggregationTest, PathAggregationTest, testing::Combine(
-	testing::Values(0, 1, 10),
-	testing::Values(10, 20),
-	testing::Values(120, 40)
-));

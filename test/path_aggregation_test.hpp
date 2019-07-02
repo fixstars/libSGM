@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <thrust/host_vector.h>
 #include <gtest/gtest.h>
+#include "types.hpp"
 
 #ifdef _WIN32
 #define popcnt64 __popcnt64
