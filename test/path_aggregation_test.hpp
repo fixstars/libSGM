@@ -4,6 +4,7 @@
 #include <limits>
 #include <algorithm>
 #include <thrust/host_vector.h>
+#include <gtest/gtest.h>
 
 #ifdef _WIN32
 #define popcnt64 __popcnt64
@@ -44,5 +45,16 @@ static thrust::host_vector<sgm::cost_type> path_aggregation(
 	}
 	return result;
 }
+
+class PathAggregationTest : public testing::TestWithParam<std::tuple<int, int, int>>
+{
+public:
+	int min_disp_;
+	int p1_, p2_;
+
+	virtual void SetUp(){
+		std::tie(min_disp_, p1_, p2_) = GetParam();
+	}
+};
 
 #endif

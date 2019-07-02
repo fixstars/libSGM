@@ -7,18 +7,7 @@
 
 #include "debug.hpp"
 
-class HorizontalPathAggregation : public testing::TestWithParam<std::tuple<int, int, int>>
-{
-public:
-	int min_disp_;
-	int p1_, p2_;
-
-	virtual void SetUp(){
-		std::tie(min_disp_, p1_, p2_) = GetParam();
-	}
-};
-
-TEST_P(HorizontalPathAggregation, RandomLeft2Right){
+TEST_P(PathAggregationTest, RandomLeft2Right){
 	static constexpr size_t width = 631, height = 479, disparity = 128;
 
 	const auto left  = generate_random_sequence<sgm::feature_type>(width * height);
@@ -42,7 +31,7 @@ TEST_P(HorizontalPathAggregation, RandomLeft2Right){
 	debug_compare(actual.data(), expect.data(), width, height, disparity);
 }
 
-TEST_P(HorizontalPathAggregation, RandomRight2Left){
+TEST_P(PathAggregationTest, RandomRight2Left){
 	static constexpr size_t width = 640, height = 480, disparity = 64;
 
 	const auto left  = generate_random_sequence<sgm::feature_type>(width * height);
@@ -66,7 +55,7 @@ TEST_P(HorizontalPathAggregation, RandomRight2Left){
 	debug_compare(actual.data(), expect.data(), width, height, disparity);
 }
 
-INSTANTIATE_TEST_CASE_P(HorizontalPathAggregationTest, HorizontalPathAggregation, testing::Combine(
+INSTANTIATE_TEST_CASE_P(HorizontalPathAggregationTest, PathAggregationTest, testing::Combine(
 	testing::Values(0, 1, 10),
 	testing::Values(10, 20),
 	testing::Values(120, 40)
