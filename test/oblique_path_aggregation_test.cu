@@ -21,7 +21,7 @@ TEST_P(PathAggregationTest, RandomUpLeft2DownRight){
 		d_cost.data().get(),
 		d_left.data().get(),
 		d_right.data().get(),
-		width, height, p1_, p2_, 0, 0);
+		width, height, p1_, p2_, min_disp_, 0);
 	cudaStreamSynchronize(0);
 
 	const auto actual = to_host_vector(d_cost);
@@ -44,7 +44,7 @@ TEST_P(PathAggregationTest, RandomUpRight2DownLeft){
 		d_cost.data().get(),
 		d_left.data().get(),
 		d_right.data().get(),
-		width, height, p1_, p2_, 0, 0);
+		width, height, p1_, p2_, min_disp_, 0);
 	cudaStreamSynchronize(0);
 
 	const auto actual = to_host_vector(d_cost);
@@ -67,7 +67,7 @@ TEST_P(PathAggregationTest, RandomDownRight2UpLeft){
 		d_cost.data().get(),
 		d_left.data().get(),
 		d_right.data().get(),
-		width, height, p1_, p2_, 0, 0);
+		width, height, p1_, p2_, min_disp_, 0);
 	cudaStreamSynchronize(0);
 
 	const auto actual = to_host_vector(d_cost);
@@ -90,7 +90,7 @@ TEST_P(PathAggregationTest, RandomDownLeft2UpRight){
 		d_cost.data().get(),
 		d_left.data().get(),
 		d_right.data().get(),
-		width, height, p1_, p2_, 0, 0);
+		width, height, p1_, p2_, min_disp_, 0);
 	cudaStreamSynchronize(0);
 
 	const auto actual = to_host_vector(d_cost);
