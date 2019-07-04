@@ -21,7 +21,6 @@ limitations under the License.
 #include <opencv2/core/cuda.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
-#include <opencv2/core/version.hpp>
 
 #include <libsgm.h>
 
@@ -31,80 +30,58 @@ limitations under the License.
 		std::exit(EXIT_FAILURE); \
 	} \
 
-static void execute(sgm::LibSGMWrapper& sgmw, const cv::Mat& h_left, const cv::Mat& h_right, cv::Mat& h_disparity) noexcept(false)
+int main(int argc, char* argv[])
 {
-	cv::cuda::GpuMat d_left, d_right;
-	d_left.upload(h_left);
-	d_right.upload(h_right);
-
-	cv::cuda::GpuMat d_disparity;
-
-	sgmw.execute(d_left, d_right, d_disparity);
-
-	// normalize result
-	cv::cuda::GpuMat d_normalized_disparity;
-	d_disparity.convertTo(d_normalized_disparity, CV_8UC1, 256. / sgmw.getNumDisparities());
-	d_normalized_disparity.download(h_disparity);
-}
-
-int main(int argc, char* argv[]) {
 	ASSERT_MSG(argc >= 3, "usage: stereosgm left_img right_img [disp_size]");
 
-	const cv::Mat left = cv::imread(argv[1], -1);
-	const cv::Mat right = cv::imread(argv[2], -1);
+	cv::Mat  left = cv::imread(argv[1], -1);
+	cv::Mat right = cv::imread(argv[2], -1);
 	const int disp_size = argc > 3 ? std::atoi(argv[3]) : 128;
 
 	ASSERT_MSG(left.size() == right.size() && left.type() == right.type(), "input images must be same size and type.");
 	ASSERT_MSG(left.type() == CV_8U || left.type() == CV_16U, "input image format must be CV_8U or CV_16U.");
 	ASSERT_MSG(disp_size == 64 || disp_size == 128 || disp_size == 256, "disparity size must be 64, 128 or 256.");
 
-	sgm::LibSGMWrapper sgmw{disp_size};
+	sgm::LibSGMWrapper sgm(disp_size);
 	cv::Mat disparity;
+
 	try {
-		execute(sgmw, left, right, disparity);
-	} catch (const cv::Exception& e) {
+		cv::cuda::GpuMat d_left, d_right, d_disparity;
+		d_left.upload(left);
+		d_right.upload(right);
+		sgm.execute(d_left, d_right, d_disparity);
+		d_disparity.download(disparity);
+	}
+	catch (const cv::Exception& e) {
 		std::cerr << e.what() << std::endl;
-		if (e.code == cv::Error::GpuNotSupported) {
-			return 1;
-		} else {
-			return -1;
-		}
+		return e.code == cv::Error::GpuNotSupported ? 1 : -1;
 	}
 
-	// post-process for showing image
-	cv::Mat colored;
-	cv::applyColorMap(disparity, colored, cv::COLORMAP_JET);
-	cv::imshow("image", disparity);
+	// show image
+	cv::Mat disparity_color;
+	disparity.convertTo(disparity, CV_8U, 255. / disp_size);
+	cv::applyColorMap(disparity, disparity_color, cv::COLORMAP_JET);
+	if (left.type() != CV_8U)
+		cv::normalize(left, left, 0, 255, cv::NORM_MINMAX, CV_8U);
 
-	int key = cv::waitKey();
+	std::vector<cv::Mat> images = { disparity, disparity_color, left };
+	std::vector<std::string> titles = { "disparity", "disparity color", "input" };
+
+	std::cout << "Hot keys:" << std::endl;
+	std::cout << "\tESC - quit the program" << std::endl;
+	std::cout << "\ts - switch display (disparity | colored disparity | input image)" << std::endl;
+
 	int mode = 0;
-	while (key != 27) {
-		if (key == 's') {
-			mode += 1;
-			if (mode >= 3) mode = 0;
+	while (true) {
 
-			switch (mode) {
-			case 0:
-				{
-					cv::setWindowTitle("image", "disparity");
-					cv::imshow("image", disparity);
-					break;
-				}
-			case 1:
-				{
-					cv::setWindowTitle("image", "disparity color");
-					cv::imshow("image", colored);
-					break;
-				}
-			case 2:
-				{
-					cv::setWindowTitle("image", "input");
-					cv::imshow("image", left);
-					break;
-				}
-			}
-		}
-		key = cv::waitKey();
+		cv::setWindowTitle("image", titles[mode]);
+		cv::imshow("image", images[mode]);
+
+		const char c = cv::waitKey(0);
+		if (c == 's')
+			mode = (mode < 2 ? mode + 1 : 0);
+		if (c == 27)
+			break;
 	}
 
 	return 0;
