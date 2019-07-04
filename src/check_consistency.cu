@@ -19,7 +19,7 @@ limitations under the License.
 
 namespace {
 	template<typename SRC_T, typename DST_T>
-	__global__ void check_consistency_kernel(DST_T* d_leftDisp, const DST_T* d_rightDisp, const SRC_T* d_left, int width, int height, int src_pitch, int dst_pitch, bool subpixel)  {
+	__global__ void check_consistency_kernel(DST_T* d_leftDisp, const DST_T* d_rightDisp, const SRC_T* d_left, int width, int height, int src_pitch, int dst_pitch, bool subpixel, int min_disp)  {
 
 		const int j = blockIdx.x * blockDim.x + threadIdx.x;
 		const int i = blockIdx.y * blockDim.y + threadIdx.y;
@@ -34,7 +34,10 @@ namespace {
 		int k = j - d;
 		if (mask == 0 || d <= 0 || (k >= 0 && k < width && abs(d_rightDisp[i * dst_pitch + k] - d) > 1)) {
 			// masked or left-right inconsistent pixel -> invalid
-			d_leftDisp[i * dst_pitch + j] = 0;
+			d_leftDisp[i * dst_pitch + j] = min_disp - 1;
+		}
+		else {
+			d_leftDisp[i * dst_pitch + j] += min_disp;
 		}
 	}
 }
@@ -42,29 +45,29 @@ namespace {
 namespace sgm {
 	namespace details {
 
-		void check_consistency(uint8_t* d_left_disp, const uint8_t* d_right_disp, const void* d_src_left, int width, int height, int depth_bits, int src_pitch, int dst_pitch, bool subpixel) {
+		void check_consistency(uint8_t* d_left_disp, const uint8_t* d_right_disp, const void* d_src_left, int width, int height, int depth_bits, int src_pitch, int dst_pitch, bool subpixel, int min_disp) {
 
 			const dim3 blocks(width / 16, height / 16);
 			const dim3 threads(16, 16);
 			if (depth_bits == 16) {
-				check_consistency_kernel<uint16_t> << < blocks, threads >> > (d_left_disp, d_right_disp, (uint16_t*)d_src_left, width, height, src_pitch, dst_pitch, subpixel);
+				check_consistency_kernel<uint16_t> << < blocks, threads >> > (d_left_disp, d_right_disp, (uint16_t*)d_src_left, width, height, src_pitch, dst_pitch, subpixel, min_disp);
 			}
 			else if (depth_bits == 8) {
-				check_consistency_kernel<uint8_t> << < blocks, threads >> > (d_left_disp, d_right_disp, (uint8_t*)d_src_left, width, height, src_pitch, dst_pitch, subpixel);
+				check_consistency_kernel<uint8_t> << < blocks, threads >> > (d_left_disp, d_right_disp, (uint8_t*)d_src_left, width, height, src_pitch, dst_pitch, subpixel, min_disp);
 			}
 
 			CudaKernelCheck();
 		}
 
-		void check_consistency(uint16_t* d_left_disp, const uint16_t* d_right_disp, const void* d_src_left, int width, int height, int depth_bits, int src_pitch, int dst_pitch, bool subpixel) {
+		void check_consistency(uint16_t* d_left_disp, const uint16_t* d_right_disp, const void* d_src_left, int width, int height, int depth_bits, int src_pitch, int dst_pitch, bool subpixel, int min_disp) {
 
 			const dim3 blocks(width / 16, height / 16);
 			const dim3 threads(16, 16);
 			if (depth_bits == 16) {
-				check_consistency_kernel<uint16_t> << < blocks, threads >> > (d_left_disp, d_right_disp, (uint16_t*)d_src_left, width, height, src_pitch, dst_pitch, subpixel);
+				check_consistency_kernel<uint16_t> << < blocks, threads >> > (d_left_disp, d_right_disp, (uint16_t*)d_src_left, width, height, src_pitch, dst_pitch, subpixel, min_disp);
 			}
 			else if (depth_bits == 8) {
-				check_consistency_kernel<uint8_t> << < blocks, threads >> > (d_left_disp, d_right_disp, (uint8_t*)d_src_left, width, height, src_pitch, dst_pitch, subpixel);
+				check_consistency_kernel<uint8_t> << < blocks, threads >> > (d_left_disp, d_right_disp, (uint8_t*)d_src_left, width, height, src_pitch, dst_pitch, subpixel, min_disp);
 			}
 			
 			CudaKernelCheck();	

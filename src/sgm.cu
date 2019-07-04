@@ -64,7 +64,7 @@ public:
 			dest_left, dest_right,
 			m_path_aggregation.get_output(),
 			width, height, dst_pitch,
-			param.uniqueness, param.subpixel, param.path_type, param.min_disp,
+			param.uniqueness, param.subpixel, param.path_type,
 			stream);
 	}
 
