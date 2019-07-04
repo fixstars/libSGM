@@ -39,6 +39,7 @@ int main(int argc, char* argv[])
 		"{P2         |    120 | penalty on the disparity change by more than 1 between neighbor pixels              }"
 		"{uniqueness |   0.95 | margin in ratio by which the best cost function value should be at least second one }"
 		"{num_paths  |      8 | number of scanlines used in cost aggregation                                        }"
+		"{min_disp   |      0 | minimum disparity value                                                             }"
 		"{help h     |        | display this help and exit                                                          }");
 
 	if (parser.has("help")) {
@@ -60,6 +61,7 @@ int main(int argc, char* argv[])
 	const int P2 = parser.get<int>("P2");
 	const float uniqueness = parser.get<float>("uniqueness");
 	const int num_paths = parser.get<int>("num_paths");
+	const int min_disp = parser.get<int>("min_disp");
 
 	ASSERT_MSG(!left.empty() && !right.empty(), "imread failed.");
 	ASSERT_MSG(left.size() == right.size() && left.type() == right.type(), "input images must be same size and type.");
@@ -71,7 +73,7 @@ int main(int argc, char* argv[])
 	const int input_depth = left.type() == CV_8U ? 8 : 16;
 	const int output_depth = 8;
 
-	const sgm::StereoSGM::Parameters param(P1, P2, uniqueness, false, path_type);
+	const sgm::StereoSGM::Parameters param(P1, P2, uniqueness, false, path_type, min_disp);
 	sgm::StereoSGM ssgm(left.cols, left.rows, disp_size, input_depth, output_depth, sgm::EXECUTE_INOUT_HOST2HOST, param);
 
 	cv::Mat disparity(left.size(), CV_8U);
