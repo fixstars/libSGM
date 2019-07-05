@@ -34,7 +34,11 @@ namespace {
 		int k = j - d;
 		if (mask == 0 || d <= 0 || (k >= 0 && k < width && abs(d_rightDisp[i * dst_pitch + k] - d) > 1)) {
 			// masked or left-right inconsistent pixel -> invalid
-			d_leftDisp[i * dst_pitch + j] = min_disp - 1;
+			int invalid = min_disp - 1;
+			if (subpixel) {
+				invalid *= sgm::StereoSGM::SUBPIXEL_SCALE;
+			}
+			d_leftDisp[i * dst_pitch + j] = invalid;
 		}
 		else {
 			d_leftDisp[i * dst_pitch + j] += min_disp;
