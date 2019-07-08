@@ -132,6 +132,8 @@ void reprojectPointsTo3D(const cv::Mat& disparity, const CameraParameters& camer
 {
 	CV_Assert(disparity.type() == CV_32F);
 
+	const float invalid = -1.0f;
+
 	CoordinateTransform tf(camera);
 
 	points.clear();
@@ -142,7 +144,7 @@ void reprojectPointsTo3D(const cv::Mat& disparity, const CameraParameters& camer
 		for (int x = 0; x < disparity.cols; x++)
 		{
 			const float d = disparity.at<float>(y, x);
-			if (d > 0)
+			if (d > invalid)
 				points.push_back(tf.imageToWorld(cv::Point(x, y), d));
 		}
 	}
@@ -212,7 +214,7 @@ int main(int argc, char* argv[])
 
 	sgm::StereoSGM sgm(width, height, disp_size, input_depth, output_depth, sgm::EXECUTE_INOUT_CUDA2CUDA, params);
 
-	cv::Mat disparity(height, width, output_depth == 8 ? CV_8U : CV_16U);
+	cv::Mat disparity(height, width, CV_16S);
 	cv::Mat disparity_8u, disparity_32f, disparity_color, draw;
 	std::vector<cv::Point3f> points;
 
@@ -253,6 +255,7 @@ int main(int argc, char* argv[])
 
 		disparity_32f.convertTo(disparity_8u, CV_8U, 255. / disp_size);
 		cv::applyColorMap(disparity_8u, disparity_color, cv::COLORMAP_JET);
+		disparity_color.setTo(cv::Scalar(0, 0, 0), disparity_32f < 0);
 		cv::putText(disparity_color, format_string("sgm execution time: %4.1f[msec] %4.1f[FPS]", 1e-3 * duration, fps),
 			cv::Point(50, 50), 2, 0.75, cv::Scalar(255, 255, 255));
 
