@@ -16,6 +16,7 @@ limitations under the License.
 
 #include <stdlib.h>
 #include <iostream>
+#include <cstdint>
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -80,10 +81,14 @@ int main(int argc, char* argv[])
 
 	ssgm.execute(left.data, right.data, disparity.data);
 
+	// create mask for invalid disp
+	cv::Mat mask = disparity == static_cast<std::uint8_t>(min_disp - 1);
+
 	// show image
 	cv::Mat disparity_color;
 	disparity *= (255. / disp_size);
 	cv::applyColorMap(disparity, disparity_color, cv::COLORMAP_JET);
+	disparity_color.setTo(cv::Scalar(0, 0, 0), mask);
 	if (left.type() != CV_8U)
 		cv::normalize(left, left, 0, 255, cv::NORM_MINMAX, CV_8U);
 
