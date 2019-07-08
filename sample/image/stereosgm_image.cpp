@@ -88,6 +88,7 @@ int main(int argc, char* argv[])
 	cv::Mat disparity_color;
 	disparity *= (255. / disp_size);
 	cv::applyColorMap(disparity, disparity_color, cv::COLORMAP_JET);
+	disparity.setTo(cv::Scalar(0, 0, 0), mask);
 	disparity_color.setTo(cv::Scalar(0, 0, 0), mask);
 	if (left.type() != CV_8U)
 		cv::normalize(left, left, 0, 255, cv::NORM_MINMAX, CV_8U);
