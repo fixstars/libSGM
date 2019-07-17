@@ -31,6 +31,7 @@ CUDA_ADD_EXECUTABLE(zed_demo
 	zed_demo.cpp
 )
 
+string(REGEX REPLACE [[; +]] [[;]] CUDA_NPP_LIBRARIES_ZED "${CUDA_NPP_LIBRARIES_ZED}")
 
 TARGET_LINK_LIBRARIES(zed_demo 
 	sgm 
