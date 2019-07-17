@@ -13,7 +13,7 @@
 #define popcnt64 __builtin_popcountll
 #endif
 
-static thrust::host_vector<sgm::cost_type> path_aggregation(
+static inline thrust::host_vector<sgm::cost_type> path_aggregation(
 	const thrust::host_vector<sgm::feature_type>& left,
 	const thrust::host_vector<sgm::feature_type>& right,
 	int width, int height, int max_disparity, int min_disparity,
