@@ -193,7 +193,7 @@ __global__ void winner_takes_all_kernel(
 				}
 				uniq = subgroup_and<WARP_SIZE>(uniq, 0xffffffffu);
 				if(lane_id == 0){
-					left_dest[x] = uniq ? compute_disparity(bestDisp, bestCost, smem_cost_sum[warp_id][smem_x]) : 0;
+					left_dest[x] = uniq ? compute_disparity(bestDisp, bestCost, smem_cost_sum[warp_id][smem_x]) : INVALID_DISP;
 				}
 			}
 		}
