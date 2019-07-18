@@ -121,9 +121,28 @@ namespace sgm {
 			width_ = height_ = input_depth_bits_ = output_depth_bits_ = disparity_size_ = 0;
 			throw std::logic_error("disparity size must be 64, 128 or 256");
 		}
-		if (param.subpixel && output_depth_bits != 16) {
-			width_ = height_ = input_depth_bits_ = output_depth_bits_ = disparity_size_ = 0;
-			throw std::logic_error("output depth bits must be 16 if sub-pixel option was enabled");
+		{
+			// simulate minimum/maximum value
+			std::int64_t max = static_cast<int64_t>(disparity_size) + param.min_disp - 1;
+			if (param.subpixel) {
+				max *= SUBPIXEL_SCALE;
+				max += SUBPIXEL_SCALE - 1;
+			}
+			bool enough = max < 1 << output_depth_bits;
+			if (param.min_disp <= 0) {
+				// whether or not output can be represented by signed
+				std::int64_t min = static_cast<int64_t>(param.min_disp) - 1;
+				if (param.subpixel) {
+					min *= SUBPIXEL_SCALE;
+				}
+				enough = enough
+						&& -(1 << (output_depth_bits - 1)) <= min
+						&& max < 1 << (output_depth_bits - 1);
+			}
+			if (!enough) {
+				width_ = height_ = input_depth_bits_ = output_depth_bits_ = disparity_size_ = 0;
+				throw std::logic_error("output depth bits must be sufficient for representing output value");
+			}
 		}
 		if (param_.path_type != PathType::SCAN_4PATH && param_.path_type != PathType::SCAN_8PATH) {
 			width_ = height_ = input_depth_bits_ = output_depth_bits_ = disparity_size_ = 0;
