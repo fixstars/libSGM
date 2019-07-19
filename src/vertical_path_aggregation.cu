@@ -185,6 +185,7 @@ template void enqueue_aggregate_up2down_path<256u>(
 	int height,
 	unsigned int p1,
 	unsigned int p2,
+	int min_disp,
 	cudaStream_t stream);
 
 template void enqueue_aggregate_down2up_path<64u>(
@@ -217,6 +218,7 @@ template void enqueue_aggregate_down2up_path<256u>(
 	int height,
 	unsigned int p1,
 	unsigned int p2,
+	int min_disp,
 	cudaStream_t stream);
 
 }
