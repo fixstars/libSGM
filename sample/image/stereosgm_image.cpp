@@ -72,28 +72,28 @@ int main(int argc, char* argv[])
 
 	const sgm::PathType path_type = num_paths == 8 ? sgm::PathType::SCAN_8PATH : sgm::PathType::SCAN_4PATH;
 	const int input_depth = left.type() == CV_8U ? 8 : 16;
-	const int output_depth = 8;
+	const int output_depth = 16;
 
 	const sgm::StereoSGM::Parameters param(P1, P2, uniqueness, false, path_type, min_disp);
 	sgm::StereoSGM ssgm(left.cols, left.rows, disp_size, input_depth, output_depth, sgm::EXECUTE_INOUT_HOST2HOST, param);
 
-	cv::Mat disparity(left.size(), CV_8U);
+	cv::Mat disparity(left.size(), CV_16S);
 
 	ssgm.execute(left.data, right.data, disparity.data);
 
 	// create mask for invalid disp
-	cv::Mat mask = disparity == static_cast<std::uint8_t>(min_disp - 1);
+	cv::Mat mask = disparity == min_disp - 1;
 
 	// show image
-	cv::Mat disparity_color;
-	disparity *= (255. / disp_size);
-	cv::applyColorMap(disparity, disparity_color, cv::COLORMAP_JET);
-	disparity.setTo(0, mask);
+	cv::Mat disparity_8u, disparity_color;
+	disparity.convertTo(disparity_8u, CV_8U, 255. / disp_size);
+	cv::applyColorMap(disparity_8u, disparity_color, cv::COLORMAP_JET);
+	disparity_8u.setTo(0, mask);
 	disparity_color.setTo(cv::Scalar(0, 0, 0), mask);
 	if (left.type() != CV_8U)
 		cv::normalize(left, left, 0, 255, cv::NORM_MINMAX, CV_8U);
 
-	std::vector<cv::Mat> images = { disparity, disparity_color, left };
+	std::vector<cv::Mat> images = { disparity_8u, disparity_color, left };
 	std::vector<std::string> titles = { "disparity", "disparity color", "input" };
 
 	std::cout << "Hot keys:" << std::endl;
