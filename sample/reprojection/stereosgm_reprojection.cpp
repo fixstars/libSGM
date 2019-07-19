@@ -132,8 +132,6 @@ void reprojectPointsTo3D(const cv::Mat& disparity, const CameraParameters& camer
 {
 	CV_Assert(disparity.type() == CV_32F);
 
-	const float invalid = -1.0f;
-
 	CoordinateTransform tf(camera);
 
 	points.clear();
@@ -144,7 +142,7 @@ void reprojectPointsTo3D(const cv::Mat& disparity, const CameraParameters& camer
 		for (int x = 0; x < disparity.cols; x++)
 		{
 			const float d = disparity.at<float>(y, x);
-			if (d > invalid)
+			if (d > 0)
 				points.push_back(tf.imageToWorld(cv::Point(x, y), d));
 		}
 	}
