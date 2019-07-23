@@ -16,7 +16,6 @@ limitations under the License.
 
 #include <stdlib.h>
 #include <iostream>
-#include <cstdint>
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
