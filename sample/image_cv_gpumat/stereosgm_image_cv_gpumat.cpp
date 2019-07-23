@@ -58,10 +58,11 @@ int main(int argc, char* argv[])
 	}
 
 	// show image
-	cv::Mat mask = disparity == static_cast<uint16_t>(-1);
+	cv::Mat mask = disparity == sgm.getInvalidDisparity();
 	cv::Mat disparity_color;
 	disparity.convertTo(disparity, CV_8U, 255. / disp_size);
 	cv::applyColorMap(disparity, disparity_color, cv::COLORMAP_JET);
+	disparity.setTo(0, mask);
 	disparity_color.setTo(cv::Scalar(0, 0, 0), mask);
 	if (left.type() != CV_8U)
 		cv::normalize(left, left, 0, 255, cv::NORM_MINMAX, CV_8U);
