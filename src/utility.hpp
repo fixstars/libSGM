@@ -23,7 +23,7 @@ limitations under the License.
 namespace sgm {
 
 static constexpr unsigned int WARP_SIZE = 32u;
-static constexpr output_type INVALID_DISP = static_cast<uint16_t>(-1);
+static constexpr output_type INVALID_DISP = static_cast<output_type>(-1);
 
 namespace detail {
 	template <typename T, unsigned int GROUP_SIZE, unsigned int STEP>
