@@ -128,7 +128,7 @@ namespace sgm {
 				max *= SUBPIXEL_SCALE;
 				max += SUBPIXEL_SCALE - 1;
 			}
-			bool enough = max < 1 << output_depth_bits;
+			bool enough = max < 1ll << output_depth_bits;
 			if (param.min_disp <= 0) {
 				// whether or not output can be represented by signed
 				std::int64_t min = static_cast<int64_t>(param.min_disp) - 1;
@@ -136,8 +136,8 @@ namespace sgm {
 					min *= SUBPIXEL_SCALE;
 				}
 				enough = enough
-						&& -(1 << (output_depth_bits - 1)) <= min
-						&& max < 1 << (output_depth_bits - 1);
+						&& -(1ll << (output_depth_bits - 1)) <= min
+						&& max < 1ll << (output_depth_bits - 1);
 			}
 			if (!enough) {
 				width_ = height_ = input_depth_bits_ = output_depth_bits_ = disparity_size_ = 0;
