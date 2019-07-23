@@ -28,8 +28,8 @@ namespace sgm {
 	bool LibSGMWrapper::hasSubpixel() const { return param_.subpixel; }
 	PathType LibSGMWrapper::getPathType() const { return param_.path_type; }
 	int LibSGMWrapper::getMinDisparity() const { return param_.min_disp; }
-	std::uint16_t LibSGMWrapper::getInvalidDisparity() const {
-		return static_cast<std::uint16_t>((param_.min_disp - 1) * (param_.subpixel ? StereoSGM::SUBPIXEL_SCALE : 1));
+	std::int16_t LibSGMWrapper::getInvalidDisparity() const {
+		return static_cast<std::int16_t>((param_.min_disp - 1) * (param_.subpixel ? StereoSGM::SUBPIXEL_SCALE : 1));
 	}
 
 	struct LibSGMWrapper::Creator {
@@ -92,8 +92,8 @@ namespace sgm {
 		CV_Assert(I1.type() == I2.type());
 		const int depth = I1.depth();
 		CV_Assert(depth == CV_8U || depth == CV_16U);
-		if (disparity.size() != size || disparity.depth() != CV_16U) {
-			disparity.create(size, CV_16U);
+		if (disparity.size() != size || disparity.depth() != CV_16S) {
+			disparity.create(size, CV_16S);
 		}
 		std::unique_ptr<Creator> creator(new Creator(I1, disparity));
 		if (!sgm_ || !prev_ || *creator != *prev_) {
@@ -109,8 +109,8 @@ namespace sgm {
 		CV_Assert(I1.type() == I2.type());
 		const int depth = I1.depth();
 		CV_Assert(depth == CV_8U || depth == CV_16U);
-		if (disparity.size() != size || disparity.depth() != CV_16U) {
-			disparity.create(size, CV_16U);
+		if (disparity.size() != size || disparity.depth() != CV_16S) {
+			disparity.create(size, CV_16S);
 		}
 		std::unique_ptr<Creator> creator(new Creator(I1, disparity));
 		if (!sgm_ || !prev_ || *creator != *prev_) {

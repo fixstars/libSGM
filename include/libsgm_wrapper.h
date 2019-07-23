@@ -33,7 +33,7 @@ namespace sgm {
 		LIBSGM_API bool hasSubpixel() const;
 		LIBSGM_API PathType getPathType() const;
 		LIBSGM_API int getMinDisparity() const;
-		LIBSGM_API std::uint16_t getInvalidDisparity() const;
+		LIBSGM_API std::int16_t getInvalidDisparity() const;
 
 #ifdef BUILD_OPENCV_WRAPPER
 		/**
@@ -42,7 +42,7 @@ namespace sgm {
 		 * @param I2        Input right image.  Image's size and type must be same with I1.
 		 * @param disparity Output image.  Its memory will be allocated automatically dependent on input image size.
 		 * @attention
-		 * type of output image `disparity` is CV_16U.
+		 * type of output image `disparity` is CV_16S.
 		 * Note that disparity element value would be multiplied StereoSGM::SUBPIXEL_SCALE if subpixel option was enabled.
 		 */
 		LIBSGM_API void execute(const cv::cuda::GpuMat& I1, const cv::cuda::GpuMat& I2, cv::cuda::GpuMat& disparity);
@@ -52,7 +52,7 @@ namespace sgm {
 		 * @param I2        Input right image.  Image's size and type must be same with I1.
 		 * @param disparity Output image.  Its memory will be allocated automatically dependent on input image size.
 		 * @attention
-		 * type of output image `disparity` is CV_16U.
+		 * type of output image `disparity` is CV_16S.
 		 * Note that disparity element value would be multiplied StereoSGM::SUBPIXEL_SCALE if subpixel option was enabled.
 		 */
 		LIBSGM_API void execute(const cv::Mat& I1, const cv::Mat& I2, cv::Mat& disparity);
