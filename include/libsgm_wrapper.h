@@ -14,14 +14,16 @@ namespace sgm {
 	class LibSGMWrapper {
 	public:
 		/**
-		 * @param numDisparity Maximum possible disparity value
+		 * @param numDisparity Maximum disparity minus minimum disparity
 		 * @param P1 Penalty on the disparity change by plus or minus 1 between nieghbor pixels
 		 * @param P2 Penalty on the disparity change by more than 1 between neighbor pixels
 		 * @param uniquenessRatio Margin in ratio by which the best cost function value should be at least second one
 		 * @param subpixel Disparity value has 4 fractional bits if subpixel option is enabled
 		 * @param pathType Number of scanlines used in cost aggregation
+		 * @param minDisparity Minimum possible disparity value
 		 */
-		LIBSGM_API LibSGMWrapper(int numDisparity = 128, int P1 = 10, int P2 = 120, float uniquenessRatio = 0.95f, bool subpixel = false, PathType pathType = PathType::SCAN_8PATH);
+		LIBSGM_API LibSGMWrapper(int numDisparity = 128, int P1 = 10, int P2 = 120, float uniquenessRatio = 0.95f,
+				bool subpixel = false, PathType pathType = PathType::SCAN_8PATH, int minDisparity = 0);
 		LIBSGM_API ~LibSGMWrapper();
 
 		LIBSGM_API int getNumDisparities() const;
@@ -30,6 +32,8 @@ namespace sgm {
 		LIBSGM_API float getUniquenessRatio() const;
 		LIBSGM_API bool hasSubpixel() const;
 		LIBSGM_API PathType getPathType() const;
+		LIBSGM_API int getMinDisparity() const;
+		LIBSGM_API std::uint16_t getInvalidDisparity() const;
 
 #ifdef BUILD_OPENCV_WRAPPER
 		/**
