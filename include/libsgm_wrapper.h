@@ -33,7 +33,7 @@ namespace sgm {
 		LIBSGM_API bool hasSubpixel() const;
 		LIBSGM_API PathType getPathType() const;
 		LIBSGM_API int getMinDisparity() const;
-		LIBSGM_API std::int16_t getInvalidDisparity() const;
+		LIBSGM_API int getInvalidDisparity() const;
 
 #ifdef BUILD_OPENCV_WRAPPER
 		/**

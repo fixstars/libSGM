@@ -28,8 +28,8 @@ namespace sgm {
 	bool LibSGMWrapper::hasSubpixel() const { return param_.subpixel; }
 	PathType LibSGMWrapper::getPathType() const { return param_.path_type; }
 	int LibSGMWrapper::getMinDisparity() const { return param_.min_disp; }
-	std::int16_t LibSGMWrapper::getInvalidDisparity() const {
-		return static_cast<std::int16_t>((param_.min_disp - 1) * (param_.subpixel ? StereoSGM::SUBPIXEL_SCALE : 1));
+	int LibSGMWrapper::getInvalidDisparity() const {
+		return (param_.min_disp - 1) * (param_.subpixel ? StereoSGM::SUBPIXEL_SCALE : 1);
 	}
 
 	struct LibSGMWrapper::Creator {
