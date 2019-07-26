@@ -89,10 +89,10 @@ namespace sgm {
 		/**
 		* @param width Processed image's width.
 		* @param height Processed image's height.
-		* @param disparity_size It must be 64 or 128.
+		* @param disparity_size It must be 64, 128 or 256.
 		* @param input_depth_bits Processed image's bits per pixel. It must be 8 or 16.
 		* @param output_depth_bits Disparity image's bits per pixel. It must be 8 or 16.
-		* @param inout_type 	Specify input/output pointer type. See sgm::EXECUTE_TYPE.
+		* @param inout_type Specify input/output pointer type. See sgm::EXECUTE_TYPE.
 		* @attention
 		* output_depth_bits must be set to 16 when subpixel is enabled.
 		*/
@@ -102,12 +102,12 @@ namespace sgm {
 		/**
 		* @param width Processed image's width.
 		* @param height Processed image's height.
-		* @param disparity_size It must be 64 or 128.
+		* @param disparity_size It must be 64, 128 or 256.
 		* @param input_depth_bits Processed image's bits per pixel. It must be 8 or 16.
 		* @param output_depth_bits Disparity image's bits per pixel. It must be 8 or 16.
 		* @param src_pitch Source image's pitch (pixels).
 		* @param dst_pitch Destination image's pitch (pixels).
-		* @param inout_type 	Specify input/output pointer type. See sgm::EXECUTE_TYPE.
+		* @param inout_type Specify input/output pointer type. See sgm::EXECUTE_TYPE.
 		* @attention
 		* output_depth_bits must be set to 16 when subpixel is enabled.
 		*/
@@ -118,9 +118,9 @@ namespace sgm {
 
 		/**
 		* Execute stereo semi global matching.
-		* @param left_pixels	A pointer stored input left image.
-		* @param right_pixels	A pointer stored input right image.
-		* @param dst	        Output pointer. User must allocate enough memory.
+		* @param left_pixels  A pointer stored input left image.
+		* @param right_pixels A pointer stored input right image.
+		* @param dst          Output pointer. User must allocate enough memory.
 		* @attention
 		* You need to allocate dst memory at least width x height x sizeof(element_type) bytes.
 		* The element_type is uint8_t for output_depth_bits == 8 and uint16_t for output_depth_bits == 16.
