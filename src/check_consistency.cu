@@ -34,16 +34,13 @@ namespace {
 			d >>= sgm::StereoSGM::SUBPIXEL_SHIFT;
 		}
 		int k = j - d;
+		int scale = subpixel ? sgm::StereoSGM::SUBPIXEL_SCALE : 1;
 		if (mask == 0 || org == sgm::INVALID_DISP || (k >= 0 && k < width && abs(d_rightDisp[i * dst_pitch + k] - d) > 1)) {
 			// masked or left-right inconsistent pixel -> invalid
-			int invalid = min_disp - 1;
-			if (subpixel) {
-				invalid *= sgm::StereoSGM::SUBPIXEL_SCALE;
-			}
-			d_leftDisp[i * dst_pitch + j] = invalid;
+			d_leftDisp[i * dst_pitch + j] = (min_disp - 1) * scale;
 		}
 		else {
-			d_leftDisp[i * dst_pitch + j] += min_disp;
+			d_leftDisp[i * dst_pitch + j] += min_disp * scale;
 		}
 	}
 }
