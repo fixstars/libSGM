@@ -96,6 +96,30 @@ namespace sgm {
 		}
 	};
 
+	static bool hasEnoughDepth(int output_depth_bits, int disparity_size, int min_disp, bool subpixel)
+	{
+		// simulate minimum/maximum value
+		std::int64_t max = static_cast<int64_t>(disparity_size) + min_disp - 1;
+		if (subpixel) {
+			max *= sgm::StereoSGM::SUBPIXEL_SCALE;
+			max += sgm::StereoSGM::SUBPIXEL_SCALE - 1;
+		}
+		bool enough = max < 1ll << output_depth_bits;
+
+		if (min_disp <= 0) {
+			// whether or not output can be represented by signed
+			std::int64_t min = static_cast<int64_t>(min_disp) - 1;
+			if (subpixel) {
+				min *= sgm::StereoSGM::SUBPIXEL_SCALE;
+			}
+			enough = enough
+					&& -(1ll << (output_depth_bits - 1)) <= min
+					&& max < 1ll << (output_depth_bits - 1);
+		}
+
+		return enough;
+	}
+
 	StereoSGM::StereoSGM(int width, int height, int disparity_size, int input_depth_bits, int output_depth_bits,
 		EXECUTE_INOUT inout_type, const Parameters& param) : StereoSGM(width, height, disparity_size, input_depth_bits, output_depth_bits, width, width, inout_type, param) {}
 
@@ -121,28 +145,9 @@ namespace sgm {
 			width_ = height_ = input_depth_bits_ = output_depth_bits_ = disparity_size_ = 0;
 			throw std::logic_error("disparity size must be 64, 128 or 256");
 		}
-		{
-			// simulate minimum/maximum value
-			std::int64_t max = static_cast<int64_t>(disparity_size) + param.min_disp - 1;
-			if (param.subpixel) {
-				max *= SUBPIXEL_SCALE;
-				max += SUBPIXEL_SCALE - 1;
-			}
-			bool enough = max < 1ll << output_depth_bits;
-			if (param.min_disp <= 0) {
-				// whether or not output can be represented by signed
-				std::int64_t min = static_cast<int64_t>(param.min_disp) - 1;
-				if (param.subpixel) {
-					min *= SUBPIXEL_SCALE;
-				}
-				enough = enough
-						&& -(1ll << (output_depth_bits - 1)) <= min
-						&& max < 1ll << (output_depth_bits - 1);
-			}
-			if (!enough) {
-				width_ = height_ = input_depth_bits_ = output_depth_bits_ = disparity_size_ = 0;
-				throw std::logic_error("output depth bits must be sufficient for representing output value");
-			}
+		if (!hasEnoughDepth(output_depth_bits, disparity_size, param_.min_disp, param_.subpixel)) {
+			width_ = height_ = input_depth_bits_ = output_depth_bits_ = disparity_size_ = 0;
+			throw std::logic_error("output depth bits must be sufficient for representing output value");
 		}
 		if (param_.path_type != PathType::SCAN_4PATH && param_.path_type != PathType::SCAN_8PATH) {
 			width_ = height_ = input_depth_bits_ = output_depth_bits_ = disparity_size_ = 0;
