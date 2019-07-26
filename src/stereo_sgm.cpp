@@ -104,7 +104,9 @@ namespace sgm {
 			max *= sgm::StereoSGM::SUBPIXEL_SCALE;
 			max += sgm::StereoSGM::SUBPIXEL_SCALE - 1;
 		}
-		bool enough = max < 1ll << output_depth_bits;
+
+		if (1ll << output_depth_bits <= max)
+			return false;
 
 		if (min_disp <= 0) {
 			// whether or not output can be represented by signed
@@ -112,12 +114,13 @@ namespace sgm {
 			if (subpixel) {
 				min *= sgm::StereoSGM::SUBPIXEL_SCALE;
 			}
-			enough = enough
-					&& -(1ll << (output_depth_bits - 1)) <= min
-					&& max < 1ll << (output_depth_bits - 1);
+
+			if (min < -(1ll << (output_depth_bits - 1))
+			    || 1ll << (output_depth_bits - 1) <= max)
+				return false;
 		}
 
-		return enough;
+		return true;
 	}
 
 	StereoSGM::StereoSGM(int width, int height, int disparity_size, int input_depth_bits, int output_depth_bits,
