@@ -19,7 +19,7 @@ limitations under the License.
 #include "utility.hpp"
 
 namespace {
-	__global__ void fix_output_kernel(uint16_t* d_disp, int width, int height, int pitch, bool subpixel, int min_disp) {
+	__global__ void correct_disparity_range_kernel(uint16_t* d_disp, int width, int height, int pitch, bool subpixel, int min_disp) {
 		const int x = blockIdx.x * blockDim.x + threadIdx.x;
 		const int y = blockIdx.y * blockDim.y + threadIdx.y;
 
@@ -40,7 +40,7 @@ namespace {
 
 namespace sgm {
 	namespace details {
-		void fix_output(uint16_t* d_disp, int width, int height, int pitch, bool subpixel, int min_disp) {
+		void correct_disparity_range(uint16_t* d_disp, int width, int height, int pitch, bool subpixel, int min_disp) {
 			if (!subpixel && min_disp == 0) {
 				return;
 			}
@@ -48,7 +48,7 @@ namespace sgm {
 			static constexpr int SIZE = 16;
 			const dim3 blocks((width + SIZE - 1) / SIZE, (height + SIZE - 1) / SIZE);
 			const dim3 threads(SIZE, SIZE);
-			fix_output_kernel<<<blocks, threads>>>(d_disp, width, height, pitch, subpixel, min_disp);
+			correct_disparity_range_kernel<<<blocks, threads>>>(d_disp, width, height, pitch, subpixel, min_disp);
 		}
 	}
 }
