@@ -79,10 +79,10 @@ __global__ void aggregate_vertical_path_kernel(
 		for(unsigned int i0 = 0; i0 < RIGHT_BUFFER_SIZE; i0 += BLOCK_SIZE){
 			const unsigned int i = i0 + threadIdx.x;
 			if(i < RIGHT_BUFFER_SIZE){
-				const int x = static_cast<int>(right_x0 + PATHS_PER_BLOCK - 1 - i - min_disp);
+				const int right_x = static_cast<int>(right_x0 + PATHS_PER_BLOCK - 1 - i - min_disp);
 				feature_type right_value = 0;
-				if(0 <= x && x < static_cast<int>(width)){
-					right_value = right[x + y * width];
+				if(0 <= right_x && right_x < static_cast<int>(width)){
+					right_value = right[right_x + y * width];
 				}
 				const unsigned int lo = i % DP_BLOCK_SIZE;
 				const unsigned int hi = i / DP_BLOCK_SIZE;
