@@ -46,7 +46,7 @@ namespace sgm {
 			}
 
 			static constexpr int SIZE = 16;
-			const dim3 blocks((width + SIZE - 1) / SIZE, height / SIZE);
+			const dim3 blocks((width + SIZE - 1) / SIZE, (height + SIZE - 1) / SIZE);
 			const dim3 threads(SIZE, SIZE);
 			fix_output_kernel<<<blocks, threads>>>(d_disp, width, height, pitch, subpixel, min_disp);
 		}
