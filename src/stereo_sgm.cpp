@@ -96,7 +96,7 @@ namespace sgm {
 		}
 	};
 
-	static bool hasEnoughDepth(int output_depth_bits, int disparity_size, int min_disp, bool subpixel)
+	static bool has_enough_depth(int output_depth_bits, int disparity_size, int min_disp, bool subpixel)
 	{
 		// simulate minimum/maximum value
 		std::int64_t max = static_cast<int64_t>(disparity_size) + min_disp - 1;
@@ -148,7 +148,7 @@ namespace sgm {
 			width_ = height_ = input_depth_bits_ = output_depth_bits_ = disparity_size_ = 0;
 			throw std::logic_error("disparity size must be 64, 128 or 256");
 		}
-		if (!hasEnoughDepth(output_depth_bits, disparity_size, param_.min_disp, param_.subpixel)) {
+		if (!has_enough_depth(output_depth_bits, disparity_size, param_.min_disp, param_.subpixel)) {
 			width_ = height_ = input_depth_bits_ = output_depth_bits_ = disparity_size_ = 0;
 			throw std::logic_error("output depth bits must be sufficient for representing output value");
 		}
