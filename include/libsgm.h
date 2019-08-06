@@ -125,6 +125,7 @@ namespace sgm {
 		* You need to allocate dst memory at least width x height x sizeof(element_type) bytes.
 		* The element_type is uint8_t for output_depth_bits == 8 and uint16_t for output_depth_bits == 16.
 		* Note that dst element value would be multiplied StereoSGM::SUBPIXEL_SCALE if subpixel option was enabled.
+		* Value of Invalid disparity is equal to return value of `get_invalid_disparity` member function.
 		*/
 		LIBSGM_API void execute(const void* left_pixels, const void* right_pixels, void* dst);
 
