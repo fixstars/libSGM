@@ -96,7 +96,7 @@ int main(int argc, char* argv[]) {
 
 		disparity.convertTo(disparity_8u, CV_8U, 255. / disp_size);
 		cv::applyColorMap(disparity_8u, disparity_color, cv::COLORMAP_JET);
-		disparity_color.setTo(cv::Scalar(0, 0, 0), disparity == static_cast<std::uint8_t>(sgm.get_invalid_disparity()));
+		disparity_color.setTo(cv::Scalar(0, 0, 0), disparity == static_cast<uint8_t>(sgm.get_invalid_disparity()));
 		cv::putText(disparity_color, format_string("sgm execution time: %4.1f[msec] %4.1f[FPS]", 1e-3 * duration, fps),
 			cv::Point(50, 50), 2, 0.75, cv::Scalar(255, 255, 255));
 

@@ -99,7 +99,7 @@ namespace sgm {
 	static bool has_enough_depth(int output_depth_bits, int disparity_size, int min_disp, bool subpixel)
 	{
 		// simulate minimum/maximum value
-		std::int64_t max = static_cast<int64_t>(disparity_size) + min_disp - 1;
+		int64_t max = static_cast<int64_t>(disparity_size) + min_disp - 1;
 		if (subpixel) {
 			max *= sgm::StereoSGM::SUBPIXEL_SCALE;
 			max += sgm::StereoSGM::SUBPIXEL_SCALE - 1;
@@ -110,7 +110,7 @@ namespace sgm {
 
 		if (min_disp <= 0) {
 			// whether or not output can be represented by signed
-			std::int64_t min = static_cast<int64_t>(min_disp) - 1;
+			int64_t min = static_cast<int64_t>(min_disp) - 1;
 			if (subpixel) {
 				min *= sgm::StereoSGM::SUBPIXEL_SCALE;
 			}
