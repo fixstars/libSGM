@@ -16,6 +16,7 @@ limitations under the License.
 
 #include <libsgm.h>
 #include "internal.h"
+#include "utility.hpp"
 
 namespace {
 	template<typename SRC_T, typename DST_T>
@@ -27,14 +28,15 @@ namespace {
 		// left-right consistency check, only on leftDisp, but could be done for rightDisp too
 
 		SRC_T mask = d_left[i * src_pitch + j];
-		int d = d_leftDisp[i * dst_pitch + j];
+		DST_T org = d_leftDisp[i * dst_pitch + j];
+		int d = org;
 		if (subpixel) {
 			d >>= sgm::StereoSGM::SUBPIXEL_SHIFT;
 		}
 		int k = j - d;
-		if (mask == 0 || d <= 0 || (k >= 0 && k < width && abs(d_rightDisp[i * dst_pitch + k] - d) > 1)) {
+		if (mask == 0 || org == sgm::INVALID_DISP || (k >= 0 && k < width && abs(d_rightDisp[i * dst_pitch + k] - d) > 1)) {
 			// masked or left-right inconsistent pixel -> invalid
-			d_leftDisp[i * dst_pitch + j] = 0;
+			d_leftDisp[i * dst_pitch + j] = static_cast<DST_T>(sgm::INVALID_DISP);
 		}
 	}
 }

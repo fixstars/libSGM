@@ -96,6 +96,33 @@ namespace sgm {
 		}
 	};
 
+	static bool has_enough_depth(int output_depth_bits, int disparity_size, int min_disp, bool subpixel)
+	{
+		// simulate minimum/maximum value
+		int64_t max = static_cast<int64_t>(disparity_size) + min_disp - 1;
+		if (subpixel) {
+			max *= sgm::StereoSGM::SUBPIXEL_SCALE;
+			max += sgm::StereoSGM::SUBPIXEL_SCALE - 1;
+		}
+
+		if (1ll << output_depth_bits <= max)
+			return false;
+
+		if (min_disp <= 0) {
+			// whether or not output can be represented by signed
+			int64_t min = static_cast<int64_t>(min_disp) - 1;
+			if (subpixel) {
+				min *= sgm::StereoSGM::SUBPIXEL_SCALE;
+			}
+
+			if (min < -(1ll << (output_depth_bits - 1))
+			    || 1ll << (output_depth_bits - 1) <= max)
+				return false;
+		}
+
+		return true;
+	}
+
 	StereoSGM::StereoSGM(int width, int height, int disparity_size, int input_depth_bits, int output_depth_bits,
 		EXECUTE_INOUT inout_type, const Parameters& param) : StereoSGM(width, height, disparity_size, input_depth_bits, output_depth_bits, width, width, inout_type, param) {}
 
@@ -121,9 +148,9 @@ namespace sgm {
 			width_ = height_ = input_depth_bits_ = output_depth_bits_ = disparity_size_ = 0;
 			throw std::logic_error("disparity size must be 64, 128 or 256");
 		}
-		if (param.subpixel && output_depth_bits != 16) {
+		if (!has_enough_depth(output_depth_bits, disparity_size, param_.min_disp, param_.subpixel)) {
 			width_ = height_ = input_depth_bits_ = output_depth_bits_ = disparity_size_ = 0;
-			throw std::logic_error("output depth bits must be 16 if sub-pixel option was enabled");
+			throw std::logic_error("output depth bits must be sufficient for representing output value");
 		}
 		if (param_.path_type != PathType::SCAN_4PATH && param_.path_type != PathType::SCAN_8PATH) {
 			width_ = height_ = input_depth_bits_ = output_depth_bits_ = disparity_size_ = 0;
@@ -167,6 +194,7 @@ namespace sgm {
 		sgm::details::median_filter((uint16_t*)d_tmp_left_disp, (uint16_t*)d_left_disp, width_, height_, dst_pitch_);
 		sgm::details::median_filter((uint16_t*)d_tmp_right_disp, (uint16_t*)d_right_disp, width_, height_, dst_pitch_);
 		sgm::details::check_consistency((uint16_t*)d_left_disp, (uint16_t*)d_right_disp, d_input_left, width_, height_, input_depth_bits_, src_pitch_, dst_pitch_, param_.subpixel);
+		sgm::details::correct_disparity_range((uint16_t*)d_left_disp, width_, height_, dst_pitch_, param_.subpixel, param_.min_disp);
 
 		if (!is_cuda_output(inout_type_) && output_depth_bits_ == 8) {
 			sgm::details::cast_16bit_8bit_array((const uint16_t*)d_left_disp, (uint8_t*)d_tmp_left_disp, dst_pitch_ * height_);
@@ -184,5 +212,9 @@ namespace sgm {
 		else {
 			std::cerr << "not impl" << std::endl;
 		}
+	}
+
+	int StereoSGM::get_invalid_disparity() const {
+		return (param_.min_disp - 1) * (param_.subpixel ? SUBPIXEL_SCALE : 1);
 	}
 }

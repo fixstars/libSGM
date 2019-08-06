@@ -75,12 +75,14 @@ namespace sgm {
 			float uniqueness;
 			bool subpixel;
 			PathType path_type;
-			Parameters(int P1 = 10, int P2 = 120, float uniqueness = 0.95f, bool subpixel = false, PathType path_type = PathType::SCAN_8PATH)
+			int min_disp;
+			Parameters(int P1 = 10, int P2 = 120, float uniqueness = 0.95f, bool subpixel = false, PathType path_type = PathType::SCAN_8PATH, int min_disp = 0)
 				: P1(P1)
 				, P2(P2)
 				, uniqueness(uniqueness)
 				, subpixel(subpixel)
 				, path_type(path_type)
+				, min_disp(min_disp)
 			{ }
 		};
 
@@ -123,8 +125,17 @@ namespace sgm {
 		* You need to allocate dst memory at least width x height x sizeof(element_type) bytes.
 		* The element_type is uint8_t for output_depth_bits == 8 and uint16_t for output_depth_bits == 16.
 		* Note that dst element value would be multiplied StereoSGM::SUBPIXEL_SCALE if subpixel option was enabled.
+		* Value of Invalid disparity is equal to return value of `get_invalid_disparity` member function.
 		*/
 		LIBSGM_API void execute(const void* left_pixels, const void* right_pixels, void* dst);
+
+		/**
+		* Generate invalid disparity value from Parameter::min_disp and Parameter::subpixel
+		* @attention
+		* Cast properly if you receive disparity value as `unsigned` type.
+		* See sample/movie for an example of this.
+		*/
+		LIBSGM_API int get_invalid_disparity() const;
 
 	private:
 		StereoSGM(const StereoSGM&);

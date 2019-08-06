@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <libsgm.h>
 #include "winner_takes_all.hpp"
+#include "utility.hpp"
 #include "generator.hpp"
 #include "test_utility.hpp"
 
@@ -52,7 +53,7 @@ thrust::host_vector<sgm::output_type> winner_takes_all_left(
 				const int cost = p.first;
 				const int disp = p.second;
 				if (cost * uniqueness < best_cost && abs(disp - best_disp) > 1) {
-					dst = 0;
+					dst = sgm::INVALID_DISP;
 					break;
 				}
 			}

@@ -58,7 +58,7 @@ public:
 			m_census_left.get_output(),
 			m_census_right.get_output(),
 			width, height,
-			param.path_type, param.P1, param.P2,
+			param.path_type, param.P1, param.P2, param.min_disp,
 			stream);
 		m_winner_takes_all.enqueue(
 			dest_left, dest_right,

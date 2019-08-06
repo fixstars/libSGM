@@ -4,6 +4,8 @@
 #include <limits>
 #include <algorithm>
 #include <thrust/host_vector.h>
+#include <gtest/gtest.h>
+#include "types.hpp"
 
 #ifdef _WIN32
 #define popcnt64 __popcnt64
@@ -11,10 +13,10 @@
 #define popcnt64 __builtin_popcountll
 #endif
 
-static thrust::host_vector<sgm::cost_type> path_aggregation(
+static inline thrust::host_vector<sgm::cost_type> path_aggregation(
 	const thrust::host_vector<sgm::feature_type>& left,
 	const thrust::host_vector<sgm::feature_type>& right,
-	int width, int height, int max_disparity,
+	int width, int height, int max_disparity, int min_disparity,
 	int p1, int p2, int dx, int dy)
 {
 	thrust::host_vector<sgm::cost_type> result(width * height * max_disparity);
@@ -29,7 +31,7 @@ static thrust::host_vector<sgm::cost_type> path_aggregation(
 			const int min_cost = *min_element(before.begin(), before.end());
 			for(int k = 0; k < max_disparity; ++k){
 				const auto l = left[j + i * width];
-				const auto r = (k > j ? 0 : right[(j - k) + i * width]);
+				const auto r = (k + min_disparity > j ? 0 : right[(j - k - min_disparity) + i * width]);
 				int cost = std::min(before[k] - min_cost, p2);
 				if(k > 0){
 					cost = std::min(cost, before[k - 1] - min_cost + p1);
@@ -44,5 +46,16 @@ static thrust::host_vector<sgm::cost_type> path_aggregation(
 	}
 	return result;
 }
+
+class PathAggregationTest : public testing::TestWithParam<std::tuple<int, int, int>>
+{
+public:
+	int min_disp_;
+	int p1_, p2_;
+
+	virtual void SetUp(){
+		std::tie(min_disp_, p1_, p2_) = GetParam();
+	}
+};
 
 #endif
