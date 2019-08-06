@@ -128,6 +128,14 @@ namespace sgm {
 		*/
 		LIBSGM_API void execute(const void* left_pixels, const void* right_pixels, void* dst);
 
+		/**
+		* Generate invalid disparity value from Parameter::min_disp and Parameter::subpixel
+		* @attention
+		* Cast properly if you receive disparity value as `unsigned` type.
+		* See sample/movie for an example of this.
+		*/
+		LIBSGM_API int get_invalid_disparity() const;
+
 	private:
 		StereoSGM(const StereoSGM&);
 		StereoSGM& operator=(const StereoSGM&);

@@ -81,7 +81,7 @@ int main(int argc, char* argv[])
 	ssgm.execute(left.data, right.data, disparity.data);
 
 	// create mask for invalid disp
-	cv::Mat mask = disparity == min_disp - 1;
+	cv::Mat mask = disparity == ssgm.get_invalid_disparity();
 
 	// show image
 	cv::Mat disparity_8u, disparity_color;

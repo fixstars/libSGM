@@ -213,4 +213,8 @@ namespace sgm {
 			std::cerr << "not impl" << std::endl;
 		}
 	}
+
+	int StereoSGM::get_invalid_disparity() const {
+		return (param_.min_disp - 1) * (param_.subpixel ? SUBPIXEL_SCALE : 1);
+	}
 }
