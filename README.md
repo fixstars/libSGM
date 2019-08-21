@@ -17,13 +17,14 @@ The libSGM performance obtained from benchmark sample
 ### Settings
 - image size : 1024 x 440
 - disparity size : 128
-- sgm path : 8 path
+- sgm path : 4 path
+- subpixel : enabled
 
 ### Results
 |Device|Processing Time[Milliseconds]|FPS|
 |---|---|---|
-|Tegra X2|52.4|19.1|
-|GTX 1080 Ti|3.4|296|
+|Tegra X2 (CUDA: v10.0)|28.5|35.1|
+|GTX 1080 Ti (CUDA: v10.1)|2.0|495.1|
 
 ## Requirements
 libSGM needs CUDA (compute capabilities >= 3.0) to be installed.  
