@@ -48,14 +48,13 @@ $ pwd
 .../libSGM
 $ cd build
 $ cd sample/movie/
-$ ./stereo_movie <left image path format> <right image path format> <disparity> <frame count>
+$ ./stereo_movie <left image path format> <right image path format> <disparity>
 left image path format: the format used for the file paths to the left input images
 right image path format: the format used for the file paths to the right input images
 disparity: the maximum number of disparities (optional)
-frame count: the total number of images (optional)
 ```
 
-"disparity" and "frame count" are optional. By default, they are 64 and 100, respectively.
+"disparity" is optional. By default, it is 128.
 
 Next, we explain the meaning of the "left image path format" and "right image path format".  
 When provided with the following set of files, we should pass the "path formats" given below.

@@ -48,14 +48,13 @@ $ pwd
 .../libSGM
 $ cd build
 $ cd sample/movie/
-$ ./stereo_movie <left image path format> <right image path format> <disparity> <frame count>
+$ ./stereo_movie <left image path format> <right image path format> <disparity>
 left image path format: 左側画像入力時に使用するファイルパスのフォーマット
 right image path format: 右側画像入力時に使用するファイルパスのフォーマット
 disparity: 視差情報を何段階で保持するか(省略可)
-frame count: 全画像が何枚存在するか(省略可)
 ```
 
-disparityとframe countは省略が可能です。省略した時には、それぞれ64, 100が付与されます。
+disparityは省略が可能です。省略した時には、128が付与されます。
 
 ここで、left image path format, right image path formatとは、ファイル読み込み時に使用するフォーマットを意味します。  
 次のような連番ファイルが与えられていたとき、与えるべきpath formatは以下のようになります。
