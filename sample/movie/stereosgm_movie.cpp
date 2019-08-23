@@ -74,10 +74,14 @@ int main(int argc, char* argv[])
 
 	const int input_depth = I1.type() == CV_8U ? 8 : 16;
 	const int input_bytes = input_depth * width * height / 8;
-	const int output_depth = 8;
+	const int output_depth = disp_size < 256 ? 8 : 16;
 	const int output_bytes = output_depth * width * height / 8;
 
 	sgm::StereoSGM sgm(width, height, disp_size, input_depth, output_depth, sgm::EXECUTE_INOUT_CUDA2CUDA);
+
+	const int invalid_disp = output_depth == 8
+			? static_cast< uint8_t>(sgm.get_invalid_disparity())
+			: static_cast<uint16_t>(sgm.get_invalid_disparity());
 
 	cv::Mat disparity(height, width, output_depth == 8 ? CV_8U : CV_16U);
 	cv::Mat disparity_8u, disparity_color;
@@ -115,6 +119,7 @@ int main(int argc, char* argv[])
 
 		disparity.convertTo(disparity_8u, CV_8U, 255. / disp_size);
 		cv::applyColorMap(disparity_8u, disparity_color, cv::COLORMAP_JET);
+		disparity_color.setTo(cv::Scalar(0, 0, 0), disparity == invalid_disp);
 		cv::putText(disparity_color, format_string("sgm execution time: %4.1f[msec] %4.1f[FPS]", 1e-3 * duration, fps),
 			cv::Point(50, 50), 2, 0.75, cv::Scalar(255, 255, 255));
 

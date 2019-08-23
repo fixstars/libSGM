@@ -49,6 +49,7 @@ public:
 		PathType path_type,
 		unsigned int p1,
 		unsigned int p2,
+		int min_disp,
 		cudaStream_t stream);
 
 };

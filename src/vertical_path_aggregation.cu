@@ -32,7 +32,8 @@ __global__ void aggregate_vertical_path_kernel(
 	int width,
 	int height,
 	unsigned int p1,
-	unsigned int p2)
+	unsigned int p2,
+	int min_disp)
 {
 	static const unsigned int SUBGROUP_SIZE = MAX_DISPARITY / DP_BLOCK_SIZE;
 	static const unsigned int PATHS_PER_WARP = WARP_SIZE / SUBGROUP_SIZE;
@@ -78,10 +79,10 @@ __global__ void aggregate_vertical_path_kernel(
 		for(unsigned int i0 = 0; i0 < RIGHT_BUFFER_SIZE; i0 += BLOCK_SIZE){
 			const unsigned int i = i0 + threadIdx.x;
 			if(i < RIGHT_BUFFER_SIZE){
-				const int x = static_cast<int>(right_x0 + PATHS_PER_BLOCK - 1 - i);
+				const int right_x = static_cast<int>(right_x0 + PATHS_PER_BLOCK - 1 - i - min_disp);
 				feature_type right_value = 0;
-				if(0 <= x && x < static_cast<int>(width)){
-					right_value = right[x + y * width];
+				if(0 <= right_x && right_x < static_cast<int>(width)){
+					right_value = right[right_x + y * width];
 				}
 				const unsigned int lo = i % DP_BLOCK_SIZE;
 				const unsigned int hi = i / DP_BLOCK_SIZE;
@@ -120,6 +121,7 @@ void enqueue_aggregate_up2down_path(
 	int height,
 	unsigned int p1,
 	unsigned int p2,
+	int min_disp,
 	cudaStream_t stream)
 {
 	static const unsigned int SUBGROUP_SIZE = MAX_DISPARITY / DP_BLOCK_SIZE;
@@ -128,7 +130,7 @@ void enqueue_aggregate_up2down_path(
 	const int gdim = (width + PATHS_PER_BLOCK - 1) / PATHS_PER_BLOCK;
 	const int bdim = BLOCK_SIZE;
 	aggregate_vertical_path_kernel<1, MAX_DISPARITY><<<gdim, bdim, 0, stream>>>(
-		dest, left, right, width, height, p1, p2);
+		dest, left, right, width, height, p1, p2, min_disp);
 }
 
 template <unsigned int MAX_DISPARITY>
@@ -140,6 +142,7 @@ void enqueue_aggregate_down2up_path(
 	int height,
 	unsigned int p1,
 	unsigned int p2,
+	int min_disp,
 	cudaStream_t stream)
 {
 	static const unsigned int SUBGROUP_SIZE = MAX_DISPARITY / DP_BLOCK_SIZE;
@@ -148,7 +151,7 @@ void enqueue_aggregate_down2up_path(
 	const int gdim = (width + PATHS_PER_BLOCK - 1) / PATHS_PER_BLOCK;
 	const int bdim = BLOCK_SIZE;
 	aggregate_vertical_path_kernel<-1, MAX_DISPARITY><<<gdim, bdim, 0, stream>>>(
-		dest, left, right, width, height, p1, p2);
+		dest, left, right, width, height, p1, p2, min_disp);
 }
 
 
@@ -160,6 +163,7 @@ template void enqueue_aggregate_up2down_path<64u>(
 	int height,
 	unsigned int p1,
 	unsigned int p2,
+	int min_disp,
 	cudaStream_t stream);
 
 template void enqueue_aggregate_up2down_path<128u>(
@@ -170,6 +174,7 @@ template void enqueue_aggregate_up2down_path<128u>(
 	int height,
 	unsigned int p1,
 	unsigned int p2,
+	int min_disp,
 	cudaStream_t stream);
 
 template void enqueue_aggregate_up2down_path<256u>(
@@ -180,6 +185,7 @@ template void enqueue_aggregate_up2down_path<256u>(
 	int height,
 	unsigned int p1,
 	unsigned int p2,
+	int min_disp,
 	cudaStream_t stream);
 
 template void enqueue_aggregate_down2up_path<64u>(
@@ -190,6 +196,7 @@ template void enqueue_aggregate_down2up_path<64u>(
 	int height,
 	unsigned int p1,
 	unsigned int p2,
+	int min_disp,
 	cudaStream_t stream);
 
 template void enqueue_aggregate_down2up_path<128u>(
@@ -200,6 +207,7 @@ template void enqueue_aggregate_down2up_path<128u>(
 	int height,
 	unsigned int p1,
 	unsigned int p2,
+	int min_disp,
 	cudaStream_t stream);
 
 template void enqueue_aggregate_down2up_path<256u>(
@@ -210,6 +218,7 @@ template void enqueue_aggregate_down2up_path<256u>(
 	int height,
 	unsigned int p1,
 	unsigned int p2,
+	int min_disp,
 	cudaStream_t stream);
 
 }
