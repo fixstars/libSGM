@@ -36,9 +36,10 @@ libSGMはCUDA (compute capabilities >= 3.5)を必要とします。
 ```
 $ git clone https://github.com/fixstars/libSGM.git
 $ cd libSGM
+$ git submodule update --init  # ENABLE_TESTS オプションを ON にする際に必要です
 $ mkdir build
 $ cd build
-$ cmake ../
+$ cmake ../  # いくつかのオプションが用意されています
 $ make
 ```
 
@@ -76,6 +77,28 @@ $ ./stereo_movie left_image_%04d.pgm right_image_%04d.pgm
 ```
 
 本ソフトウェアは [Daimler Urban Scene Segmentation Benchmark Dataset 2014](http://www.6d-vision.com/scene-labeling) にて提供されている画像を用いて動作確認をしています。
+
+## Test Execution
+libSGMでは[Google Test](https://github.com/google/googletest)をテスト・フレームワークとして採用しています。  
+Git submodule機能を通して導入しているため、始めに以下のコマンドで初期化する必要があります。
+
+```
+$ pwd
+.../libSGM
+$ git submodule update --init
+```
+
+ビルド後、以下のコマンドでテストを実行できます。
+
+```
+$ pwd
+.../libSGM
+$ cd build
+$ cd test
+$ ./sgm-test
+```
+
+テストコードではナイーブな実装との比較を行っています。
 
 ## Authors
 The "SGM Team": Samuel Audet, Yoriyuki Kitta, Yuta Noto, Ryo Sakamoto, Akihiro Takagi  

@@ -36,9 +36,10 @@ Moreover, to build the sample, we need the following libraries:
 ```
 $ git clone https://github.com/fixstars/libSGM.git
 $ cd libSGM
+$ git submodule update --init  # It is needed if ENABLE_TESTS option is set to ON
 $ mkdir build
 $ cd build
-$ cmake ../
+$ cmake ../  # Several options available
 $ make
 ```
 
@@ -76,6 +77,28 @@ $ ./stereo_movie left_image_%04d.pgm right_image_%04d.pgm
 ```
 
 The sample images available at [Daimler Urban Scene Segmentation Benchmark Dataset 2014](http://www.6d-vision.com/scene-labeling) are used to test the software.
+
+## Test Execution
+libSGM uses [Google Test](https://github.com/google/googletest) for tests as Git submodule.  
+So, we need to init submodule by following command firstly.
+
+```
+$ pwd
+.../libSGM
+$ git submodule update --init
+```
+
+We can run tests after a build.
+
+```
+$ pwd
+.../libSGM
+$ cd build
+$ cd test
+$ ./sgm-test
+```
+
+Test code compares our implementation of each functions to naive implementation.
 
 ## Authors
 The "SGM Team": Samuel Audet, Yoriyuki Kitta, Yuta Noto, Ryo Sakamoto, Akihiro Takagi  
