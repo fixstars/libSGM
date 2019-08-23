@@ -75,10 +75,7 @@ right_image_0003.pgm
 $ ./stereo_movie left_image_%04d.pgm right_image_%04d.pgm
 ```
 
-The sample movie images available at
-http://www.6d-vision.com/scene-labeling
-under "Daimler Urban Scene Segmentation Benchmark Dataset"
-are used to test the software.
+The sample images available at [Daimler Urban Scene Segmentation Benchmark Dataset 2014](http://www.6d-vision.com/scene-labeling) are used to test the software.
 
 ## Authors
 The "SGM Team": Samuel Audet, Yoriyuki Kitta, Yuta Noto, Ryo Sakamoto, Akihiro Takagi  
