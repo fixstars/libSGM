@@ -17,16 +17,17 @@ The libSGM performance obtained from benchmark sample
 ### Settings
 - image size : 1024 x 440
 - disparity size : 128
-- sgm path : 8 path
+- sgm path : 4 path
+- subpixel : enabled
 
 ### Results
 |Device|Processing Time[Milliseconds]|FPS|
 |---|---|---|
-|Tegra X2|52.4|19.1|
-|GTX 1080 Ti|3.4|296|
+|Tegra X2 (CUDA: v10.0)|28.5|35.1|
+|GTX 1080 Ti (CUDA: v10.1)|2.0|495.1|
 
 ## Requirements
-libSGM needs CUDA (compute capabilities >= 3.0) to be installed.  
+libSGM needs CUDA (compute capabilities >= 3.5) to be installed.  
 Moreover, to build the sample, we need the following libraries:
 - OpenCV 3.0 or later
 - CMake 3.1 or later
@@ -35,9 +36,10 @@ Moreover, to build the sample, we need the following libraries:
 ```
 $ git clone https://github.com/fixstars/libSGM.git
 $ cd libSGM
+$ git submodule update --init  # It is needed if ENABLE_TESTS option is set to ON
 $ mkdir build
 $ cd build
-$ cmake ../
+$ cmake ../  # Several options available
 $ make
 ```
 
@@ -47,14 +49,13 @@ $ pwd
 .../libSGM
 $ cd build
 $ cd sample/movie/
-$ ./stereo_movie <left image path format> <right image path format> <disparity> <frame count>
+$ ./stereo_movie <left image path format> <right image path format> <disparity_size>
 left image path format: the format used for the file paths to the left input images
 right image path format: the format used for the file paths to the right input images
-disparity: the maximum number of disparities (optional)
-frame count: the total number of images (optional)
+disparity_size: the maximum number of disparities (optional)
 ```
 
-"disparity" and "frame count" are optional. By default, they are 64 and 100, respectively.
+"disparity_size" is optional. By default, it is 128.
 
 Next, we explain the meaning of the "left image path format" and "right image path format".  
 When provided with the following set of files, we should pass the "path formats" given below.
@@ -75,10 +76,29 @@ right_image_0003.pgm
 $ ./stereo_movie left_image_%04d.pgm right_image_%04d.pgm
 ```
 
-The sample movie images available at
-http://www.6d-vision.com/scene-labeling
-under "Daimler Urban Scene Segmentation Benchmark Dataset"
-are used to test the software.
+The sample images available at [Daimler Urban Scene Segmentation Benchmark Dataset 2014](http://www.6d-vision.com/scene-labeling) are used to test the software.
+
+## Test Execution
+libSGM uses [Google Test](https://github.com/google/googletest) for tests as Git submodule.  
+So, we need to init submodule by following command firstly.
+
+```
+$ pwd
+.../libSGM
+$ git submodule update --init
+```
+
+We can run tests after a build.
+
+```
+$ pwd
+.../libSGM
+$ cd build
+$ cd test
+$ ./sgm-test
+```
+
+Test code compares our implementation of each functions to naive implementation.
 
 ## Authors
 The "SGM Team": Samuel Audet, Yoriyuki Kitta, Yuta Noto, Ryo Sakamoto, Akihiro Takagi  
