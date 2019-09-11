@@ -21,9 +21,10 @@ namespace sgm {
 		 * @param subpixel Disparity value has 4 fractional bits if subpixel option is enabled
 		 * @param pathType Number of scanlines used in cost aggregation
 		 * @param minDisparity Minimum possible disparity value
+		 * @param lrMaxDiff Acceptable difference pixels which is used in LR check consistency. LR check consistency will be disabled if this value is set to negative.
 		 */
 		LIBSGM_API LibSGMWrapper(int numDisparity = 128, int P1 = 10, int P2 = 120, float uniquenessRatio = 0.95f,
-				bool subpixel = false, PathType pathType = PathType::SCAN_8PATH, int minDisparity = 0);
+				bool subpixel = false, PathType pathType = PathType::SCAN_8PATH, int minDisparity = 0, int lrMaxDiff = 1);
 		LIBSGM_API ~LibSGMWrapper();
 
 		LIBSGM_API int getNumDisparities() const;
@@ -33,6 +34,7 @@ namespace sgm {
 		LIBSGM_API bool hasSubpixel() const;
 		LIBSGM_API PathType getPathType() const;
 		LIBSGM_API int getMinDisparity() const;
+		LIBSGM_API int getLrMaxDiff() const;
 		LIBSGM_API int getInvalidDisparity() const;
 
 #ifdef BUILD_OPENCV_WRAPPER

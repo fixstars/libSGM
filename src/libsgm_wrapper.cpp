@@ -17,8 +17,8 @@ limitations under the License.
 #include <libsgm_wrapper.h>
 
 namespace sgm {
-	LibSGMWrapper::LibSGMWrapper(int numDisparity, int P1, int P2, float uniquenessRatio, bool subpixel, PathType pathType, int minDisparity)
-		: sgm_(nullptr), numDisparity_(numDisparity), param_(P1, P2, uniquenessRatio, subpixel, pathType, minDisparity), prev_(nullptr) {}
+	LibSGMWrapper::LibSGMWrapper(int numDisparity, int P1, int P2, float uniquenessRatio, bool subpixel, PathType pathType, int minDisparity, int lrMaxDiff)
+		: sgm_(nullptr), numDisparity_(numDisparity), param_(P1, P2, uniquenessRatio, subpixel, pathType, minDisparity, lrMaxDiff), prev_(nullptr) {}
 	LibSGMWrapper::~LibSGMWrapper() = default;
 
 	int LibSGMWrapper::getNumDisparities() const { return numDisparity_; }
@@ -28,6 +28,7 @@ namespace sgm {
 	bool LibSGMWrapper::hasSubpixel() const { return param_.subpixel; }
 	PathType LibSGMWrapper::getPathType() const { return param_.path_type; }
 	int LibSGMWrapper::getMinDisparity() const { return param_.min_disp; }
+	int LibSGMWrapper::getLrMaxDiff() const { return param_.LR_max_diff; }
 	int LibSGMWrapper::getInvalidDisparity() const {
 		return (param_.min_disp - 1) * (param_.subpixel ? StereoSGM::SUBPIXEL_SCALE : 1);
 	}
