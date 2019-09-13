@@ -32,15 +32,16 @@ limitations under the License.
 int main(int argc, char* argv[])
 {
 	cv::CommandLineParser parser(argc, argv,
-		"{@left_img  | <none> | path to input left image                                                            }"
-		"{@right_img | <none> | path to input right image                                                           }"
-		"{disp_size  |     64 | maximum possible disparity value                                                    }"
-		"{P1         |     10 | penalty on the disparity change by plus or minus 1 between nieghbor pixels          }"
-		"{P2         |    120 | penalty on the disparity change by more than 1 between neighbor pixels              }"
-		"{uniqueness |   0.95 | margin in ratio by which the best cost function value should be at least second one }"
-		"{num_paths  |      8 | number of scanlines used in cost aggregation                                        }"
-		"{min_disp   |      0 | minimum disparity value                                                             }"
-		"{help h     |        | display this help and exit                                                          }");
+		"{@left_img   | <none> | path to input left image                                                            }"
+		"{@right_img  | <none> | path to input right image                                                           }"
+		"{disp_size   |     64 | maximum possible disparity value                                                    }"
+		"{P1          |     10 | penalty on the disparity change by plus or minus 1 between nieghbor pixels          }"
+		"{P2          |    120 | penalty on the disparity change by more than 1 between neighbor pixels              }"
+		"{uniqueness  |   0.95 | margin in ratio by which the best cost function value should be at least second one }"
+		"{num_paths   |      8 | number of scanlines used in cost aggregation                                        }"
+		"{min_disp    |      0 | minimum disparity value                                                             }"
+		"{LR_max_diff |      1 | maximum allowed difference between left and right disparity                         }"
+		"{help h      |        | display this help and exit                                                          }");
 
 	if (parser.has("help")) {
 		parser.printMessage();
@@ -62,6 +63,7 @@ int main(int argc, char* argv[])
 	const float uniqueness = parser.get<float>("uniqueness");
 	const int num_paths = parser.get<int>("num_paths");
 	const int min_disp = parser.get<int>("min_disp");
+	const int LR_max_diff = parser.get<int>("LR_max_diff");
 
 	ASSERT_MSG(!left.empty() && !right.empty(), "imread failed.");
 	ASSERT_MSG(left.size() == right.size() && left.type() == right.type(), "input images must be same size and type.");
@@ -73,7 +75,7 @@ int main(int argc, char* argv[])
 	const int input_depth = left.type() == CV_8U ? 8 : 16;
 	const int output_depth = 16;
 
-	const sgm::StereoSGM::Parameters param(P1, P2, uniqueness, false, path_type, min_disp);
+	const sgm::StereoSGM::Parameters param(P1, P2, uniqueness, false, path_type, min_disp, LR_max_diff);
 	sgm::StereoSGM ssgm(left.cols, left.rows, disp_size, input_depth, output_depth, sgm::EXECUTE_INOUT_HOST2HOST, param);
 
 	cv::Mat disparity(left.size(), CV_16S);

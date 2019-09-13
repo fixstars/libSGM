@@ -56,9 +56,12 @@ namespace sgm {
 		EXECUTE_INOUT_CUDA2CUDA = (1 << 1) | 1,
 	};
 
+	/**
+	* Indicates number of scanlines which will be used.
+	*/
 	enum class PathType {
-		SCAN_4PATH,
-		SCAN_8PATH
+		SCAN_4PATH, //>! Horizontal and vertical paths.
+		SCAN_8PATH  //>! Horizontal, vertical and oblique paths.
 	};
 
 	/**
@@ -68,6 +71,10 @@ namespace sgm {
 	public:
 		static const int SUBPIXEL_SHIFT = 4;
 		static const int SUBPIXEL_SCALE = (1 << SUBPIXEL_SHIFT);
+
+		/**
+		* @brief Available options for StereoSGM
+		*/
 		struct Parameters
 		{
 			int P1;
@@ -76,13 +83,25 @@ namespace sgm {
 			bool subpixel;
 			PathType path_type;
 			int min_disp;
-			Parameters(int P1 = 10, int P2 = 120, float uniqueness = 0.95f, bool subpixel = false, PathType path_type = PathType::SCAN_8PATH, int min_disp = 0)
+			int LR_max_diff;
+
+			/**
+			* @param P1 Penalty on the disparity change by plus or minus 1 between nieghbor pixels.
+			* @param P2 Penalty on the disparity change by more than 1 between neighbor pixels.
+			* @param uniqueness Margin in ratio by which the best cost function value should be at least second one.
+			* @param subpixel Disparity value has 4 fractional bits if subpixel option is enabled.
+			* @param path_type Number of scanlines used in cost aggregation.
+			* @param min_disp Minimum possible disparity value.
+			* @param LR_max_diff Acceptable difference pixels which is used in LR check consistency. LR check consistency will be disabled if this value is set to negative.
+			*/
+			Parameters(int P1 = 10, int P2 = 120, float uniqueness = 0.95f, bool subpixel = false, PathType path_type = PathType::SCAN_8PATH, int min_disp = 0, int LR_max_diff = 1)
 				: P1(P1)
 				, P2(P2)
 				, uniqueness(uniqueness)
 				, subpixel(subpixel)
 				, path_type(path_type)
 				, min_disp(min_disp)
+				, LR_max_diff(LR_max_diff)
 			{ }
 		};
 

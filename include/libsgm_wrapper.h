@@ -14,16 +14,17 @@ namespace sgm {
 	class LibSGMWrapper {
 	public:
 		/**
-		 * @param numDisparity Maximum disparity minus minimum disparity
-		 * @param P1 Penalty on the disparity change by plus or minus 1 between nieghbor pixels
-		 * @param P2 Penalty on the disparity change by more than 1 between neighbor pixels
-		 * @param uniquenessRatio Margin in ratio by which the best cost function value should be at least second one
-		 * @param subpixel Disparity value has 4 fractional bits if subpixel option is enabled
-		 * @param pathType Number of scanlines used in cost aggregation
-		 * @param minDisparity Minimum possible disparity value
+		 * @param numDisparity Maximum disparity minus minimum disparity.
+		 * @param P1 Penalty on the disparity change by plus or minus 1 between nieghbor pixels.
+		 * @param P2 Penalty on the disparity change by more than 1 between neighbor pixels.
+		 * @param uniquenessRatio Margin in ratio by which the best cost function value should be at least second one.
+		 * @param subpixel Disparity value has 4 fractional bits if subpixel option is enabled.
+		 * @param pathType Number of scanlines used in cost aggregation.
+		 * @param minDisparity Minimum possible disparity value.
+		 * @param lrMaxDiff Acceptable difference pixels which is used in LR check consistency. LR check consistency will be disabled if this value is set to negative.
 		 */
 		LIBSGM_API LibSGMWrapper(int numDisparity = 128, int P1 = 10, int P2 = 120, float uniquenessRatio = 0.95f,
-				bool subpixel = false, PathType pathType = PathType::SCAN_8PATH, int minDisparity = 0);
+				bool subpixel = false, PathType pathType = PathType::SCAN_8PATH, int minDisparity = 0, int lrMaxDiff = 1);
 		LIBSGM_API ~LibSGMWrapper();
 
 		LIBSGM_API int getNumDisparities() const;
@@ -33,11 +34,12 @@ namespace sgm {
 		LIBSGM_API bool hasSubpixel() const;
 		LIBSGM_API PathType getPathType() const;
 		LIBSGM_API int getMinDisparity() const;
+		LIBSGM_API int getLrMaxDiff() const;
 		LIBSGM_API int getInvalidDisparity() const;
 
 #ifdef BUILD_OPENCV_WRAPPER
 		/**
-		 * Execute stereo semi global matching via wrapper class
+		 * Execute stereo semi global matching via wrapper class.
 		 * @param I1        Input left image.  Image's type is must be CV_8U or CV_16U
 		 * @param I2        Input right image.  Image's size and type must be same with I1.
 		 * @param disparity Output image.  Its memory will be allocated automatically dependent on input image size.
@@ -46,9 +48,10 @@ namespace sgm {
 		 * Note that disparity element value would be multiplied StereoSGM::SUBPIXEL_SCALE if subpixel option was enabled.
 		 */
 		LIBSGM_API void execute(const cv::cuda::GpuMat& I1, const cv::cuda::GpuMat& I2, cv::cuda::GpuMat& disparity);
+
 		/**
-		 * Execute stereo semi global matching via wrapper class
-		 * @param I1        Input left image.  Image's type is must be CV_8U or CV_16U
+		 * Execute stereo semi global matching via wrapper class.
+		 * @param I1        Input left image.  Image's type is must be CV_8U or CV_16U.
 		 * @param I2        Input right image.  Image's size and type must be same with I1.
 		 * @param disparity Output image.  Its memory will be allocated automatically dependent on input image size.
 		 * @attention
