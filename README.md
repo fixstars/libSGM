@@ -31,6 +31,7 @@ libSGM needs CUDA (compute capabilities >= 3.5) to be installed.
 Moreover, to build the sample, we need the following libraries:
 - OpenCV 3.0 or later
 - CMake 3.1 or later
+- Pybind11 (latest) if python bindings option is enabled
 
 ## Build Instructions
 ```

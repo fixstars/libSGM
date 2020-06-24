@@ -1,2 +1,5 @@
 include/libsgm_config.h
 build/
+pysgm/*.so
+*__pycache__*
+pysgm.egg-info/
