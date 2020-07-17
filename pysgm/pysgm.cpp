@@ -155,7 +155,7 @@ PYBIND11_MODULE(pysgm, m) {
            py::arg("param") = sgm::StereoSGM::Parameters()
                )
       .def(py::init<int, int, int, int, int, int, int, sgm::EXECUTE_INOUT, const sgm::StereoSGM::Parameters &>())
-      .def("execute", [](sgm::StereoSGM &w, unsigned long left_pixels, unsigned long right_pixels, unsigned long dst) {
+      .def("execute", [](sgm::StereoSGM &w, uintptr_t left_pixels, uintptr_t right_pixels, uintptr_t dst) {
         w.execute((void *)left_pixels, (void *)right_pixels, (void *)dst);
       })
       .def("get_invalid_disparity", &sgm::StereoSGM::get_invalid_disparity)
