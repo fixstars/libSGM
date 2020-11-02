@@ -47,7 +47,7 @@ $ make
 ```
 $ pwd
 .../libSGM
-$ cd build
+$ ( cd build && cmake .. -DENABLE_SAMPLES=on && make )
 $ cd sample/movie/
 $ ./stereo_movie <left image path format> <right image path format> <disparity_size>
 left image path format: 左側画像入力時に使用するファイルパスのフォーマット
