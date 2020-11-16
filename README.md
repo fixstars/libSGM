@@ -47,7 +47,9 @@ $ make
 ```
 $ pwd
 .../libSGM
-$ ( cd build && cmake .. -DENABLE_SAMPLES=on && make )
+$ cd build
+$ cmake .. -DENABLE_SAMPLES=on
+$ make
 $ cd sample/movie/
 $ ./stereo_movie <left image path format> <right image path format> <disparity_size>
 left image path format: the format used for the file paths to the left input images
