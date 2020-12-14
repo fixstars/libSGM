@@ -28,19 +28,7 @@ limitations under the License.
 
 #include "libsgm_config.h"
 
-#if defined(LIBSGM_SHARED)
-	#if defined(WIN32) || defined(_WIN32)
-		#if defined sgm_EXPORTS
-			#define LIBSGM_API __declspec(dllexport)
-		#else
-			#define LIBSGM_API __declspec(dllimport)
-		#endif
-	#else
-		#define LIBSGM_API __attribute__((visibility("default")))
-	#endif
-#else
-	#define LIBSGM_API
-#endif
+#include "libsgm_export.h"
 
 namespace sgm {
 	struct CudaStereoSGMResources;

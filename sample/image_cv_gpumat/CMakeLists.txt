@@ -1,20 +1,11 @@
-cmake_minimum_required(VERSION 3.1)
-
-set(CMAKE_FIND_PACKAGE_SORT_ORDER NATURAL)
-
-if (CMAKE_COMPILER_IS_GNUCXX)
-	set(CMAKE_CXX_FLAGS "-O3 -Wall")
-endif()
+cmake_minimum_required(VERSION 3.18)
+project(stereo_image_cv_gpumat)
 
 find_package(CUDA REQUIRED)
 
-find_package(OpenCV REQUIRED)
-if (OpenCV_VERSION VERSION_LESS 3.0)
-	message(FATAL_ERROR "Error: OpenCV version requires at least 3.0")
-endif()
+find_package(OpenCV 3 REQUIRED)
 
-include_directories(${OpenCV_INCLUDE_DIRS})
-include_directories(../../include)
-
-cuda_add_executable(stereo_image_cv_gpumat stereosgm_image_cv_gpumat.cpp ${CUDA_SRC})
-target_link_libraries(stereo_image_cv_gpumat sgm ${CUDA_LIBRARIES} ${OpenCV_LIBS})
+add_executable(${PROJECT_NAME} stereosgm_image_cv_gpumat.cpp)
+target_link_libraries(${PROJECT_NAME} PRIVATE libsgm::sgm ${CUDA_LIBRARIES} ${OpenCV_LIBS})
+target_include_directories(${PROJECT_NAME} PRIVATE ${OpenCV_INCLUDE_DIRS})
+target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_11)
