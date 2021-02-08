@@ -21,10 +21,13 @@ benchmarkサンプルで計測した処理時間を示します
 - subpixel : enabled
 
 ### Results
-|Device|Processing Time[Milliseconds]|FPS|
-|---|---|---|
-|Tegra X2 (CUDA: v10.0)|28.5|35.1|
-|GTX 1080 Ti (CUDA: v10.1)|2.0|495.1|
+|Device|CUDA version|Processing Time[Milliseconds]|FPS|
+|---|---|---|---|
+|GTX 1080 Ti|10.1|2.0|495.1|
+|GeForce RTX 3080|11.1|1.5|651.3|
+|Tegra X2|10.0|28.5|35.1|
+|Xavier(MODE_15W)|10.2|17.3|57.7|
+|Xavier(MAXN)|10.2|9.0|110.7|
 
 ## Requirements
 libSGMはCUDA (compute capabilities >= 3.5)を必要とします。  
