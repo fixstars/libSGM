@@ -105,9 +105,10 @@ $ ./sgm-test
 
 Test code compares our implementation of each functions to naive implementation.
 
-## Authors
-The "SGM Team": Samuel Audet, Yoriyuki Kitta, Yuta Noto, Ryo Sakamoto, Akihiro Takagi  
-[Fixstars Corporation](http://www.fixstars.com/)
+## Author
+The "adaskit Team"  
+
+The adaskit is an open-source project created by [Fixstars Corporation](https://www.fixstars.com/) and its subsidiary companies including [Fixstars Autonomous Technologies](https://at.fixstars.com/), aimed at contributing to the ADAS industry by developing high-performance implementations for algorithms with high computational cost.
 
 ## License
 Apache License 2.0
