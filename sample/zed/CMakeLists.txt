@@ -6,7 +6,7 @@ message(STATUS ${CMAKE_MODULE_PATH})
 
 set(CMAKE_FIND_PACKAGE_SORT_ORDER NATURAL)
 
-find_package(ZED 2 REQUIRED)
+find_package(ZED 3 REQUIRED)
 find_package(CUDA ${ZED_CUDA_VERSION} REQUIRED)
 
 find_package(OpenCV REQUIRED)
@@ -21,6 +21,7 @@ include_directories(${ZED_INCLUDE_DIRS})
 
 link_directories(${ZED_LIBRARY_DIR})
 link_directories(${CUDA_LIBRARY_DIRS})
+link_directories(${OpenCV_LIBRARY_DIRS})
 
 if(NOT WIN32)
 	set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -std=c++11")
