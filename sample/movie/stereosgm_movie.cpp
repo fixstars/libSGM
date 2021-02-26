@@ -58,7 +58,6 @@ int main(int argc, char* argv[])
 		"{@right-image-format | <none> | format string for path to input right image }"
 		"{disp_size           |    128 | maximum possible disparity value            }"
 		"{start_number        |      0 | initial frame number to read                }"
-		"{frames              |      0 | number of frames                            }"
 		"{help h              |        | display this help and exit                  }");
 
 	if (parser.has("help")) {
@@ -69,7 +68,6 @@ int main(int argc, char* argv[])
 	const std::string left_image_format = parser.get<cv::String>("@left-image-format");
 	const std::string right_image_format = parser.get<cv::String>("@right-image-format");
 	const int first_frame = parser.get<int>("start_number");
-	const int frames = parser.get<int>("frames");
 	const int disp_size = parser.get<int>("disp_size");
 
 	cv::Mat I1 = cv::imread(format_string(left_image_format, first_frame), -1);
@@ -109,7 +107,7 @@ int main(int argc, char* argv[])
 
 		I1 = cv::imread(format_string(left_image_format, frame_no), -1);
 		I2 = cv::imread(format_string(right_image_format, frame_no), -1);
-		if (I1.empty() || I2.empty() || (frames > 0 && frame_no - first_frame >= frames)) {
+		if (I1.empty() || I2.empty()) {
 			frame_no = first_frame - 1;
 			continue;
 		}
