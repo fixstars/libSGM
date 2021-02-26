@@ -12,6 +12,7 @@ option(ENABLE_ZED_DEMO      "Build a Demo using ZED Camera" OFF)
 option(ENABLE_SAMPLES       "Build samples" OFF)
 option(ENABLE_TESTS         "Test library" OFF)
 option(LIBSGM_SHARED        "Build a shared library" OFF)
+option(BUILD_PYTHON_WRAPPER "Build pybind11 wrappers" OFF)
 option(BUILD_OPENCV_WRAPPER "Make library compatible with cv::Mat and cv::cuda::GpuMat of OpenCV" OFF)
 
 if(WIN32)
@@ -34,6 +35,14 @@ configure_file(${PROJECT_SOURCE_DIR}/include/libsgm_config.h.in
 )
 
 add_subdirectory(src)
+
+if(BUILD_PYTHON_WRAPPER)
+    if (LIBSGM_SHARED)
+        add_subdirectory(pysgm)
+    else()
+        message(WARNING "Python wrappers requires LIBSGM_SHARED=ON")
+    endif()
+endif()
 
 if(ENABLE_SAMPLES)
     add_subdirectory(sample/image)
