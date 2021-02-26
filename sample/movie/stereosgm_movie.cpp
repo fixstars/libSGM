@@ -67,8 +67,8 @@ int main(int argc, char* argv[])
 
 	const std::string left_image_format = parser.get<cv::String>("@left-image-format");
 	const std::string right_image_format = parser.get<cv::String>("@right-image-format");
-	const int start_number = parser.get<int>("start_number");
 	const int disp_size = parser.get<int>("disp_size");
+	const int start_number = parser.get<int>("start_number");
 
 	cv::Mat I1 = cv::imread(format_string(left_image_format, start_number), -1);
 	cv::Mat I2 = cv::imread(format_string(right_image_format, start_number), -1);
