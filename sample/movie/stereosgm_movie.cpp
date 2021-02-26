@@ -43,26 +43,41 @@ struct device_buffer
 };
 
 template <class... Args>
-static std::string format_string(const char* fmt, Args... args)
+static std::string format_string(const std::string& fmt, Args... args)
 {
 	const int BUF_SIZE = 1024;
 	char buf[BUF_SIZE];
-	std::snprintf(buf, BUF_SIZE, fmt, args...);
+	std::snprintf(buf, BUF_SIZE, fmt.c_str(), args...);
 	return std::string(buf);
 }
 
 int main(int argc, char* argv[])
 {
-	if (argc < 3) {
-		std::cout << "usage: " << argv[0] << " left-image-format right-image-format [disp_size]" << std::endl;
-		std::exit(EXIT_FAILURE);
+	cv::CommandLineParser parser(argc, argv,
+		"{@left-image-format  | <none> | format string for path to input left image  }"
+		"{@right-image-format | <none> | format string for path to input right image }"
+		"{disp_size           |    128 | maximum possible disparity value            }"
+		"{start_number        |      0 | index to start reading                      }"
+		"{help h              |        | display this help and exit                  }");
+
+	if (parser.has("help")) {
+		parser.printMessage();
+		return 0;
 	}
 
-	const int first_frame = 1;
+	const std::string left_image_format = parser.get<cv::String>("@left-image-format");
+	const std::string right_image_format = parser.get<cv::String>("@right-image-format");
+	const int disp_size = parser.get<int>("disp_size");
+	const int start_number = parser.get<int>("start_number");
 
-	cv::Mat I1 = cv::imread(format_string(argv[1], first_frame), -1);
-	cv::Mat I2 = cv::imread(format_string(argv[2], first_frame), -1);
-	const int disp_size = argc >= 4 ? std::stoi(argv[3]) : 128;
+	cv::Mat I1 = cv::imread(format_string(left_image_format, start_number), -1);
+	cv::Mat I2 = cv::imread(format_string(right_image_format, start_number), -1);
+
+	if (!parser.check()) {
+		parser.printErrors();
+		parser.printMessage();
+		std::exit(EXIT_FAILURE);
+	}
 
 	ASSERT_MSG(!I1.empty() && !I2.empty(), "imread failed.");
 	ASSERT_MSG(I1.size() == I2.size() && I1.type() == I2.type(), "input images must be same size and type.");
@@ -88,12 +103,12 @@ int main(int argc, char* argv[])
 
 	device_buffer d_I1(input_bytes), d_I2(input_bytes), d_disparity(output_bytes);
 
-	for (int frame_no = first_frame;; frame_no++) {
+	for (int frame_no = start_number;; frame_no++) {
 
-		I1 = cv::imread(format_string(argv[1], frame_no), -1);
-		I2 = cv::imread(format_string(argv[2], frame_no), -1);
+		I1 = cv::imread(format_string(left_image_format, frame_no), -1);
+		I2 = cv::imread(format_string(right_image_format, frame_no), -1);
 		if (I1.empty() || I2.empty()) {
-			frame_no = first_frame;
+			frame_no = start_number - 1;
 			continue;
 		}
 
