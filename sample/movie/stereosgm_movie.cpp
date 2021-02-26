@@ -67,11 +67,11 @@ int main(int argc, char* argv[])
 
 	const std::string left_image_format = parser.get<cv::String>("@left-image-format");
 	const std::string right_image_format = parser.get<cv::String>("@right-image-format");
-	const int first_frame = parser.get<int>("start_number");
+	const int start_number = parser.get<int>("start_number");
 	const int disp_size = parser.get<int>("disp_size");
 
-	cv::Mat I1 = cv::imread(format_string(left_image_format, first_frame), -1);
-	cv::Mat I2 = cv::imread(format_string(right_image_format, first_frame), -1);
+	cv::Mat I1 = cv::imread(format_string(left_image_format, start_number), -1);
+	cv::Mat I2 = cv::imread(format_string(right_image_format, start_number), -1);
 
 	if (!parser.check()) {
 		parser.printErrors();
@@ -103,12 +103,12 @@ int main(int argc, char* argv[])
 
 	device_buffer d_I1(input_bytes), d_I2(input_bytes), d_disparity(output_bytes);
 
-	for (int frame_no = first_frame;; frame_no++) {
+	for (int frame_no = start_number;; frame_no++) {
 
 		I1 = cv::imread(format_string(left_image_format, frame_no), -1);
 		I2 = cv::imread(format_string(right_image_format, frame_no), -1);
 		if (I1.empty() || I2.empty()) {
-			frame_no = first_frame - 1;
+			frame_no = start_number - 1;
 			continue;
 		}
 
