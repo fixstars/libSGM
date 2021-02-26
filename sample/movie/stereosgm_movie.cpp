@@ -57,7 +57,7 @@ int main(int argc, char* argv[])
 		"{@left-image-format  | <none> | format string for path to input left image  }"
 		"{@right-image-format | <none> | format string for path to input right image }"
 		"{disp_size           |    128 | maximum possible disparity value            }"
-		"{start_number        |      0 | initial frame number to read                }"
+		"{start_number        |      0 | index to start reading                      }"
 		"{help h              |        | display this help and exit                  }");
 
 	if (parser.has("help")) {
