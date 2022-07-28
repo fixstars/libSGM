@@ -143,7 +143,7 @@ template <>
 __device__ inline void store_uint8_vector<2u>(uint8_t *dest, const uint32_t *ptr){
 	uchar2 uint8x2;
 	uint8x2.x = static_cast<uint8_t>(ptr[0]);
-	uint8x2.y = static_cast<uint8_t>(ptr[0]);
+	uint8x2.y = static_cast<uint8_t>(ptr[1]);
 	store_as<uchar2>(dest, uint8x2);
 }
 
