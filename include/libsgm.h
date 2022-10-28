@@ -43,7 +43,6 @@ limitations under the License.
 #endif
 
 namespace sgm {
-	struct CudaStereoSGMResources;
 
 	/**
 	* @enum DST_TYPE
@@ -157,22 +156,12 @@ namespace sgm {
 		LIBSGM_API int get_invalid_disparity() const;
 
 	private:
+
 		StereoSGM(const StereoSGM&);
 		StereoSGM& operator=(const StereoSGM&);
 
-		void cuda_resource_allocate();
-
-		CudaStereoSGMResources* cu_res_;
-
-		int width_;
-		int height_;
-		int disparity_size_;
-		int input_depth_bits_;
-		int output_depth_bits_;
-		int src_pitch_;
-		int dst_pitch_;
-		EXECUTE_INOUT inout_type_;
-		Parameters param_;
+		class Impl;
+		Impl* impl_;
 	};
 }
 
