@@ -33,6 +33,8 @@ limitations under the License.
 namespace sgm {
 	namespace details {
 
+		void census_transform(const void* d_src, uint32_t* d_dst, int width, int height, int pitch, int src_depth, cudaStream_t stream = 0);
+
 		void median_filter(const uint8_t* d_src, uint8_t* d_dst, int width, int height, int pitch);
 		void median_filter(const uint16_t* d_src, uint16_t* d_dst, int width, int height, int pitch);
 

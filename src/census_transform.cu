@@ -147,4 +147,21 @@ void CensusTransform<T>::enqueue(
 template class CensusTransform<uint8_t>;
 template class CensusTransform<uint16_t>;
 
+void census_transform(const void* d_src, uint32_t* d_dst, int width, int height, int pitch, int src_depth, cudaStream_t stream)
+{
+	const int width_per_block = BLOCK_SIZE - WINDOW_WIDTH + 1;
+	const int height_per_block = LINES_PER_BLOCK;
+	const dim3 gdim(
+		(width + width_per_block - 1) / width_per_block,
+		(height + height_per_block - 1) / height_per_block);
+	const dim3 bdim(BLOCK_SIZE);
+
+	if (src_depth == 8) {
+		census_transform_kernel<<<gdim, bdim, 0, stream>>>(d_dst, (const uint8_t*)d_src, width, height, pitch);
+	}
+	else if (src_depth == 16) {
+		census_transform_kernel<<<gdim, bdim, 0, stream>>>(d_dst, (const uint16_t*)d_src, width, height, pitch);
+	}
+}
+
 }
