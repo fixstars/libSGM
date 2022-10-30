@@ -42,8 +42,8 @@ namespace sgm {
 		void cost_aggregation(const DeviceImage& srcL, const DeviceImage& srcR, DeviceImage& dst,
 			int disp_size, int P1, int P2, PathType path_type, int min_disp);
 
-		void winner_takes_all(const cost_type* src, output_type* left_dest, output_type* right_dest,
-			int width, int height, int pitch, int disp_size, float uniqueness, bool subpixel, PathType path_type, cudaStream_t stream = 0);
+		void winner_takes_all(const DeviceImage& src, DeviceImage& dstL, DeviceImage& dstR,
+			int disp_size, float uniqueness, bool subpixel, PathType path_type);
 
 		void median_filter(const uint8_t* d_src, uint8_t* d_dst, int width, int height, int pitch);
 		void median_filter(const uint16_t* d_src, uint16_t* d_dst, int width, int height, int pitch);

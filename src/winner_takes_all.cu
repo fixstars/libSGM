@@ -14,11 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+#include "internal.h"
+
 #include <cuda_runtime.h>
 
-#include "libsgm.h"
 #include "utility.hpp"
 #include "types.hpp"
+#include "host_utility.h"
 
 namespace sgm {
 
@@ -212,42 +214,49 @@ __global__ void winner_takes_all_kernel(
 
 namespace details {
 
-template <size_t MAX_DISPARITY>
-void winner_takes_all_(const cost_type* src, output_type* left_dest, output_type* right_dest,
-	int width, int height, int pitch, float uniqueness, bool subpixel, PathType path_type, cudaStream_t stream)
+template <int MAX_DISPARITY>
+void winner_takes_all_(const DeviceImage& src, DeviceImage& dstL, DeviceImage& dstR,
+	float uniqueness, bool subpixel, PathType path_type)
 {
-	const int gdim = (height + WARPS_PER_BLOCK - 1) / WARPS_PER_BLOCK;
+	const int width = dstL.cols;
+	const int height = dstL.rows;
+	const int pitch = dstL.step;
+
+	const int gdim = divUp(height, WARPS_PER_BLOCK);
 	const int bdim = BLOCK_SIZE;
 
+	output_type* left_dest = dstL.ptr<output_type>();
+	output_type* right_dest = dstR.ptr<output_type>();
+
 	if (subpixel && path_type == PathType::SCAN_8PATH) {
-		winner_takes_all_kernel<MAX_DISPARITY, 8, compute_disparity_subpixel<MAX_DISPARITY>><<<gdim, bdim, 0, stream>>>(
-			left_dest, right_dest, src, width, height, pitch, uniqueness);
+		winner_takes_all_kernel<MAX_DISPARITY, 8, compute_disparity_subpixel<MAX_DISPARITY>><<<gdim, bdim>>>(
+			left_dest, right_dest, src.ptr<cost_type>(), width, height, pitch, uniqueness);
 	}
 	else if (subpixel && path_type == PathType::SCAN_4PATH) {
-		winner_takes_all_kernel<MAX_DISPARITY, 4, compute_disparity_subpixel<MAX_DISPARITY>><<<gdim, bdim, 0, stream>>>(
-			left_dest, right_dest, src, width, height, pitch, uniqueness);
+		winner_takes_all_kernel<MAX_DISPARITY, 4, compute_disparity_subpixel<MAX_DISPARITY>><<<gdim, bdim>>>(
+			left_dest, right_dest, src.ptr<cost_type>(), width, height, pitch, uniqueness);
 	}
 	else if (!subpixel && path_type == PathType::SCAN_8PATH) {
-		winner_takes_all_kernel<MAX_DISPARITY, 8, compute_disparity_normal><<<gdim, bdim, 0, stream>>>(
-			left_dest, right_dest, src, width, height, pitch, uniqueness);
+		winner_takes_all_kernel<MAX_DISPARITY, 8, compute_disparity_normal><<<gdim, bdim>>>(
+			left_dest, right_dest, src.ptr<cost_type>(), width, height, pitch, uniqueness);
 	}
 	else /* if (!subpixel && path_type == PathType::SCAN_4PATH) */ {
-		winner_takes_all_kernel<MAX_DISPARITY, 4, compute_disparity_normal><<<gdim, bdim, 0, stream>>>(
-			left_dest, right_dest, src, width, height, pitch, uniqueness);
+		winner_takes_all_kernel<MAX_DISPARITY, 4, compute_disparity_normal><<<gdim, bdim>>>(
+			left_dest, right_dest, src.ptr<cost_type>(), width, height, pitch, uniqueness);
 	}
 }
 
-void winner_takes_all(const cost_type* src, output_type* left_dest, output_type* right_dest,
-	int width, int height, int pitch, int disp_size, float uniqueness, bool subpixel, PathType path_type, cudaStream_t stream)
+void winner_takes_all(const DeviceImage& src, DeviceImage& dstL, DeviceImage& dstR,
+	int disp_size, float uniqueness, bool subpixel, PathType path_type)
 {
 	if (disp_size == 64) {
-		winner_takes_all_<64u>(src, left_dest, right_dest, width, height, pitch, uniqueness, subpixel, path_type, stream);
+		winner_takes_all_<64>(src, dstL, dstR, uniqueness, subpixel, path_type);
 	}
 	else if (disp_size == 128) {
-		winner_takes_all_<128u>(src, left_dest, right_dest, width, height, pitch, uniqueness, subpixel, path_type, stream);
+		winner_takes_all_<128>(src, dstL, dstR, uniqueness, subpixel, path_type);
 	}
 	else if (disp_size == 256) {
-		winner_takes_all_<256u>(src, left_dest, right_dest, width, height, pitch, uniqueness, subpixel, path_type, stream);
+		winner_takes_all_<256>(src, dstL, dstR, uniqueness, subpixel, path_type);
 	}
 }
 
