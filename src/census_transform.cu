@@ -14,9 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+#include "internal.h"
+
 #include <cuda_runtime.h>
 
-#include "types.hpp"
+#include "host_utility.h"
 
 namespace sgm {
 
@@ -108,21 +110,24 @@ __global__ void census_transform_kernel(
 
 namespace details {
 
-void census_transform(const void* d_src, uint32_t* d_dst, int width, int height, int pitch, int src_depth, cudaStream_t stream)
+void census_transform(const DeviceImage& src, DeviceImage& dst)
 {
+	const int width = src.cols;
+	const int height = src.rows;
+
 	const int width_per_block = BLOCK_SIZE - WINDOW_WIDTH + 1;
 	const int height_per_block = LINES_PER_BLOCK;
-	const dim3 gdim(
-		(width + width_per_block - 1) / width_per_block,
-		(height + height_per_block - 1) / height_per_block);
+	const dim3 gdim(divUp(width, width_per_block), divUp(height, height_per_block));
 	const dim3 bdim(BLOCK_SIZE);
 
-	if (src_depth == 8) {
-		census_transform_kernel<<<gdim, bdim, 0, stream>>>(d_dst, (const uint8_t*)d_src, width, height, pitch);
+	if (src.type == SGM_8U) {
+		census_transform_kernel<<<gdim, bdim>>>(dst.ptr<uint32_t>(), src.ptr<uint8_t>(), width, height, src.step);
 	}
-	else if (src_depth == 16) {
-		census_transform_kernel<<<gdim, bdim, 0, stream>>>(d_dst, (const uint16_t*)d_src, width, height, pitch);
+	else if (src.type == SGM_16U) {
+		census_transform_kernel<<<gdim, bdim>>>(dst.ptr<uint32_t>(), src.ptr<uint16_t>(), width, height, src.step);
 	}
+
+	CUDA_CHECK(cudaGetLastError());
 }
 
 } // namespace details

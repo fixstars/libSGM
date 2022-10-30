@@ -28,6 +28,7 @@ limitations under the License.
 
 #include "libsgm.h"
 #include "types.hpp"
+#include "device_image.h"
 
 #define CudaSafeCall(error) sgm::details::cuda_safe_call(error, __FILE__, __LINE__)
 
@@ -36,7 +37,7 @@ limitations under the License.
 namespace sgm {
 	namespace details {
 
-		void census_transform(const void* d_src, uint32_t* d_dst, int width, int height, int pitch, int src_depth, cudaStream_t stream = 0);
+		void census_transform(const DeviceImage& src, DeviceImage& dst);
 
 		void cost_aggregation(const feature_type* srcL, const feature_type* srcR, cost_type* dst, int width, int height,
 			int disp_size, int P1, int P2, PathType path_type, int min_disp);
