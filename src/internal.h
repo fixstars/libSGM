@@ -39,10 +39,7 @@ namespace sgm {
 
 		void census_transform(const DeviceImage& src, DeviceImage& dst);
 
-		void cost_aggregation(const feature_type* srcL, const feature_type* srcR, cost_type* dst, int width, int height,
-			int disp_size, int P1, int P2, PathType path_type, int min_disp);
-
-		void cost_aggregation(const feature_type* srcL, const feature_type* srcR, cost_type* dst, int width, int height,
+		void cost_aggregation(const DeviceImage& srcL, const DeviceImage& srcR, DeviceImage& dst,
 			int disp_size, int P1, int P2, PathType path_type, int min_disp);
 
 		void winner_takes_all(const cost_type* src, output_type* left_dest, output_type* right_dest,

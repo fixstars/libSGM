@@ -14,10 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+#include "internal.h"
+
 #include <cuda_runtime.h>
 
-#include "libsgm.h"
 #include "cost_aggregation_common.hpp"
+#include "host_utility.h"
 
 namespace sgm {
 
@@ -135,6 +137,7 @@ void aggregate_up2down(
 	const int bdim = BLOCK_SIZE;
 	aggregate_vertical_path_kernel<1, MAX_DISPARITY><<<gdim, bdim, 0, stream>>>(
 		dest, left, right, width, height, p1, p2, min_disp);
+	CUDA_CHECK(cudaGetLastError());
 }
 
 template <unsigned int MAX_DISPARITY>
@@ -156,6 +159,7 @@ void aggregate_down2up(
 	const int bdim = BLOCK_SIZE;
 	aggregate_vertical_path_kernel<-1, MAX_DISPARITY><<<gdim, bdim, 0, stream>>>(
 		dest, left, right, width, height, p1, p2, min_disp);
+	CUDA_CHECK(cudaGetLastError());
 }
 
 } // namespace vertical
@@ -320,6 +324,7 @@ void aggregate_left2right(
 	const int bdim = BLOCK_SIZE;
 	aggregate_horizontal_path_kernel<1, MAX_DISPARITY><<<gdim, bdim, 0, stream>>>(
 		dest, left, right, width, height, p1, p2, min_disp);
+	CUDA_CHECK(cudaGetLastError());
 }
 
 template <unsigned int MAX_DISPARITY>
@@ -342,6 +347,7 @@ void aggregate_right2left(
 	const int bdim = BLOCK_SIZE;
 	aggregate_horizontal_path_kernel<-1, MAX_DISPARITY><<<gdim, bdim, 0, stream>>>(
 		dest, left, right, width, height, p1, p2, min_disp);
+	CUDA_CHECK(cudaGetLastError());
 }
 
 } // namespace horizontal
@@ -461,6 +467,7 @@ void aggregate_upleft2downright(
 	const int bdim = BLOCK_SIZE;
 	aggregate_oblique_path_kernel<1, 1, MAX_DISPARITY><<<gdim, bdim, 0, stream>>>(
 		dest, left, right, width, height, p1, p2, min_disp);
+	CUDA_CHECK(cudaGetLastError());
 }
 
 template <unsigned int MAX_DISPARITY>
@@ -482,6 +489,7 @@ void aggregate_upright2downleft(
 	const int bdim = BLOCK_SIZE;
 	aggregate_oblique_path_kernel<-1, 1, MAX_DISPARITY><<<gdim, bdim, 0, stream>>>(
 		dest, left, right, width, height, p1, p2, min_disp);
+	CUDA_CHECK(cudaGetLastError());
 }
 
 template <unsigned int MAX_DISPARITY>
@@ -503,6 +511,7 @@ void aggregate_downright2upleft(
 	const int bdim = BLOCK_SIZE;
 	aggregate_oblique_path_kernel<-1, -1, MAX_DISPARITY><<<gdim, bdim, 0, stream>>>(
 		dest, left, right, width, height, p1, p2, min_disp);
+	CUDA_CHECK(cudaGetLastError());
 }
 
 template <unsigned int MAX_DISPARITY>
@@ -524,6 +533,7 @@ void aggregate_downleft2upright(
 	const int bdim = BLOCK_SIZE;
 	aggregate_oblique_path_kernel<1, -1, MAX_DISPARITY><<<gdim, bdim, 0, stream>>>(
 		dest, left, right, width, height, p1, p2, min_disp);
+	CUDA_CHECK(cudaGetLastError());
 }
 
 } // namespace oblique
@@ -532,37 +542,41 @@ void aggregate_downleft2upright(
 
 namespace details {
 
-template <size_t MAX_DISPARITY>
-void cost_aggregation_(const feature_type* left, const feature_type* right, cost_type* dst, int width, int height,
-	int p1, int p2, PathType path_type, int min_disp)
+template <int MAX_DISPARITY>
+void cost_aggregation_(const DeviceImage& srcL, const DeviceImage& srcR, DeviceImage& dst,
+	int P1, int P2, PathType path_type, int min_disp)
 {
+	const int width = srcL.cols;
+	const int height = srcL.rows;
 	const int num_paths = path_type == PathType::SCAN_4PATH ? 4 : 8;
 
-	const size_t buffer_step = width * height * MAX_DISPARITY;
+	dst.create(num_paths, height * width * MAX_DISPARITY, SGM_8U);
+
+	const feature_type* left = srcL.ptr<feature_type>();
+	const feature_type* right = srcR.ptr<feature_type>();
 
 	cudaStream_t streams[8];
 	for (int i = 0; i < num_paths; i++)
 		cudaStreamCreate(&streams[i]);
 
 	cost_aggregation::vertical::aggregate_up2down<MAX_DISPARITY>(
-		dst + 0 * buffer_step, left, right, width, height, p1, p2, min_disp, streams[0]);
+		dst.ptr<cost_type>(0), left, right, width, height, P1, P2, min_disp, streams[0]);
 	cost_aggregation::vertical::aggregate_down2up<MAX_DISPARITY>(
-		dst + 1 * buffer_step, left, right, width, height, p1, p2, min_disp, streams[1]);
-
+		dst.ptr<cost_type>(1), left, right, width, height, P1, P2, min_disp, streams[1]);
 	cost_aggregation::horizontal::aggregate_left2right<MAX_DISPARITY>(
-		dst + 2 * buffer_step, left, right, width, height, p1, p2, min_disp, streams[2]);
+		dst.ptr<cost_type>(2), left, right, width, height, P1, P2, min_disp, streams[2]);
 	cost_aggregation::horizontal::aggregate_right2left<MAX_DISPARITY>(
-		dst + 3 * buffer_step, left, right, width, height, p1, p2, min_disp, streams[3]);
+		dst.ptr<cost_type>(3), left, right, width, height, P1, P2, min_disp, streams[3]);
 
 	if (path_type == PathType::SCAN_8PATH) {
 		cost_aggregation::oblique::aggregate_upleft2downright<MAX_DISPARITY>(
-			dst + 4 * buffer_step, left, right, width, height, p1, p2, min_disp, streams[4]);
+			dst.ptr<cost_type>(4), left, right, width, height, P1, P2, min_disp, streams[4]);
 		cost_aggregation::oblique::aggregate_upright2downleft<MAX_DISPARITY>(
-			dst + 5 * buffer_step, left, right, width, height, p1, p2, min_disp, streams[5]);
+			dst.ptr<cost_type>(5), left, right, width, height, P1, P2, min_disp, streams[5]);
 		cost_aggregation::oblique::aggregate_downright2upleft<MAX_DISPARITY>(
-			dst + 6 * buffer_step, left, right, width, height, p1, p2, min_disp, streams[6]);
+			dst.ptr<cost_type>(6), left, right, width, height, P1, P2, min_disp, streams[6]);
 		cost_aggregation::oblique::aggregate_downleft2upright<MAX_DISPARITY>(
-			dst + 7 * buffer_step, left, right, width, height, p1, p2, min_disp, streams[7]);
+			dst.ptr<cost_type>(7), left, right, width, height, P1, P2, min_disp, streams[7]);
 	}
 
 	for (int i = 0; i < num_paths; i++)
@@ -571,17 +585,17 @@ void cost_aggregation_(const feature_type* left, const feature_type* right, cost
 		cudaStreamDestroy(streams[i]);
 }
 
-void cost_aggregation(const feature_type* srcL, const feature_type* srcR, cost_type* dst, int width, int height,
+void cost_aggregation(const DeviceImage& srcL, const DeviceImage& srcR, DeviceImage& dst,
 	int disp_size, int P1, int P2, PathType path_type, int min_disp)
 {
 	if (disp_size == 64) {
-		cost_aggregation_<64u>(srcL, srcR, dst, width, height, P1, P2, path_type, min_disp);
+		cost_aggregation_<64>(srcL, srcR, dst, P1, P2, path_type, min_disp);
 	}
 	else if (disp_size == 128) {
-		cost_aggregation_<128u>(srcL, srcR, dst, width, height, P1, P2, path_type, min_disp);
+		cost_aggregation_<128>(srcL, srcR, dst, P1, P2, path_type, min_disp);
 	}
 	else if (disp_size == 256) {
-		cost_aggregation_<256u>(srcL, srcR, dst, width, height, P1, P2, path_type, min_disp);
+		cost_aggregation_<256>(srcL, srcR, dst, P1, P2, path_type, min_disp);
 	}
 }
 

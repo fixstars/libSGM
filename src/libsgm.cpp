@@ -134,7 +134,7 @@ namespace sgm {
 
 			details::census_transform(d_src_left_, d_census_left_);
 			details::census_transform(d_src_right_, d_census_right_);
-			sgm::details::cost_aggregation(d_census_left_.ptr<uint32_t>(), d_census_right_.ptr<uint32_t>(), d_cost, width_, height_, disparity_size_, param_.P1, param_.P2, param_.path_type, param_.min_disp);
+			details::cost_aggregation(d_census_left_, d_census_right_, d_cost_, disparity_size_, param_.P1, param_.P2, param_.path_type, param_.min_disp);
 			sgm::details::winner_takes_all(d_cost, (uint16_t*)d_tmp_left_disp, (uint16_t*)d_tmp_right_disp, width_, height_, dst_pitch_,
 				disparity_size_, param_.uniqueness, param_.subpixel, param_.path_type);
 
