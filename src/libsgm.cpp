@@ -94,7 +94,9 @@ namespace sgm {
 				d_src_right_.create(height, width, src_type_, src_pitch);
 			}
 
-			d_left_disp_.create(height, width, SGM_16U, dst_pitch);
+			if (!(is_cuda_output(inout_type_) && output_depth_bits_ == 16)) {
+				d_left_disp_.create(height, width, SGM_16U, dst_pitch);
+			}
 			d_right_disp_.create(height, width, SGM_16U, dst_pitch);
 
 			d_tmp_left_disp_.create(height, width, SGM_16U, dst_pitch);
@@ -122,14 +124,10 @@ namespace sgm {
 				d_src_left_.upload(left_pixels);
 				d_src_right_.upload(right_pixels);
 			}
-
-			void* d_tmp_left_disp = d_tmp_left_disp_.data;
-			void* d_tmp_right_disp = d_tmp_right_disp_.data;
-			void* d_left_disp = d_left_disp_.data;
-			void* d_right_disp = d_right_disp_.data;
-
-			if (is_cuda_output(inout_type_) && output_depth_bits_ == 16)
-				d_left_disp = dst; // when threre is no device-host copy or type conversion, use passed buffer
+			if (is_cuda_output(inout_type_) && output_depth_bits_ == 16) {
+				// when threre is no device-host copy or type conversion, use passed buffer
+				d_left_disp_.create((void*)dst, height_, width_, SGM_16U, dst_pitch_);
+			}
 
 			details::census_transform(d_src_left_, d_census_left_);
 			details::census_transform(d_src_right_, d_census_right_);
@@ -150,7 +148,7 @@ namespace sgm {
 				details::cast_16bit_to_8bit(d_left_disp_, d_dst);
 			}
 			else if (!is_cuda_output(inout_type_) && output_depth_bits_ == 16) {
-				CudaSafeCall(cudaMemcpy(dst, d_left_disp, sizeof(uint16_t) * dst_pitch_ * height_, cudaMemcpyDeviceToHost));
+				d_left_disp_.download(dst);
 			}
 			else if (is_cuda_output(inout_type_) && output_depth_bits_ == 16) {
 				// optimize! no-copy!
