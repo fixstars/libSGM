@@ -138,7 +138,7 @@ namespace sgm {
 
 			details::median_filter(d_tmp_left_disp_, d_left_disp_);
 			details::median_filter(d_tmp_right_disp_, d_right_disp_);
-			sgm::details::check_consistency((uint16_t*)d_left_disp, (uint16_t*)d_right_disp, d_src_left_.data, width_, height_, input_depth_bits_, src_pitch_, dst_pitch_, param_.subpixel, param_.LR_max_diff);
+			details::check_consistency(d_left_disp_, d_right_disp_, d_src_left_, param_.subpixel, param_.LR_max_diff);
 			sgm::details::correct_disparity_range((uint16_t*)d_left_disp, width_, height_, dst_pitch_, param_.subpixel, param_.min_disp);
 
 			if (!is_cuda_output(inout_type_) && output_depth_bits_ == 8) {

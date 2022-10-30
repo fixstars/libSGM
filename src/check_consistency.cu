@@ -14,9 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-#include <libsgm.h>
 #include "internal.h"
 #include "utility.hpp"
+#include "host_utility.h"
 
 namespace {
 	template<typename SRC_T, typename DST_T>
@@ -44,33 +44,27 @@ namespace {
 namespace sgm {
 	namespace details {
 
-		void check_consistency(uint8_t* d_left_disp, const uint8_t* d_right_disp, const void* d_src_left, int width, int height, int depth_bits, int src_pitch, int dst_pitch, bool subpixel, int LR_max_diff) {
+		void check_consistency(DeviceImage& dispL, const DeviceImage& dispR, const DeviceImage& srcL, bool subpixel, int LR_max_diff)
+		{
+			SGM_ASSERT(dispL.type == SGM_16U && dispR.type == SGM_16U, "");
 
-			const dim3 blocks(width / 16, height / 16);
-			const dim3 threads(16, 16);
-			if (depth_bits == 16) {
-				check_consistency_kernel<uint16_t><<<blocks, threads>>>(d_left_disp, d_right_disp, (uint16_t*)d_src_left, width, height, src_pitch, dst_pitch, subpixel, LR_max_diff);
-			}
-			else if (depth_bits == 8) {
-				check_consistency_kernel<uint8_t><<<blocks, threads>>>(d_left_disp, d_right_disp, (uint8_t*)d_src_left, width, height, src_pitch, dst_pitch, subpixel, LR_max_diff);
-			}
+			const int w = srcL.cols;
+			const int h = srcL.rows;
 
-			CudaKernelCheck();
+			const dim3 block(16, 16);
+			const dim3 grid(divUp(w, block.x), divUp(h, block.y));
+
+			if (srcL.type == SGM_8U) {
+				using SRC_T = uint8_t;
+				check_consistency_kernel<SRC_T><<<grid, block>>>(dispL.ptr<uint16_t>(), dispR.ptr<uint16_t>(),
+					srcL.ptr<SRC_T>(), w, h, srcL.step, dispL.step, subpixel, LR_max_diff);
+			}
+			else {
+				using SRC_T = uint16_t;
+				check_consistency_kernel<SRC_T><<<grid, block>>>(dispL.ptr<uint16_t>(), dispR.ptr<uint16_t>(),
+					srcL.ptr<SRC_T>(), w, h, srcL.step, dispL.step, subpixel, LR_max_diff);
+			}
+			CUDA_CHECK(cudaGetLastError());
 		}
-
-		void check_consistency(uint16_t* d_left_disp, const uint16_t* d_right_disp, const void* d_src_left, int width, int height, int depth_bits, int src_pitch, int dst_pitch, bool subpixel, int LR_max_diff) {
-
-			const dim3 blocks(width / 16, height / 16);
-			const dim3 threads(16, 16);
-			if (depth_bits == 16) {
-				check_consistency_kernel<uint16_t><<<blocks, threads>>>(d_left_disp, d_right_disp, (uint16_t*)d_src_left, width, height, src_pitch, dst_pitch, subpixel, LR_max_diff);
-			}
-			else if (depth_bits == 8) {
-				check_consistency_kernel<uint8_t><<<blocks, threads>>>(d_left_disp, d_right_disp, (uint8_t*)d_src_left, width, height, src_pitch, dst_pitch, subpixel, LR_max_diff);
-			}
-			
-			CudaKernelCheck();	
-		}
-
 	}
 }

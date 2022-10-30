@@ -47,8 +47,7 @@ namespace sgm {
 
 		void median_filter(const DeviceImage& src, DeviceImage& dst);
 
-		void check_consistency(uint8_t* d_left_disp, const uint8_t* d_right_disp, const void* d_src_left, int width, int height, int depth_bits, int src_pitch, int dst_pitch, bool subpixel, int LR_max_diff);
-		void check_consistency(uint16_t* d_left_disp, const uint16_t* d_right_disp, const void* d_src_left, int width, int height, int depth_bits, int src_pitch, int dst_pitch, bool subpixel, int LR_max_diff);
+		void check_consistency(DeviceImage& dispL, const DeviceImage& dispR, const DeviceImage& srcL, bool subpixel, int LR_max_diff);
 
 		void correct_disparity_range(uint16_t* d_disp, int width, int height, int pitch, bool subpixel, int min_disp);
 
