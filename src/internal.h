@@ -16,23 +16,8 @@ limitations under the License.
 
 #pragma once
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <assert.h>
-
-#include <stdexcept>
-
-#include <cuda_runtime.h>
-#include <cuda_runtime_api.h>
-
 #include "libsgm.h"
-#include "types.hpp"
 #include "device_image.h"
-
-#define CudaSafeCall(error) sgm::details::cuda_safe_call(error, __FILE__, __LINE__)
-
-#define CudaKernelCheck() CudaSafeCall(cudaGetLastError())
 
 namespace sgm {
 	namespace details {
@@ -53,14 +38,6 @@ namespace sgm {
 
 		void cast_16bit_to_8bit(const DeviceImage& src, DeviceImage& dst);
 		void cast_8bit_to_16bit(const DeviceImage& src, DeviceImage& dst);
-
-		inline void cuda_safe_call(cudaError error, const char *file, const int line)
-		{
-			if (error != cudaSuccess) {
-				fprintf(stderr, "cuda error %s : %d %s\n", file, line, cudaGetErrorString(error));
-				exit(-1);
-			}
-		}
 
 	}
 }
