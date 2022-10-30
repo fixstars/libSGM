@@ -308,4 +308,47 @@ template class WinnerTakesAll< 64>;
 template class WinnerTakesAll<128>;
 template class WinnerTakesAll<256>;
 
+namespace details {
+
+template <size_t MAX_DISPARITY>
+void winner_takes_all_(const cost_type* src, output_type* left_dest, output_type* right_dest,
+	int width, int height, int pitch, float uniqueness, bool subpixel, PathType path_type, cudaStream_t stream)
+{
+	const int gdim = (height + WARPS_PER_BLOCK - 1) / WARPS_PER_BLOCK;
+	const int bdim = BLOCK_SIZE;
+
+	if (subpixel && path_type == PathType::SCAN_8PATH) {
+		winner_takes_all_kernel<MAX_DISPARITY, 8, compute_disparity_subpixel<MAX_DISPARITY>><<<gdim, bdim, 0, stream>>>(
+			left_dest, right_dest, src, width, height, pitch, uniqueness);
+	}
+	else if (subpixel && path_type == PathType::SCAN_4PATH) {
+		winner_takes_all_kernel<MAX_DISPARITY, 4, compute_disparity_subpixel<MAX_DISPARITY>><<<gdim, bdim, 0, stream>>>(
+			left_dest, right_dest, src, width, height, pitch, uniqueness);
+	}
+	else if (!subpixel && path_type == PathType::SCAN_8PATH) {
+		winner_takes_all_kernel<MAX_DISPARITY, 8, compute_disparity_normal><<<gdim, bdim, 0, stream>>>(
+			left_dest, right_dest, src, width, height, pitch, uniqueness);
+	}
+	else /* if (!subpixel && path_type == PathType::SCAN_4PATH) */ {
+		winner_takes_all_kernel<MAX_DISPARITY, 4, compute_disparity_normal><<<gdim, bdim, 0, stream>>>(
+			left_dest, right_dest, src, width, height, pitch, uniqueness);
+	}
+}
+
+void winner_takes_all(const cost_type* src, output_type* left_dest, output_type* right_dest,
+	int width, int height, int pitch, int disp_size, float uniqueness, bool subpixel, PathType path_type, cudaStream_t stream)
+{
+	if (disp_size == 64) {
+		winner_takes_all_<64u>(src, left_dest, right_dest, width, height, pitch, uniqueness, subpixel, path_type, stream);
+	}
+	else if (disp_size == 128) {
+		winner_takes_all_<128u>(src, left_dest, right_dest, width, height, pitch, uniqueness, subpixel, path_type, stream);
+	}
+	else if (disp_size == 256) {
+		winner_takes_all_<256u>(src, left_dest, right_dest, width, height, pitch, uniqueness, subpixel, path_type, stream);
+	}
+}
+
+} // namespace details
+
 }

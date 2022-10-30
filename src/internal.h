@@ -26,6 +26,9 @@ limitations under the License.
 #include <cuda_runtime.h>
 #include <cuda_runtime_api.h>
 
+#include "libsgm.h"
+#include "types.hpp"
+
 #define CudaSafeCall(error) sgm::details::cuda_safe_call(error, __FILE__, __LINE__)
 
 #define CudaKernelCheck() CudaSafeCall(cudaGetLastError())
@@ -34,6 +37,15 @@ namespace sgm {
 	namespace details {
 
 		void census_transform(const void* d_src, uint32_t* d_dst, int width, int height, int pitch, int src_depth, cudaStream_t stream = 0);
+
+		void cost_aggregation(const feature_type* srcL, const feature_type* srcR, cost_type* dst, int width, int height,
+			int disp_size, int P1, int P2, PathType path_type, int min_disp);
+
+		void cost_aggregation(const feature_type* srcL, const feature_type* srcR, cost_type* dst, int width, int height,
+			int disp_size, int P1, int P2, PathType path_type, int min_disp);
+
+		void winner_takes_all(const cost_type* src, output_type* left_dest, output_type* right_dest,
+			int width, int height, int pitch, int disp_size, float uniqueness, bool subpixel, PathType path_type, cudaStream_t stream = 0);
 
 		void median_filter(const uint8_t* d_src, uint8_t* d_dst, int width, int height, int pitch);
 		void median_filter(const uint16_t* d_src, uint16_t* d_dst, int width, int height, int pitch);

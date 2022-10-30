@@ -140,6 +140,14 @@ namespace sgm {
 			d_right_disp_.fillZero();
 			d_tmp_left_disp_.fillZero();
 			d_tmp_right_disp_.fillZero();
+
+			d_census_left_.allocate(width_ * height_);
+			d_census_right_.allocate(width_ * height_);
+			d_census_left_.fillZero();
+			d_census_right_.fillZero();
+
+			const int num_paths = param.path_type == PathType::SCAN_4PATH ? 4 : 8;
+			d_cost_.allocate(width * height * disparity_size * num_paths);
 		}
 
 		~Impl() {
@@ -165,12 +173,21 @@ namespace sgm {
 			void* d_tmp_right_disp = d_tmp_right_disp_.data();
 			void* d_left_disp = d_left_disp_.data();
 			void* d_right_disp = d_right_disp_.data();
+			uint32_t* d_census_left = d_census_left_.data();
+			uint32_t* d_census_right = d_census_right_.data();
+			cost_type* d_cost = d_cost_.data();
 
 			if (is_cuda_output(inout_type_) && output_depth_bits_ == 16)
 				d_left_disp = dst; // when threre is no device-host copy or type conversion, use passed buffer
 
-			sgm_engine_->execute((uint16_t*)d_tmp_left_disp, (uint16_t*)d_tmp_right_disp,
-				d_input_left, d_input_right, width_, height_, src_pitch_, dst_pitch_, param_);
+			sgm::details::census_transform(d_input_left, d_census_left, width_, height_, src_pitch_, input_depth_bits_);
+			sgm::details::census_transform(d_input_right, d_census_right, width_, height_, src_pitch_, input_depth_bits_);
+			sgm::details::cost_aggregation(d_census_left, d_census_right, d_cost, width_, height_, disparity_size_, param_.P1, param_.P2, param_.path_type, param_.min_disp);
+			sgm::details::winner_takes_all(d_cost, (uint16_t*)d_tmp_left_disp, (uint16_t*)d_tmp_right_disp, width_, height_, dst_pitch_,
+				disparity_size_, param_.uniqueness, param_.subpixel, param_.path_type);
+
+			/*sgm_engine_->execute((uint16_t*)d_tmp_left_disp, (uint16_t*)d_tmp_right_disp,
+				d_input_left, d_input_right, width_, height_, src_pitch_, dst_pitch_, param_);*/
 
 			sgm::details::median_filter((uint16_t*)d_tmp_left_disp, (uint16_t*)d_left_disp, width_, height_, dst_pitch_);
 			sgm::details::median_filter((uint16_t*)d_tmp_right_disp, (uint16_t*)d_right_disp, width_, height_, dst_pitch_);
@@ -217,6 +234,9 @@ namespace sgm {
 		DeviceBuffer<uint16_t> d_right_disp_;
 		DeviceBuffer<uint16_t> d_tmp_left_disp_;
 		DeviceBuffer<uint16_t> d_tmp_right_disp_;
+		DeviceBuffer<uint32_t> d_census_left_;
+		DeviceBuffer<uint32_t> d_census_right_;
+		DeviceBuffer<cost_type> d_cost_;
 		SemiGlobalMatchingBase* sgm_engine_;
 	};
 

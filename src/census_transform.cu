@@ -147,6 +147,8 @@ void CensusTransform<T>::enqueue(
 template class CensusTransform<uint8_t>;
 template class CensusTransform<uint16_t>;
 
+namespace details {
+
 void census_transform(const void* d_src, uint32_t* d_dst, int width, int height, int pitch, int src_depth, cudaStream_t stream)
 {
 	const int width_per_block = BLOCK_SIZE - WINDOW_WIDTH + 1;
@@ -164,4 +166,6 @@ void census_transform(const void* d_src, uint32_t* d_dst, int width, int height,
 	}
 }
 
-}
+} // namespace details
+
+} // namespace sgm
