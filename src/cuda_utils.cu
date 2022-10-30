@@ -53,7 +53,7 @@ namespace sgm {
 		{
 			const int w = src.cols;
 			const int h = src.rows;
-			dst.create(h, w, SGM_8U, src.step);
+			dst.create(h, w, SGM_16U, src.step);
 
 			const int num_elements = h * src.step;
 			const int block = 1024;
