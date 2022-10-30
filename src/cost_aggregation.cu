@@ -17,7 +17,7 @@ limitations under the License.
 #include <cuda_runtime.h>
 
 #include "libsgm.h"
-#include "path_aggregation_common.hpp"
+#include "cost_aggregation_common.hpp"
 
 namespace sgm {
 
