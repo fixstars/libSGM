@@ -51,8 +51,8 @@ namespace sgm {
 
 		void correct_disparity_range(DeviceImage& disp, bool subpixel, int min_disp);
 
-		void cast_16bit_8bit_array(const uint16_t* arr16bits, uint8_t* arr8bits, int num_elements);
-		void cast_8bit_16bit_array(const uint8_t* arr8bits, uint16_t* arr16bits, int num_elements);
+		void cast_16bit_to_8bit(const DeviceImage& src, DeviceImage& dst);
+		void cast_8bit_to_16bit(const DeviceImage& src, DeviceImage& dst);
 
 		inline void cuda_safe_call(cudaError error, const char *file, const int line)
 		{

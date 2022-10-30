@@ -16,6 +16,8 @@ limitations under the License.
 
 #include "internal.h"
 
+#include "host_utility.h"
+
 namespace {
 
 	__global__ void cast_16bit_8bit_array_kernel(const uint16_t* arr16bits, uint8_t* arr8bits, int num_elements) {
@@ -33,23 +35,32 @@ namespace {
 namespace sgm {
 	namespace details {
 
-		void cast_16bit_8bit_array(const uint16_t* arr16bits, uint8_t* arr8bits, int num_elements) {
-			for (int mod = 1024; mod != 0; mod >>= 1) {
-				if (num_elements % mod == 0) {
-					cast_16bit_8bit_array_kernel << <num_elements / mod, mod >> >(arr16bits, arr8bits, num_elements);
-					break;
-				}
-			}
+		void cast_16bit_to_8bit(const DeviceImage& src, DeviceImage& dst)
+		{
+			const int w = src.cols;
+			const int h = src.rows;
+			dst.create(h, w, SGM_8U, src.step);
+
+			const int num_elements = h * src.step;
+			const int block = 1024;
+			const int grid = divUp(num_elements, block);
+
+			cast_16bit_8bit_array_kernel<<<grid, block>>>(src.ptr<uint16_t>(), dst.ptr<uint8_t>(), num_elements);
+			CUDA_CHECK(cudaGetLastError());
 		}
 
-		void cast_8bit_16bit_array(const uint8_t* arr8bits, uint16_t* arr16bits, int num_elements) {
-			for (int mod = 1024; mod != 0; mod >>= 1) {
-				if (num_elements % mod == 0) {
-					cast_8bit_16bit_array_kernel << <num_elements / mod, mod >> >(arr8bits, arr16bits, num_elements);
-					break;
-				}
-			}
-		}
+		void cast_8bit_to_16bit(const DeviceImage& src, DeviceImage& dst)
+		{
+			const int w = src.cols;
+			const int h = src.rows;
+			dst.create(h, w, SGM_8U, src.step);
 
+			const int num_elements = h * src.step;
+			const int block = 1024;
+			const int grid = divUp(num_elements, block);
+
+			cast_8bit_16bit_array_kernel<<<grid, block>>>(src.ptr<uint8_t>(), dst.ptr<uint16_t>(), num_elements);
+			CUDA_CHECK(cudaGetLastError());
+		}
 	}
 }

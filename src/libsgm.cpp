@@ -142,11 +142,12 @@ namespace sgm {
 			details::correct_disparity_range(d_left_disp_, param_.subpixel, param_.min_disp);
 
 			if (!is_cuda_output(inout_type_) && output_depth_bits_ == 8) {
-				sgm::details::cast_16bit_8bit_array((const uint16_t*)d_left_disp, (uint8_t*)d_tmp_left_disp, dst_pitch_ * height_);
-				CudaSafeCall(cudaMemcpy(dst, d_tmp_left_disp, sizeof(uint8_t) * dst_pitch_ * height_, cudaMemcpyDeviceToHost));
+				details::cast_16bit_to_8bit(d_left_disp_, d_tmp_left_disp_);
+				d_tmp_left_disp_.download(dst);
 			}
 			else if (is_cuda_output(inout_type_) && output_depth_bits_ == 8) {
-				sgm::details::cast_16bit_8bit_array((const uint16_t*)d_left_disp, (uint8_t*)dst, dst_pitch_ * height_);
+				DeviceImage d_dst(dst, height_, width_, SGM_8U, dst_pitch_);
+				details::cast_16bit_to_8bit(d_left_disp_, d_dst);
 			}
 			else if (!is_cuda_output(inout_type_) && output_depth_bits_ == 16) {
 				CudaSafeCall(cudaMemcpy(dst, d_left_disp, sizeof(uint16_t) * dst_pitch_ * height_, cudaMemcpyDeviceToHost));
