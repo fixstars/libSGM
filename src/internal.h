@@ -45,8 +45,7 @@ namespace sgm {
 		void winner_takes_all(const DeviceImage& src, DeviceImage& dstL, DeviceImage& dstR,
 			int disp_size, float uniqueness, bool subpixel, PathType path_type);
 
-		void median_filter(const uint8_t* d_src, uint8_t* d_dst, int width, int height, int pitch);
-		void median_filter(const uint16_t* d_src, uint16_t* d_dst, int width, int height, int pitch);
+		void median_filter(const DeviceImage& src, DeviceImage& dst);
 
 		void check_consistency(uint8_t* d_left_disp, const uint8_t* d_right_disp, const void* d_src_left, int width, int height, int depth_bits, int src_pitch, int dst_pitch, bool subpixel, int LR_max_diff);
 		void check_consistency(uint16_t* d_left_disp, const uint16_t* d_right_disp, const void* d_src_left, int width, int height, int depth_bits, int src_pitch, int dst_pitch, bool subpixel, int LR_max_diff);

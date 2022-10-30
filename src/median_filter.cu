@@ -16,6 +16,8 @@ limitations under the License.
 
 #include "internal.h"
 
+#include "host_utility.h"
+
 namespace {
 
 	const int BLOCK_X = 16;
@@ -23,11 +25,6 @@ namespace {
 	const int KSIZE = 3;
 	const int RADIUS = KSIZE / 2;
 	const int KSIZE_SQ = KSIZE * KSIZE;
-
-	inline int divup(int total, int grain)
-	{
-		return (total + grain - 1) / grain;
-	}
 
 	template <typename T>
 	__device__ inline void swap(T& x, T& y)
@@ -256,37 +253,40 @@ namespace {
 namespace sgm {
 	namespace details {
 
-		void median_filter(const uint8_t* d_src, uint8_t* d_dst, int width, int height, int pitch) {
+		void median_filter(const DeviceImage& src, DeviceImage& dst)
+		{
+			const int w = src.cols;
+			const int h = src.rows;
+			const int pitch = src.step;
 
-			if (pitch % 4 == 0) {
-				const dim3 block(BLOCK_X, BLOCK_Y);
-				const dim3 grid(divup(width / 4, block.x), divup(height, block.y));
-				median_kernel_3x3_8u_v4<<<grid, block>>>(d_src, d_dst, width, height, pitch);
+			dst.create(h, w, src.type, src.step);
+
+			const dim3 block(BLOCK_X, BLOCK_Y);
+
+			if (src.type == SGM_8U) {
+				using T = uint8_t;
+				if (pitch % 4 == 0) {
+					const dim3 grid(divUp(divUp(w, 4), block.x), divUp(h, block.y));
+					median_kernel_3x3_8u_v4<<<grid, block>>>(src.ptr<T>(), dst.ptr<T>(), w, h, pitch);
+				}
+				else {
+					const dim3 grid(divUp(w, block.x), divUp(h, block.y));
+					median_kernel_3x3_8u<<<grid, block>>>(src.ptr<T>(), dst.ptr<T>(), w, h, pitch);
+				}
 			}
-			else {
-				const dim3 block(BLOCK_X, BLOCK_Y);
-				const dim3 grid(divup(width, block.x), divup(height, block.y));
-				median_kernel_3x3_8u<<<grid, block>>>(d_src, d_dst, width, height, pitch);
+			else if (src.type == SGM_16U) {
+				using T = uint16_t;
+				if (pitch % 2 == 0) {
+					const dim3 grid(divUp(divUp(w, 2), block.x), divUp(h, block.y));
+					median_kernel_3x3_16u_v2<<<grid, block>>>(src.ptr<T>(), dst.ptr<T>(), w, h, pitch);
+				}
+				else {
+					const dim3 grid(divUp(w, block.x), divUp(h, block.y));
+					median_kernel_3x3_16u<<<grid, block>>>(src.ptr<T>(), dst.ptr<T>(), w, h, pitch);
+				}
 			}
 
-			CudaSafeCall(cudaGetLastError());
+			CUDA_CHECK(cudaGetLastError());
 		}
-
-		void median_filter(const uint16_t* d_src, uint16_t* d_dst, int width, int height, int pitch) {
-			
-			if (pitch % 2 == 0) {
-				const dim3 block(BLOCK_X, BLOCK_Y);
-				const dim3 grid(divup(width / 2, block.x), divup(height, block.y));
-				median_kernel_3x3_16u_v2<<<grid, block>>>(d_src, d_dst, width, height, pitch);
-			}
-			else {
-				const dim3 block(BLOCK_X, BLOCK_Y);
-				const dim3 grid(divup(width, block.x), divup(height, block.y));
-				median_kernel_3x3_16u<<<grid, block>>>(d_src, d_dst, width, height, pitch);
-			}
-
-			CudaSafeCall(cudaGetLastError());
-		}
-
 	}
 }
