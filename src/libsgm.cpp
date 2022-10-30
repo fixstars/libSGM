@@ -19,7 +19,7 @@ limitations under the License.
 #include <libsgm.h>
 
 #include "internal.h"
-#include "device_buffer.hpp"
+#include "device_image.h"
 
 namespace sgm {
 	static bool is_cuda_input(EXECUTE_INOUT type) { return (type & 0x1) > 0; }
@@ -86,29 +86,27 @@ namespace sgm {
 				throw std::logic_error("Path type must be PathType::SCAN_4PATH or PathType::SCAN_8PATH");
 			}
 
+			src_type_ = input_depth_bits == 8 ? SGM_8U : SGM_16U;
+			dst_type_ = output_depth_bits == 8 ? SGM_8U : SGM_16U;
+
 			if (!is_cuda_input(inout_type_)) {
-				d_src_left_.allocate(input_depth_bits_ / 8 * src_pitch_ * height_);
-				d_src_right_.allocate(input_depth_bits_ / 8 * src_pitch_ * height_);
+				d_src_left_.create(height, width, src_type_, src_pitch);
+				d_src_right_.create(height, width, src_type_, src_pitch);
 			}
 
-			d_left_disp_.allocate(dst_pitch_ * height_);
-			d_right_disp_.allocate(dst_pitch_ * height_);
+			d_left_disp_.create(height, width, SGM_16U, dst_pitch);
+			d_right_disp_.create(height, width, SGM_16U, dst_pitch);
 
-			d_tmp_left_disp_.allocate(dst_pitch_ * height_);
-			d_tmp_right_disp_.allocate(dst_pitch_ * height_);
+			d_tmp_left_disp_.create(height, width, SGM_16U, dst_pitch);
+			d_tmp_right_disp_.create(height, width, SGM_16U, dst_pitch);
 
-			d_left_disp_.fillZero();
-			d_right_disp_.fillZero();
-			d_tmp_left_disp_.fillZero();
-			d_tmp_right_disp_.fillZero();
-
-			d_census_left_.allocate(width_ * height_);
-			d_census_right_.allocate(width_ * height_);
-			d_census_left_.fillZero();
-			d_census_right_.fillZero();
+			d_census_left_.create(height, width, SGM_32U);
+			d_census_right_.create(height, width, SGM_32U);
+			d_census_left_.fill_zero();
+			d_census_right_.fill_zero();
 
 			const int num_paths = param.path_type == PathType::SCAN_4PATH ? 4 : 8;
-			d_cost_.allocate(width * height * disparity_size * num_paths);
+			d_cost_.create(num_paths, width * height * disparity_size, SGM_8U);
 		}
 
 		~Impl() {
@@ -123,19 +121,19 @@ namespace sgm {
 				d_input_right = right_pixels;
 			}
 			else {
-				CudaSafeCall(cudaMemcpy(d_src_left_.data(), left_pixels, d_src_left_.size(), cudaMemcpyHostToDevice));
-				CudaSafeCall(cudaMemcpy(d_src_right_.data(), right_pixels, d_src_right_.size(), cudaMemcpyHostToDevice));
-				d_input_left = d_src_left_.data();
-				d_input_right = d_src_right_.data();
+				d_src_left_.upload(left_pixels);
+				d_src_right_.upload(right_pixels);
+				d_input_left = d_src_left_.data;
+				d_input_right = d_src_right_.data;
 			}
 
-			void* d_tmp_left_disp = d_tmp_left_disp_.data();
-			void* d_tmp_right_disp = d_tmp_right_disp_.data();
-			void* d_left_disp = d_left_disp_.data();
-			void* d_right_disp = d_right_disp_.data();
-			uint32_t* d_census_left = d_census_left_.data();
-			uint32_t* d_census_right = d_census_right_.data();
-			cost_type* d_cost = d_cost_.data();
+			void* d_tmp_left_disp = d_tmp_left_disp_.data;
+			void* d_tmp_right_disp = d_tmp_right_disp_.data;
+			void* d_left_disp = d_left_disp_.data;
+			void* d_right_disp = d_right_disp_.data;
+			uint32_t* d_census_left = (uint32_t*)d_census_left_.data;
+			uint32_t* d_census_right = (uint32_t*)d_census_right_.data;
+			cost_type* d_cost = (cost_type*)d_cost_.data;
 
 			if (is_cuda_output(inout_type_) && output_depth_bits_ == 16)
 				d_left_disp = dst; // when threre is no device-host copy or type conversion, use passed buffer
@@ -184,16 +182,17 @@ namespace sgm {
 		int dst_pitch_;
 		EXECUTE_INOUT inout_type_;
 		Parameters param_;
+		ImageType src_type_, dst_type_;
 
-		DeviceBuffer<uint8_t> d_src_left_;
-		DeviceBuffer<uint8_t> d_src_right_;
-		DeviceBuffer<uint16_t> d_left_disp_;
-		DeviceBuffer<uint16_t> d_right_disp_;
-		DeviceBuffer<uint16_t> d_tmp_left_disp_;
-		DeviceBuffer<uint16_t> d_tmp_right_disp_;
-		DeviceBuffer<uint32_t> d_census_left_;
-		DeviceBuffer<uint32_t> d_census_right_;
-		DeviceBuffer<cost_type> d_cost_;
+		DeviceImage d_src_left_;
+		DeviceImage d_src_right_;
+		DeviceImage d_left_disp_;
+		DeviceImage d_right_disp_;
+		DeviceImage d_tmp_left_disp_;
+		DeviceImage d_tmp_right_disp_;
+		DeviceImage d_census_left_;
+		DeviceImage d_census_right_;
+		DeviceImage d_cost_;
 	};
 
 	StereoSGM::StereoSGM(int width, int height, int disparity_size, int src_depth, int dst_depth,
