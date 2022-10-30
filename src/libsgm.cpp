@@ -20,32 +20,10 @@ limitations under the License.
 
 #include "internal.h"
 #include "device_buffer.hpp"
-#include "sgm.hpp"
 
 namespace sgm {
 	static bool is_cuda_input(EXECUTE_INOUT type) { return (type & 0x1) > 0; }
 	static bool is_cuda_output(EXECUTE_INOUT type) { return (type & 0x2) > 0; }
-
-	class SemiGlobalMatchingBase {
-	public:
-		using output_type = sgm::output_type;
-		virtual void execute(output_type* dst_L, output_type* dst_R, const void* src_L, const void* src_R, 
-			int w, int h, int sp, int dp, StereoSGM::Parameters& param) = 0;
-
-		virtual ~SemiGlobalMatchingBase() {}
-	};
-
-	template <typename input_type, int DISP_SIZE>
-	class SemiGlobalMatchingImpl : public SemiGlobalMatchingBase {
-	public:
-		void execute(output_type* dst_L, output_type* dst_R, const void* src_L, const void* src_R,
-			int w, int h, int sp, int dp, StereoSGM::Parameters& param) override
-		{
-			sgm_engine_.execute(dst_L, dst_R, (const input_type*)src_L, (const input_type*)src_R, w, h, sp, dp, param);
-		}
-	private:
-		SemiGlobalMatching<input_type, DISP_SIZE> sgm_engine_;
-	};
 
 	static bool has_enough_depth(int output_depth_bits, int disparity_size, int min_disp, bool subpixel)
 	{
@@ -80,7 +58,6 @@ namespace sgm {
 
 		Impl(int width, int height, int disparity_size, int input_depth_bits, int output_depth_bits, int src_pitch, int dst_pitch,
 			EXECUTE_INOUT inout_type, const Parameters& param) :
-			sgm_engine_(NULL),
 			width_(width),
 			height_(height),
 			disparity_size_(disparity_size),
@@ -109,22 +86,6 @@ namespace sgm {
 				throw std::logic_error("Path type must be PathType::SCAN_4PATH or PathType::SCAN_8PATH");
 			}
 
-			// initialize sgm_engine
-			if (input_depth_bits_ == 8 && disparity_size_ == 64)
-				sgm_engine_ = new SemiGlobalMatchingImpl<uint8_t, 64>();
-			else if (input_depth_bits_ == 8 && disparity_size_ == 128)
-				sgm_engine_ = new SemiGlobalMatchingImpl<uint8_t, 128>();
-			else if (input_depth_bits_ == 8 && disparity_size_ == 256)
-				sgm_engine_ = new SemiGlobalMatchingImpl<uint8_t, 256>();
-			else if (input_depth_bits_ == 16 && disparity_size_ == 64)
-				sgm_engine_ = new SemiGlobalMatchingImpl<uint16_t, 64>();
-			else if (input_depth_bits_ == 16 && disparity_size_ == 128)
-				sgm_engine_ = new SemiGlobalMatchingImpl<uint16_t, 128>();
-			else if (input_depth_bits_ == 16 && disparity_size_ == 256)
-				sgm_engine_ = new SemiGlobalMatchingImpl<uint16_t, 256>();
-			else
-				throw std::logic_error("depth bits must be 8 or 16, and disparity size must be 64 or 128");
-
 			if (!is_cuda_input(inout_type_)) {
 				d_src_left_.allocate(input_depth_bits_ / 8 * src_pitch_ * height_);
 				d_src_right_.allocate(input_depth_bits_ / 8 * src_pitch_ * height_);
@@ -151,7 +112,6 @@ namespace sgm {
 		}
 
 		~Impl() {
-			delete sgm_engine_;
 		}
 
 		void execute(const void* left_pixels, const void* right_pixels, void* dst) {
@@ -185,9 +145,6 @@ namespace sgm {
 			sgm::details::cost_aggregation(d_census_left, d_census_right, d_cost, width_, height_, disparity_size_, param_.P1, param_.P2, param_.path_type, param_.min_disp);
 			sgm::details::winner_takes_all(d_cost, (uint16_t*)d_tmp_left_disp, (uint16_t*)d_tmp_right_disp, width_, height_, dst_pitch_,
 				disparity_size_, param_.uniqueness, param_.subpixel, param_.path_type);
-
-			/*sgm_engine_->execute((uint16_t*)d_tmp_left_disp, (uint16_t*)d_tmp_right_disp,
-				d_input_left, d_input_right, width_, height_, src_pitch_, dst_pitch_, param_);*/
 
 			sgm::details::median_filter((uint16_t*)d_tmp_left_disp, (uint16_t*)d_left_disp, width_, height_, dst_pitch_);
 			sgm::details::median_filter((uint16_t*)d_tmp_right_disp, (uint16_t*)d_right_disp, width_, height_, dst_pitch_);
@@ -237,7 +194,6 @@ namespace sgm {
 		DeviceBuffer<uint32_t> d_census_left_;
 		DeviceBuffer<uint32_t> d_census_right_;
 		DeviceBuffer<cost_type> d_cost_;
-		SemiGlobalMatchingBase* sgm_engine_;
 	};
 
 	StereoSGM::StereoSGM(int width, int height, int disparity_size, int src_depth, int dst_depth,

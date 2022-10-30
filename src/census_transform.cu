@@ -14,8 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-#include <cstdio>
-#include "census_transform.hpp"
+#include <cuda_runtime.h>
+
+#include "types.hpp"
 
 namespace sgm {
 
@@ -103,49 +104,7 @@ __global__ void census_transform_kernel(
 	}
 }
 
-template <typename T>
-void enqueue_census_transform(
-	feature_type *dest,
-	const T *src,
-	int width,
-	int height,
-	int pitch,
-	cudaStream_t stream)
-{
-	const int width_per_block = BLOCK_SIZE - WINDOW_WIDTH + 1;
-	const int height_per_block = LINES_PER_BLOCK;
-	const dim3 gdim(
-		(width  + width_per_block  - 1) / width_per_block,
-		(height + height_per_block - 1) / height_per_block);
-	const dim3 bdim(BLOCK_SIZE);
-	census_transform_kernel<<<gdim, bdim, 0, stream>>>(dest, src, width, height, pitch);
 }
-
-}
-
-
-template <typename T>
-CensusTransform<T>::CensusTransform()
-	: m_feature_buffer()
-{ }
-
-template <typename T>
-void CensusTransform<T>::enqueue(
-	const input_type *src,
-	int width,
-	int height,
-	int pitch,
-	cudaStream_t stream)
-{
-	if(m_feature_buffer.size() != static_cast<size_t>(width * height)){
-		m_feature_buffer = DeviceBuffer<feature_type>(width * height);
-	}
-	enqueue_census_transform(
-		m_feature_buffer.data(), src, width, height, pitch, stream);
-}
-
-template class CensusTransform<uint8_t>;
-template class CensusTransform<uint16_t>;
 
 namespace details {
 
