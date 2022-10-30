@@ -22,7 +22,7 @@ limitations under the License.
 #include "utility.hpp"
 
 namespace sgm {
-namespace path_aggregation {
+namespace cost_aggregation {
 
 template <
 	unsigned int DP_BLOCK_SIZE,
