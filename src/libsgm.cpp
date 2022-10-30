@@ -19,11 +19,9 @@ limitations under the License.
 #include <libsgm.h>
 
 #include "internal.h"
-#include "device_image.h"
+#include "host_utility.h"
 
 namespace sgm {
-	static bool is_cuda_input(EXECUTE_INOUT type) { return (type & 0x1) > 0; }
-	static bool is_cuda_output(EXECUTE_INOUT type) { return (type & 0x2) > 0; }
 
 	static bool has_enough_depth(int output_depth_bits, int disparity_size, int min_disp, bool subpixel)
 	{
@@ -56,101 +54,97 @@ namespace sgm {
 	{
 	public:
 
-		Impl(int width, int height, int disparity_size, int input_depth_bits, int output_depth_bits, int src_pitch, int dst_pitch,
+		Impl(int width, int height, int disparity_size, int src_depth, int dst_depth, int src_pitch, int dst_pitch,
 			EXECUTE_INOUT inout_type, const Parameters& param) :
 			width_(width),
 			height_(height),
-			disparity_size_(disparity_size),
-			input_depth_bits_(input_depth_bits),
-			output_depth_bits_(output_depth_bits),
+			disp_size_(disparity_size),
 			src_pitch_(src_pitch),
 			dst_pitch_(dst_pitch),
-			inout_type_(inout_type),
 			param_(param)
 		{
 			// check values
-			if (input_depth_bits_ != 8 && input_depth_bits_ != 16 && output_depth_bits_ != 8 && output_depth_bits_ != 16) {
-				width_ = height_ = input_depth_bits_ = output_depth_bits_ = disparity_size_ = 0;
-				throw std::logic_error("depth bits must be 8 or 16");
-			}
-			if (disparity_size_ != 64 && disparity_size_ != 128 && disparity_size != 256) {
-				width_ = height_ = input_depth_bits_ = output_depth_bits_ = disparity_size_ = 0;
-				throw std::logic_error("disparity size must be 64, 128 or 256");
-			}
-			if (!has_enough_depth(output_depth_bits, disparity_size, param_.min_disp, param_.subpixel)) {
-				width_ = height_ = input_depth_bits_ = output_depth_bits_ = disparity_size_ = 0;
-				throw std::logic_error("output depth bits must be sufficient for representing output value");
-			}
-			if (param_.path_type != PathType::SCAN_4PATH && param_.path_type != PathType::SCAN_8PATH) {
-				width_ = height_ = input_depth_bits_ = output_depth_bits_ = disparity_size_ = 0;
-				throw std::logic_error("Path type must be PathType::SCAN_4PATH or PathType::SCAN_8PATH");
-			}
+			SGM_ASSERT(src_depth == 8 || src_depth == 16, "src depth bits must be 8 or 16");
+			SGM_ASSERT(dst_depth == 8 || dst_depth == 16, "dst depth bits must be 8 or 16");
+			SGM_ASSERT(disparity_size == 64 || disparity_size == 128 || disparity_size == 256, "disparity size must be 64 or 128 or 256");
+			SGM_ASSERT(has_enough_depth(dst_depth, disparity_size, param_.min_disp, param_.subpixel),
+				"output depth bits must be sufficient for representing output value");
 
-			src_type_ = input_depth_bits == 8 ? SGM_8U : SGM_16U;
-			dst_type_ = output_depth_bits == 8 ? SGM_8U : SGM_16U;
+			src_type_ = src_depth == 8 ? SGM_8U : SGM_16U;
+			dst_type_ = dst_depth == 8 ? SGM_8U : SGM_16U;
 
-			if (!is_cuda_input(inout_type_)) {
-				d_src_left_.create(height, width, src_type_, src_pitch);
-				d_src_right_.create(height, width, src_type_, src_pitch);
+			is_src_devptr_ = (inout_type & 0x01) > 0;
+			is_dst_devptr_ = (inout_type & 0x02) > 0;
+
+			if (!is_src_devptr_) {
+				d_srcL_.create(height, width, src_type_, src_pitch);
+				d_srcR_.create(height, width, src_type_, src_pitch);
 			}
 
-			if (!(is_cuda_output(inout_type_) && output_depth_bits_ == 16)) {
-				d_left_disp_.create(height, width, SGM_16U, dst_pitch);
+			d_censusL_.create(height, width, SGM_32U);
+			d_censusR_.create(height, width, SGM_32U);
+			d_censusL_.fill_zero();
+			d_censusR_.fill_zero();
+
+			d_tmpL_.create(height, width, SGM_16U, dst_pitch);
+			d_tmpR_.create(height, width, SGM_16U, dst_pitch);
+
+			if (!(is_dst_devptr_ && dst_type_ == SGM_16U)) {
+				d_dispL_.create(height, width, SGM_16U, dst_pitch);
 			}
-			d_right_disp_.create(height, width, SGM_16U, dst_pitch);
-
-			d_tmp_left_disp_.create(height, width, SGM_16U, dst_pitch);
-			d_tmp_right_disp_.create(height, width, SGM_16U, dst_pitch);
-
-			d_census_left_.create(height, width, SGM_32U);
-			d_census_right_.create(height, width, SGM_32U);
-			d_census_left_.fill_zero();
-			d_census_right_.fill_zero();
-
-			const int num_paths = param.path_type == PathType::SCAN_4PATH ? 4 : 8;
-			d_cost_.create(num_paths, width * height * disparity_size, SGM_8U);
+			d_dispR_.create(height, width, SGM_16U, dst_pitch);
 		}
 
 		~Impl() {
 		}
 
-		void execute(const void* left_pixels, const void* right_pixels, void* dst) {
+		void execute(const void* srcL, const void* srcR, void* dst) {
 
-			if (is_cuda_input(inout_type_)) {
-				d_src_left_.create((void*)left_pixels, height_, width_, src_type_, src_pitch_);
-				d_src_right_.create((void*)right_pixels, height_, width_, src_type_, src_pitch_);
+			if (is_src_devptr_) {
+				d_srcL_.create((void*)srcL, height_, width_, src_type_, src_pitch_);
+				d_srcR_.create((void*)srcR, height_, width_, src_type_, src_pitch_);
 			}
 			else {
-				d_src_left_.upload(left_pixels);
-				d_src_right_.upload(right_pixels);
+				d_srcL_.upload(srcL);
+				d_srcR_.upload(srcR);
 			}
-			if (is_cuda_output(inout_type_) && output_depth_bits_ == 16) {
+			if (is_dst_devptr_ && dst_type_ == SGM_16U) {
 				// when threre is no device-host copy or type conversion, use passed buffer
-				d_left_disp_.create((void*)dst, height_, width_, SGM_16U, dst_pitch_);
+				d_dispL_.create((void*)dst, height_, width_, SGM_16U, dst_pitch_);
 			}
 
-			details::census_transform(d_src_left_, d_census_left_);
-			details::census_transform(d_src_right_, d_census_right_);
-			details::cost_aggregation(d_census_left_, d_census_right_, d_cost_, disparity_size_, param_.P1, param_.P2, param_.path_type, param_.min_disp);
-			details::winner_takes_all(d_cost_, d_tmp_left_disp_, d_tmp_right_disp_, disparity_size_, param_.uniqueness, param_.subpixel, param_.path_type);
+			// census transform
+			details::census_transform(d_srcL_, d_censusL_);
+			details::census_transform(d_srcR_, d_censusR_);
 
-			details::median_filter(d_tmp_left_disp_, d_left_disp_);
-			details::median_filter(d_tmp_right_disp_, d_right_disp_);
-			details::check_consistency(d_left_disp_, d_right_disp_, d_src_left_, param_.subpixel, param_.LR_max_diff);
-			details::correct_disparity_range(d_left_disp_, param_.subpixel, param_.min_disp);
+			// cost aggregation
+			details::cost_aggregation(d_censusL_, d_censusR_, d_cost_, disp_size_,
+				param_.P1, param_.P2, param_.path_type, param_.min_disp);
 
-			if (!is_cuda_output(inout_type_) && output_depth_bits_ == 8) {
-				details::cast_16bit_to_8bit(d_left_disp_, d_tmp_left_disp_);
-				d_tmp_left_disp_.download(dst);
+			// winner-takes-all
+			details::winner_takes_all(d_cost_, d_tmpL_, d_tmpR_, disp_size_,
+				param_.uniqueness, param_.subpixel, param_.path_type);
+
+			// post filtering
+			details::median_filter(d_tmpL_, d_dispL_);
+			details::median_filter(d_tmpR_, d_dispR_);
+
+			// consistency check
+			details::check_consistency(d_dispL_, d_dispR_, d_srcL_, param_.subpixel, param_.LR_max_diff);
+			details::correct_disparity_range(d_dispL_, param_.subpixel, param_.min_disp);
+
+			if (!is_dst_devptr_ && dst_type_ == SGM_8U) {
+				details::cast_16bit_to_8bit(d_dispL_, d_tmpL_);
+				d_tmpL_.download(dst);
 			}
-			else if (is_cuda_output(inout_type_) && output_depth_bits_ == 8) {
+			else if (is_dst_devptr_ && dst_type_ == SGM_8U) {
 				DeviceImage d_dst(dst, height_, width_, SGM_8U, dst_pitch_);
-				details::cast_16bit_to_8bit(d_left_disp_, d_dst);
+				details::cast_16bit_to_8bit(d_dispL_, d_dst);
 			}
-			else if (!is_cuda_output(inout_type_) && output_depth_bits_ == 16) {
-				d_left_disp_.download(dst);
+			else if (!is_dst_devptr_ && dst_type_ == SGM_16U) {
+				d_dispL_.download(dst);
 			}
-			else if (is_cuda_output(inout_type_) && output_depth_bits_ == 16) {
+			else if (is_dst_devptr_ && dst_type_ == SGM_16U) {
 				// optimize! no-copy!
 			}
 			else {
@@ -166,24 +160,25 @@ namespace sgm {
 
 		int width_;
 		int height_;
-		int disparity_size_;
-		int input_depth_bits_;
-		int output_depth_bits_;
+		int disp_size_;
 		int src_pitch_;
 		int dst_pitch_;
-		EXECUTE_INOUT inout_type_;
 		Parameters param_;
-		ImageType src_type_, dst_type_;
 
-		DeviceImage d_src_left_;
-		DeviceImage d_src_right_;
-		DeviceImage d_left_disp_;
-		DeviceImage d_right_disp_;
-		DeviceImage d_tmp_left_disp_;
-		DeviceImage d_tmp_right_disp_;
-		DeviceImage d_census_left_;
-		DeviceImage d_census_right_;
+		ImageType src_type_;
+		ImageType dst_type_;
+		bool is_src_devptr_;
+		bool is_dst_devptr_;
+
+		DeviceImage d_srcL_;
+		DeviceImage d_srcR_;
+		DeviceImage d_censusL_;
+		DeviceImage d_censusR_;
 		DeviceImage d_cost_;
+		DeviceImage d_tmpL_;
+		DeviceImage d_tmpR_;
+		DeviceImage d_dispL_;
+		DeviceImage d_dispR_;
 	};
 
 	StereoSGM::StereoSGM(int width, int height, int disparity_size, int src_depth, int dst_depth,
