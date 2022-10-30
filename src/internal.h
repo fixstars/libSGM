@@ -49,7 +49,7 @@ namespace sgm {
 
 		void check_consistency(DeviceImage& dispL, const DeviceImage& dispR, const DeviceImage& srcL, bool subpixel, int LR_max_diff);
 
-		void correct_disparity_range(uint16_t* d_disp, int width, int height, int pitch, bool subpixel, int min_disp);
+		void correct_disparity_range(DeviceImage& disp, bool subpixel, int min_disp);
 
 		void cast_16bit_8bit_array(const uint16_t* arr16bits, uint8_t* arr8bits, int num_elements);
 		void cast_8bit_16bit_array(const uint8_t* arr8bits, uint16_t* arr16bits, int num_elements);

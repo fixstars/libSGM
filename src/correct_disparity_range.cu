@@ -14,9 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-#include <libsgm.h>
 #include "internal.h"
+
 #include "utility.hpp"
+#include "host_utility.h"
 
 namespace {
 	__global__ void correct_disparity_range_kernel(uint16_t* d_disp, int width, int height, int pitch, int min_disp_scaled, int invalid_disp_scaled) {
@@ -39,20 +40,24 @@ namespace {
 
 namespace sgm {
 	namespace details {
-		void correct_disparity_range(uint16_t* d_disp, int width, int height, int pitch, bool subpixel, int min_disp) {
+		void correct_disparity_range(DeviceImage& disp, bool subpixel, int min_disp)
+		{
 			if (!subpixel && min_disp == 0) {
 				return;
 			}
 
-			static constexpr int SIZE = 16;
-			const dim3 blocks((width + SIZE - 1) / SIZE, (height + SIZE - 1) / SIZE);
+			const int w = disp.cols;
+			const int h = disp.rows;
+			constexpr int SIZE = 16;
+			const dim3 blocks(divUp(w, SIZE), divUp(h, SIZE));
 			const dim3 threads(SIZE, SIZE);
 
 			const int scale = subpixel ? StereoSGM::SUBPIXEL_SCALE : 1;
 			const int     min_disp_scaled =  min_disp      * scale;
 			const int invalid_disp_scaled = (min_disp - 1) * scale;
 
-			correct_disparity_range_kernel<<<blocks, threads>>>(d_disp, width, height, pitch, min_disp_scaled, invalid_disp_scaled);
+			correct_disparity_range_kernel<<<blocks, threads>>>(disp.ptr<uint16_t>(), w, h, disp.step, min_disp_scaled, invalid_disp_scaled);
+			CUDA_CHECK(cudaGetLastError());
 		}
 	}
 }

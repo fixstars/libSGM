@@ -15,6 +15,7 @@ limitations under the License.
 */
 
 #include "internal.h"
+
 #include "utility.hpp"
 #include "host_utility.h"
 
