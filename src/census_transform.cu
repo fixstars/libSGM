@@ -21,9 +21,10 @@ limitations under the License.
 #include "types.hpp"
 #include "host_utility.h"
 
-namespace sgm {
-
-namespace {
+namespace sgm
+{
+namespace
+{
 
 static constexpr int WINDOW_WIDTH  = 9;
 static constexpr int WINDOW_HEIGHT = 7;
@@ -107,9 +108,10 @@ __global__ void census_transform_kernel(
 	}
 }
 
-}
+} // namespace
 
-namespace details {
+namespace details
+{
 
 void census_transform(const DeviceImage& src, DeviceImage& dst)
 {
@@ -132,5 +134,4 @@ void census_transform(const DeviceImage& src, DeviceImage& dst)
 }
 
 } // namespace details
-
 } // namespace sgm

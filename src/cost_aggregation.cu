@@ -21,11 +21,13 @@ limitations under the License.
 #include "cost_aggregation_common.hpp"
 #include "host_utility.h"
 
-namespace sgm {
+namespace sgm
+{
+namespace cost_aggregation
+{
 
-namespace cost_aggregation {
-
-namespace vertical {
+namespace vertical
+{
 
 static constexpr unsigned int DP_BLOCK_SIZE = 16u;
 static constexpr unsigned int BLOCK_SIZE = WARP_SIZE * 8u;
@@ -164,7 +166,8 @@ void aggregate_down2up(
 
 } // namespace vertical
 
-namespace horizontal {
+namespace horizontal
+{
 
 static constexpr unsigned int DP_BLOCK_SIZE = 8u;
 static constexpr unsigned int DP_BLOCKS_PER_THREAD = 1u;
@@ -352,7 +355,8 @@ void aggregate_right2left(
 
 } // namespace horizontal
 
-namespace oblique {
+namespace oblique
+{
 
 static constexpr unsigned int DP_BLOCK_SIZE = 16u;
 static constexpr unsigned int BLOCK_SIZE = WARP_SIZE * 8u;
@@ -540,7 +544,8 @@ void aggregate_downleft2upright(
 
 } // namespace cost_aggregation
 
-namespace details {
+namespace details
+{
 
 template <int MAX_DISPARITY>
 void cost_aggregation_(const DeviceImage& srcL, const DeviceImage& srcR, DeviceImage& dst,
@@ -600,5 +605,4 @@ void cost_aggregation(const DeviceImage& srcL, const DeviceImage& srcR, DeviceIm
 }
 
 } // namespace details
-
-}
+} // namespace sgm

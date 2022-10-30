@@ -21,8 +21,10 @@ limitations under the License.
 #include <cuda.h>
 #include "utility.hpp"
 
-namespace sgm {
-namespace cost_aggregation {
+namespace sgm
+{
+namespace cost_aggregation
+{
 
 template <
 	unsigned int DP_BLOCK_SIZE,
@@ -99,7 +101,7 @@ __device__ unsigned int generate_mask()
 	return static_cast<unsigned int>((1ull << SIZE) - 1u);
 }
 
-}
-}
+} // namespace cost_aggregation
+} // namespace sgm
 
 #endif

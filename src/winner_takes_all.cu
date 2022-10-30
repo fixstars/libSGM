@@ -22,15 +22,16 @@ limitations under the License.
 #include "types.hpp"
 #include "host_utility.h"
 
-namespace sgm {
-
-namespace {
+namespace sgm
+{
+namespace
+{
 
 static constexpr unsigned int WARPS_PER_BLOCK = 8u;
 static constexpr unsigned int BLOCK_SIZE = WARPS_PER_BLOCK * WARP_SIZE;
 
-
-__device__ inline uint32_t pack_cost_index(uint32_t cost, uint32_t index){
+__device__ inline uint32_t pack_cost_index(uint32_t cost, uint32_t index)
+{
 	union {
 		uint32_t uint32;
 		ushort2 uint16x2;
@@ -40,11 +41,13 @@ __device__ inline uint32_t pack_cost_index(uint32_t cost, uint32_t index){
 	return u.uint32;
 }
 
-__device__ uint32_t unpack_cost(uint32_t packed){
+__device__ uint32_t unpack_cost(uint32_t packed)
+{
 	return packed >> 16;
 }
 
-__device__ int unpack_index(uint32_t packed){
+__device__ int unpack_index(uint32_t packed)
+{
 	return packed & 0xffffu;
 }
 
@@ -210,9 +213,10 @@ __global__ void winner_takes_all_kernel(
 	}
 }
 
-}
+} // namespace
 
-namespace details {
+namespace details
+{
 
 template <int MAX_DISPARITY>
 void winner_takes_all_(const DeviceImage& src, DeviceImage& dstL, DeviceImage& dstR,
@@ -261,5 +265,4 @@ void winner_takes_all(const DeviceImage& src, DeviceImage& dstL, DeviceImage& ds
 }
 
 } // namespace details
-
-}
+} // namespace sgm
