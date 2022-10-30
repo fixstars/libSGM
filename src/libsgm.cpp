@@ -114,17 +114,13 @@ namespace sgm {
 
 		void execute(const void* left_pixels, const void* right_pixels, void* dst) {
 
-			const void *d_input_left, *d_input_right;
-
 			if (is_cuda_input(inout_type_)) {
-				d_input_left = left_pixels;
-				d_input_right = right_pixels;
+				d_src_left_.create((void*)left_pixels, height_, width_, src_type_, src_pitch_);
+				d_src_right_.create((void*)right_pixels, height_, width_, src_type_, src_pitch_);
 			}
 			else {
 				d_src_left_.upload(left_pixels);
 				d_src_right_.upload(right_pixels);
-				d_input_left = d_src_left_.data;
-				d_input_right = d_src_right_.data;
 			}
 
 			void* d_tmp_left_disp = d_tmp_left_disp_.data;
@@ -138,15 +134,15 @@ namespace sgm {
 			if (is_cuda_output(inout_type_) && output_depth_bits_ == 16)
 				d_left_disp = dst; // when threre is no device-host copy or type conversion, use passed buffer
 
-			sgm::details::census_transform(d_input_left, d_census_left, width_, height_, src_pitch_, input_depth_bits_);
-			sgm::details::census_transform(d_input_right, d_census_right, width_, height_, src_pitch_, input_depth_bits_);
+			sgm::details::census_transform(d_src_left_.data, d_census_left, width_, height_, src_pitch_, input_depth_bits_);
+			sgm::details::census_transform(d_src_right_.data, d_census_right, width_, height_, src_pitch_, input_depth_bits_);
 			sgm::details::cost_aggregation(d_census_left, d_census_right, d_cost, width_, height_, disparity_size_, param_.P1, param_.P2, param_.path_type, param_.min_disp);
 			sgm::details::winner_takes_all(d_cost, (uint16_t*)d_tmp_left_disp, (uint16_t*)d_tmp_right_disp, width_, height_, dst_pitch_,
 				disparity_size_, param_.uniqueness, param_.subpixel, param_.path_type);
 
 			sgm::details::median_filter((uint16_t*)d_tmp_left_disp, (uint16_t*)d_left_disp, width_, height_, dst_pitch_);
 			sgm::details::median_filter((uint16_t*)d_tmp_right_disp, (uint16_t*)d_right_disp, width_, height_, dst_pitch_);
-			sgm::details::check_consistency((uint16_t*)d_left_disp, (uint16_t*)d_right_disp, d_input_left, width_, height_, input_depth_bits_, src_pitch_, dst_pitch_, param_.subpixel, param_.LR_max_diff);
+			sgm::details::check_consistency((uint16_t*)d_left_disp, (uint16_t*)d_right_disp, d_src_left_.data, width_, height_, input_depth_bits_, src_pitch_, dst_pitch_, param_.subpixel, param_.LR_max_diff);
 			sgm::details::correct_disparity_range((uint16_t*)d_left_disp, width_, height_, dst_pitch_, param_.subpixel, param_.min_disp);
 
 			if (!is_cuda_output(inout_type_) && output_depth_bits_ == 8) {
