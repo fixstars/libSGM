@@ -18,8 +18,7 @@ limitations under the License.
 
 #include <cuda_runtime.h>
 
-#include "utility.hpp"
-#include "types.hpp"
+#include "device_utility.h"
 #include "host_utility.h"
 
 namespace sgm

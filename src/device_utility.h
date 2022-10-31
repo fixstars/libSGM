@@ -18,7 +18,7 @@ limitations under the License.
 #define SGM_UTILITY_HPP
 
 #include <cuda.h>
-#include "types.hpp"
+#include "types.h"
 
 namespace sgm
 {
