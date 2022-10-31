@@ -14,8 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-#ifndef SGM_UTILITY_HPP
-#define SGM_UTILITY_HPP
+#ifndef __DEVICE_UTILITY_H__
+#define __DEVICE_UTILITY_H__
 
 #include <cuda.h>
 #include "types.h"
@@ -282,4 +282,4 @@ __device__ inline void store_uint16_vector<16u>(uint16_t *dest, const uint32_t *
 
 } // namespace sgm
 
-#endif
+#endif // !__DEVICE_UTILITY_H__

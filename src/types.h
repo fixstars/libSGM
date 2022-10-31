@@ -14,8 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-#ifndef SGM_TYPES_HPP
-#define SGM_TYPES_HPP
+#ifndef __TYPES_H__
+#define __TYPES_H__
 
 #include <cstdint>
 
@@ -29,4 +29,4 @@ using output_type = uint16_t;
 
 } // namespace sgm
 
-#endif
+#endif // !__TYPES_H__
