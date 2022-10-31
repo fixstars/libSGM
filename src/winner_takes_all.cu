@@ -228,25 +228,28 @@ void winner_takes_all_(const DeviceImage& src, DeviceImage& dstL, DeviceImage& d
 	const int gdim = divUp(height, WARPS_PER_BLOCK);
 	const int bdim = BLOCK_SIZE;
 
-	output_type* left_dest = dstL.ptr<output_type>();
-	output_type* right_dest = dstR.ptr<output_type>();
+	const cost_type* cost = src.ptr<cost_type>();
+	output_type* dispL = dstL.ptr<output_type>();
+	output_type* dispR = dstR.ptr<output_type>();
 
 	if (subpixel && path_type == PathType::SCAN_8PATH) {
 		winner_takes_all_kernel<MAX_DISPARITY, 8, compute_disparity_subpixel<MAX_DISPARITY>><<<gdim, bdim>>>(
-			left_dest, right_dest, src.ptr<cost_type>(), width, height, pitch, uniqueness);
+			dispL, dispR, cost, width, height, pitch, uniqueness);
 	}
 	else if (subpixel && path_type == PathType::SCAN_4PATH) {
 		winner_takes_all_kernel<MAX_DISPARITY, 4, compute_disparity_subpixel<MAX_DISPARITY>><<<gdim, bdim>>>(
-			left_dest, right_dest, src.ptr<cost_type>(), width, height, pitch, uniqueness);
+			dispL, dispR, cost, width, height, pitch, uniqueness);
 	}
 	else if (!subpixel && path_type == PathType::SCAN_8PATH) {
 		winner_takes_all_kernel<MAX_DISPARITY, 8, compute_disparity_normal><<<gdim, bdim>>>(
-			left_dest, right_dest, src.ptr<cost_type>(), width, height, pitch, uniqueness);
+			dispL, dispR, cost, width, height, pitch, uniqueness);
 	}
 	else /* if (!subpixel && path_type == PathType::SCAN_4PATH) */ {
 		winner_takes_all_kernel<MAX_DISPARITY, 4, compute_disparity_normal><<<gdim, bdim>>>(
-			left_dest, right_dest, src.ptr<cost_type>(), width, height, pitch, uniqueness);
+			dispL, dispR, cost, width, height, pitch, uniqueness);
 	}
+
+	CUDA_CHECK(cudaGetLastError());
 }
 
 void winner_takes_all(const DeviceImage& src, DeviceImage& dstL, DeviceImage& dstR,
