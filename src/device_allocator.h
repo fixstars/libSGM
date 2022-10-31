@@ -17,6 +17,8 @@ limitations under the License.
 #ifndef __DEVICE_ALLOCATOR_H__
 #define __DEVICE_ALLOCATOR_H__
 
+#include <cstddef>
+
 namespace sgm
 {
 
