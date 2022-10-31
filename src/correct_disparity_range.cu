@@ -24,7 +24,8 @@ limitations under the License.
 namespace
 {
 
-__global__ void correct_disparity_range_kernel(uint16_t* d_disp, int width, int height, int pitch, int min_disp_scaled, int invalid_disp_scaled) {
+__global__ void correct_disparity_range_kernel(uint16_t* d_disp, int width, int height, int pitch, int min_disp_scaled, int invalid_disp_scaled)
+{
 	const int x = blockIdx.x * blockDim.x + threadIdx.x;
 	const int y = blockIdx.y * blockDim.y + threadIdx.y;
 

@@ -25,7 +25,8 @@ namespace
 {
 
 template<typename SRC_T, typename DST_T>
-__global__ void check_consistency_kernel(DST_T* d_leftDisp, const DST_T* d_rightDisp, const SRC_T* d_left, int width, int height, int src_pitch, int dst_pitch, bool subpixel, int LR_max_diff) {
+__global__ void check_consistency_kernel(DST_T* d_leftDisp, const DST_T* d_rightDisp, const SRC_T* d_left, int width, int height, int src_pitch, int dst_pitch, bool subpixel, int LR_max_diff)
+{
 
 	const int j = blockIdx.x * blockDim.x + threadIdx.x;
 	const int i = blockIdx.y * blockDim.y + threadIdx.y;
