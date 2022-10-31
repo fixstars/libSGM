@@ -1,43 +1,50 @@
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.17)
 
-find_package(CUDA REQUIRED)
+set(PROJECT_NAME sgm)
+set(LIBSGM_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../include)
 
-if(DEFINED AUTO_DETECT_ARCH AND "${AUTO_DETECT_ARCH}")
-	CUDA_SELECT_NVCC_ARCH_FLAGS(ARCH_FLAGS "Auto")
-	set(CUDA_ARCH "${ARCH_FLAGS}" CACHE STRING "Value of the NVCC -arch option." FORCE)
-endif()
-message(STATUS "CUDA_ARCH: \"${CUDA_ARCH}\"")
+# create project
+project(${PROJECT_NAME} LANGUAGES CXX CUDA)
 
-include_directories(../include)
+# dependent packages
+find_package(CUDAToolkit REQUIRED)
 
-if (CMAKE_COMPILER_IS_GNUCXX)
-	set(CMAKE_CXX_FLAGS "-O3 -Wall")
-	set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -std=c++11")
+if(BUILD_OPENCV_WRAPPER)
+	find_package(OpenCV REQUIRED core)
 endif()
 
-SET(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} ${CUDA_ARCH}")
-
-file(GLOB STEREOSRCS "*.cu" "*.cpp")
-
+# library type
+set(SGM_LIB_TYPE STATIC)
 if(LIBSGM_SHARED)
-	CUDA_ADD_LIBRARY(sgm libsgm.cpp ${STEREOSRCS} SHARED)
-	target_link_libraries(sgm ${CUDA_LIBRARIES})
-	if(BUILD_OPENCV_WRAPPER)
-		target_link_libraries(sgm ${OpenCV_LIBS})
-	endif()
-else()
-	CUDA_ADD_LIBRARY(sgm libsgm.cpp ${STEREOSRCS} STATIC)
+	set(SGM_LIB_TYPE SHARED)
 endif()
+
+# target configuration
+file(GLOB SRCS ./*.cpp ./*.cu ./*.h* ${LIBSGM_INCLUDE_DIR}/*.h*)
+add_library(${PROJECT_NAME} ${SGM_LIB_TYPE})
+target_sources(${PROJECT_NAME} PRIVATE ${SRCS})
+target_include_directories(${PROJECT_NAME} PRIVATE ${LIBSGM_INCLUDE_DIR} $<$<BOOL:${BUILD_OPENCV_WRAPPER}>:${OpenCV_INCLUDE_DIRS}>)
+target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
+target_link_libraries(${PROJECT_NAME} PUBLIC CUDA::cudart $<$<BOOL:${BUILD_OPENCV_WRAPPER}>:${OpenCV_LIBS}>)
+set_target_properties(${PROJECT_NAME} PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${LIBSGM_INCLUDE_DIR})
+set_target_properties(${PROJECT_NAME} PROPERTIES CUDA_ARCHITECTURES "52;61;72;75;86")
+
+target_compile_options(${PROJECT_NAME} PRIVATE
+$<$<COMPILE_LANG_AND_ID:CXX,GNU>:-Wall -O3>
+$<$<COMPILE_LANG_AND_ID:CXX,Clang>:-Wall -O3>
+$<$<COMPILE_LANG_AND_ID:CXX,MSVC>:/wd4819>
+$<$<COMPILE_LANGUAGE:CUDA>:-lineinfo>
+)
 
 install(
-	TARGETS sgm
+	TARGETS ${PROJECT_NAME}
 	ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
 	LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
 	RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
 )
 
 install(
-	DIRECTORY ${PROJECT_SOURCE_DIR}/include
+	DIRECTORY ${LIBSGM_INCLUDE_DIR}
 	DESTINATION ${CMAKE_INSTALL_PREFIX}
 	FILES_MATCHING PATTERN "*.h" PATTERN "*.hpp"
 )
