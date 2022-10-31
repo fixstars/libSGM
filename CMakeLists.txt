@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.17)
+cmake_minimum_required(VERSION 3.18)
 
 option(ENABLE_ZED_DEMO      "Build a Demo using ZED Camera" OFF)
 option(ENABLE_SAMPLES       "Build samples" OFF)
