@@ -24,7 +24,7 @@ limitations under the License.
 namespace sgm
 {
 
-static bool has_enough_depth(int output_depth_bits, int disparity_size, int min_disp, bool subpixel)
+static bool has_enough_depth(int dst_depth, int disparity_size, int min_disp, bool subpixel)
 {
 	// simulate minimum/maximum value
 	int64_t max = static_cast<int64_t>(disparity_size) + min_disp - 1;
@@ -33,7 +33,7 @@ static bool has_enough_depth(int output_depth_bits, int disparity_size, int min_
 		max += sgm::StereoSGM::SUBPIXEL_SCALE - 1;
 	}
 
-	if (1ll << output_depth_bits <= max)
+	if (1ll << dst_depth <= max)
 		return false;
 
 	if (min_disp <= 0) {
@@ -43,8 +43,8 @@ static bool has_enough_depth(int output_depth_bits, int disparity_size, int min_
 			min *= sgm::StereoSGM::SUBPIXEL_SCALE;
 		}
 
-		if (min < -(1ll << (output_depth_bits - 1))
-			|| 1ll << (output_depth_bits - 1) <= max)
+		if (min < -(1ll << (dst_depth - 1))
+			|| 1ll << (dst_depth - 1) <= max)
 			return false;
 	}
 
@@ -98,7 +98,6 @@ public:
 
 	void execute(const void* srcL, const void* srcR, void* dst)
 	{
-
 		if (is_src_devptr_) {
 			d_srcL_.create((void*)srcL, height_, width_, src_type_, src_pitch_);
 			d_srcR_.create((void*)srcR, height_, width_, src_type_, src_pitch_);
