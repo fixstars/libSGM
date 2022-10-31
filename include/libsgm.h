@@ -14,7 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-#pragma once
+#ifndef __LIBSGM_H__
+#define __LIBSGM_H__
 
 /**
 * @mainpage stereo-sgm
@@ -170,5 +171,7 @@ private:
 };
 
 } // namespace sgm
+
+#endif // !__LIBSGM_H__
 
 #include "libsgm_wrapper.h"

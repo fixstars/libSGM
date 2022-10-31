@@ -14,7 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-#pragma once
+#ifndef __INTERNAL_H__
+#define __INTERNAL_H__
 
 #include "libsgm.h"
 #include "device_image.h"
@@ -43,3 +44,5 @@ void cast_8bit_to_16bit(const DeviceImage& src, DeviceImage& dst);
 
 } // namespace details
 } // namespace sgm
+
+#endif // !__INTERNAL_H__
