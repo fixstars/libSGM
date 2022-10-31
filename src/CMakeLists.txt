@@ -27,7 +27,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE ${LIBSGM_INCLUDE_DIR} $<$<BOO
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
 target_link_libraries(${PROJECT_NAME} PUBLIC CUDA::cudart $<$<BOOL:${BUILD_OPENCV_WRAPPER}>:${OpenCV_LIBS}>)
 set_target_properties(${PROJECT_NAME} PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${LIBSGM_INCLUDE_DIR})
-set_target_properties(${PROJECT_NAME} PROPERTIES CUDA_ARCHITECTURES "52;61;72;75;86")
+set_target_properties(${PROJECT_NAME} PROPERTIES CUDA_ARCHITECTURES ${CUDA_ARCHS})
 
 target_compile_options(${PROJECT_NAME} PRIVATE
 $<$<COMPILE_LANG_AND_ID:CXX,GNU>:-Wall -O3>
