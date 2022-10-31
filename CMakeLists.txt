@@ -7,10 +7,11 @@ option(LIBSGM_SHARED        "Build a shared library" OFF)
 option(BUILD_OPENCV_WRAPPER "Make library compatible with cv::Mat and cv::cuda::GpuMat of OpenCV" OFF)
 set(CUDA_ARCHS "52;61;72;75;86" CACHE STRING "List of architectures to generate device code for")
 
-project(libSGM VERSION 2.7.0)
+project(libSGM VERSION 3.0.0)
 
-configure_file(${PROJECT_SOURCE_DIR}/include/libsgm_config.h.in
-               ${PROJECT_SOURCE_DIR}/include/libsgm_config.h
+configure_file(
+${PROJECT_SOURCE_DIR}/include/libsgm_config.h.in
+${PROJECT_SOURCE_DIR}/include/libsgm_config.h
 )
 
 add_subdirectory(src)
