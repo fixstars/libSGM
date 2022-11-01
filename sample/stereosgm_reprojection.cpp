@@ -14,32 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-#include <iostream>
-#include <iomanip>
-#include <string>
-#include <chrono>
-
-#include <opencv2/core/core.hpp>
-#include <opencv2/highgui/highgui.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
-#include <cuda_runtime.h>
-
 #include <libsgm.h>
 
-#define ASSERT_MSG(expr, msg) \
-	if (!(expr)) { \
-		std::cerr << msg << std::endl; \
-		std::exit(EXIT_FAILURE); \
-	} \
+#include <opencv2/core.hpp>
+#include <opencv2/imgproc.hpp>
+#include <opencv2/highgui.hpp>
 
-struct device_buffer
-{
-	device_buffer() : data(nullptr) {}
-	device_buffer(size_t count) { allocate(count); }
-	void allocate(size_t count) { cudaMalloc(&data, count); }
-	~device_buffer() { cudaFree(data); }
-	void* data;
-};
+#include "sample_common.h"
 
 // Camera Parameters
 struct CameraParameters
@@ -85,49 +66,6 @@ struct CoordinateTransform
 	float sinTilt, cosTilt, bf, invfu, invfv;
 };
 
-template <class... Args>
-static std::string format_string(const char* fmt, Args... args)
-{
-	const int BUF_SIZE = 1024;
-	char buf[BUF_SIZE];
-	std::snprintf(buf, BUF_SIZE, fmt, args...);
-	return std::string(buf);
-}
-
-static cv::Scalar computeColor(float val)
-{
-	const float hscale = 6.f;
-	float h = 0.6f * (1.f - val), s = 1.f, v = 1.f;
-	float r, g, b;
-
-	static const int sector_data[][3] =
-	{ { 1,3,0 },{ 1,0,2 },{ 3,0,1 },{ 0,2,1 },{ 0,1,3 },{ 2,1,0 } };
-	float tab[4];
-	int sector;
-	h *= hscale;
-	if (h < 0)
-		do h += 6; while (h < 0);
-	else if (h >= 6)
-		do h -= 6; while (h >= 6);
-	sector = cvFloor(h);
-	h -= sector;
-	if ((unsigned)sector >= 6u)
-	{
-		sector = 0;
-		h = 0.f;
-	}
-
-	tab[0] = v;
-	tab[1] = v*(1.f - s);
-	tab[2] = v*(1.f - s*h);
-	tab[3] = v*(1.f - s*(1.f - h));
-
-	b = tab[sector_data[sector][0]];
-	g = tab[sector_data[sector][1]];
-	r = tab[sector_data[sector][2]];
-	return 255 * cv::Scalar(b, g, r);
-}
-
 void reprojectPointsTo3D(const cv::Mat& disparity, const CameraParameters& camera, std::vector<cv::Point3f>& points, bool subpixeled)
 {
 	CV_Assert(disparity.type() == CV_32F);
@@ -148,6 +86,39 @@ void reprojectPointsTo3D(const cv::Mat& disparity, const CameraParameters& camer
 	}
 }
 
+static cv::Vec3b computeColor(float val)
+{
+	const float hscale = 6.f;
+	float h = 0.6f * (1.f - val), s = 1.f, v = 1.f;
+
+	static const int sector_data[][3] =
+	{ { 1,3,0 },{ 1,0,2 },{ 3,0,1 },{ 0,2,1 },{ 0,1,3 },{ 2,1,0 } };
+	float tab[4];
+	int sector;
+	h *= hscale;
+	if (h < 0)
+		do h += 6; while (h < 0);
+	else if (h >= 6)
+		do h -= 6; while (h >= 6);
+	sector = cvFloor(h);
+	h -= sector;
+	if ((unsigned)sector >= 6u)
+	{
+		sector = 0;
+		h = 0.f;
+	}
+
+	tab[0] = v;
+	tab[1] = v * (1.f - s);
+	tab[2] = v * (1.f - s * h);
+	tab[3] = v * (1.f - s * (1.f - h));
+
+	const uchar b = (uchar)(255 * tab[sector_data[sector][0]]);
+	const uchar g = (uchar)(255 * tab[sector_data[sector][1]]);
+	const uchar r = (uchar)(255 * tab[sector_data[sector][2]]);
+	return cv::Vec3b(b, g, r);
+}
+
 void drawPoints3D(const std::vector<cv::Point3f>& points, cv::Mat& draw)
 {
 	const int SIZE_X = 512;
@@ -157,6 +128,16 @@ void drawPoints3D(const std::vector<cv::Point3f>& points, cv::Mat& draw)
 
 	draw = cv::Mat::zeros(SIZE_Z, SIZE_X, CV_8UC3);
 
+	const int tableSize = 256;
+	const float scaleZ = 1.f * (tableSize - 1) / maxz;
+	static std::vector<cv::Vec3b> colorTable;
+	if (colorTable.empty())
+	{
+		colorTable.resize(tableSize);
+		for (int i = 0; i < tableSize; i++)
+			colorTable[i] = computeColor(1.f * i / tableSize);
+	}
+
 	for (const cv::Point3f& pt : points)
 	{
 		const float X = pt.x;
@@ -165,7 +146,7 @@ void drawPoints3D(const std::vector<cv::Point3f>& points, cv::Mat& draw)
 		const int u = cvRound(pixelsPerMeter * X) + SIZE_X / 2;
 		const int v = SIZE_Z - cvRound(pixelsPerMeter * Z);
 
-		const cv::Scalar color = computeColor(std::min(Z, 1.f * maxz) / maxz);
+		const auto& color = colorTable[cvRound(scaleZ * std::min(Z, 1.f * maxz))];
 		cv::circle(draw, cv::Point(u, v), 1, color);
 	}
 }
@@ -177,14 +158,14 @@ int main(int argc, char* argv[])
 		std::exit(EXIT_FAILURE);
 	}
 
-	const int first_frame = 1;
+	const int start_number = 1;
 
-	cv::Mat I1 = cv::imread(format_string(argv[1], first_frame), -1);
-	cv::Mat I2 = cv::imread(format_string(argv[2], first_frame), -1);
+	cv::Mat I1 = cv::imread(cv::format(argv[1], start_number), cv::IMREAD_UNCHANGED);
+	cv::Mat I2 = cv::imread(cv::format(argv[2], start_number), cv::IMREAD_UNCHANGED);
+
 	const cv::FileStorage fs(argv[3], cv::FileStorage::READ);
 	const int disp_size = argc >= 5 ? std::stoi(argv[4]) : 128;
 	const bool subpixel = argc >= 6 ? std::stoi(argv[5]) != 0 : true;
-	const int output_depth = 16;
 
 	ASSERT_MSG(!I1.empty() && !I2.empty(), "imread failed.");
 	ASSERT_MSG(fs.isOpened(), "camera.xml read failed.");
@@ -204,31 +185,32 @@ int main(int argc, char* argv[])
 	const int width = I1.cols;
 	const int height = I1.rows;
 
-	const int input_depth = I1.type() == CV_8U ? 8 : 16;
-	const int input_bytes = input_depth * width * height / 8;
-	const int output_bytes = output_depth * width * height / 8;
+	const int src_depth = I1.type() == CV_8U ? 8 : 16;
+	const int dst_depth = 16;
+	const int src_bytes = src_depth * width * height / 8;
+	const int dst_bytes = dst_depth * width * height / 8;
 
-	const sgm::StereoSGM::Parameters params{10, 120, 0.95f, subpixel};
+	const sgm::StereoSGM::Parameters params(10, 120, 0.95f, subpixel);
+	sgm::StereoSGM sgm(width, height, disp_size, src_depth, dst_depth, sgm::EXECUTE_INOUT_CUDA2CUDA, params);
 
-	sgm::StereoSGM sgm(width, height, disp_size, input_depth, output_depth, sgm::EXECUTE_INOUT_CUDA2CUDA, params);
-
-	cv::Mat disparity(height, width, CV_16S);
-	cv::Mat disparity_8u, disparity_32f, disparity_color, draw;
+	device_buffer d_I1(src_bytes), d_I2(src_bytes), d_disparity(dst_bytes);
+	cv::Mat disparity(height, width, dst_depth == 8 ? CV_8S : CV_16S), disparity_color, disparity_32f, draw;
 	std::vector<cv::Point3f> points;
 
-	device_buffer d_I1(input_bytes), d_I2(input_bytes), d_disparity(output_bytes);
+	const int invalid_disp = sgm.get_invalid_disparity();
+	const int disp_scale = subpixel ? sgm::StereoSGM::SUBPIXEL_SCALE : 1;
 
-	for (int frame_no = first_frame;; frame_no++) {
+	for (int frame_no = start_number;; frame_no++) {
 
-		I1 = cv::imread(format_string(argv[1], frame_no), -1);
-		I2 = cv::imread(format_string(argv[2], frame_no), -1);
+		I1 = cv::imread(cv::format(argv[1], frame_no), cv::IMREAD_UNCHANGED);
+		I2 = cv::imread(cv::format(argv[2], frame_no), cv::IMREAD_UNCHANGED);
 		if (I1.empty() || I2.empty()) {
-			frame_no = first_frame;
+			frame_no = start_number - 1;
 			continue;
 		}
 
-		cudaMemcpy(d_I1.data, I1.data, input_bytes, cudaMemcpyHostToDevice);
-		cudaMemcpy(d_I2.data, I2.data, input_bytes, cudaMemcpyHostToDevice);
+		d_I1.upload(I1.data);
+		d_I2.upload(I2.data);
 
 		const auto t1 = std::chrono::system_clock::now();
 
@@ -239,23 +221,21 @@ int main(int argc, char* argv[])
 		const auto duration = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
 		const double fps = 1e6 / duration;
 
-		cudaMemcpy(disparity.data, d_disparity.data, output_bytes, cudaMemcpyDeviceToHost);
+		d_disparity.download(disparity.data);
+
+		// reproject points
+		disparity.convertTo(disparity_32f, CV_32F, 1. / disp_scale);
+		reprojectPointsTo3D(disparity_32f, camera, points, subpixel);
 
 		// draw results
-		if (I1.type() != CV_8U) {
-			cv::normalize(I1, I1, 0, 255, cv::NORM_MINMAX);
-			I1.convertTo(I1, CV_8U);
-		}
+		if (I1.type() != CV_8U)
+			cv::normalize(I1, I1, 0, 255, cv::NORM_MINMAX, CV_8U);
 
-		disparity.convertTo(disparity_32f, CV_32F, subpixel ? 1. / sgm::StereoSGM::SUBPIXEL_SCALE : 1);
-		reprojectPointsTo3D(disparity_32f, camera, points, subpixel);
+		colorize_disparity(disparity, disparity_color, disp_scale * disp_size, disparity == invalid_disp);
+		cv::putText(disparity_color, cv::format("sgm execution time: %4.1f[msec] %4.1f[FPS]",
+			1e-3 * duration, fps), cv::Point(50, 50), 2, 0.75, cv::Scalar(255, 255, 255));
+
 		drawPoints3D(points, draw);
-
-		disparity_32f.convertTo(disparity_8u, CV_8U, 255. / disp_size);
-		cv::applyColorMap(disparity_8u, disparity_color, cv::COLORMAP_JET);
-		disparity_color.setTo(cv::Scalar(0, 0, 0), disparity_32f < 0); // invalid disparity will be negative
-		cv::putText(disparity_color, format_string("sgm execution time: %4.1f[msec] %4.1f[FPS]", 1e-3 * duration, fps),
-			cv::Point(50, 50), 2, 0.75, cv::Scalar(255, 255, 255));
 
 		cv::imshow("left image", I1);
 		cv::imshow("disparity", disparity_color);

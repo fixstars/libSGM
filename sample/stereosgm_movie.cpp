@@ -42,8 +42,8 @@ int main(int argc, char* argv[])
 	const int disp_size = parser.get<int>("disp_size");
 	const int start_number = parser.get<int>("start_number");
 
-	cv::Mat I1 = cv::imread(cv::format(image_format_L.c_str(), start_number), -1);
-	cv::Mat I2 = cv::imread(cv::format(image_format_R.c_str(), start_number), -1);
+	cv::Mat I1 = cv::imread(cv::format(image_format_L.c_str(), start_number), cv::IMREAD_UNCHANGED);
+	cv::Mat I2 = cv::imread(cv::format(image_format_R.c_str(), start_number), cv::IMREAD_UNCHANGED);
 
 	ASSERT_MSG(!I1.empty() && !I2.empty(), "imread failed.");
 	ASSERT_MSG(I1.size() == I2.size() && I1.type() == I2.type(), "input images must be same size and type.");
@@ -60,15 +60,15 @@ int main(int argc, char* argv[])
 
 	sgm::StereoSGM sgm(width, height, disp_size, src_depth, dst_depth, sgm::EXECUTE_INOUT_CUDA2CUDA);
 
-	cv::Mat disparity(height, width, dst_depth == 8 ? CV_8S : CV_16S), disparity_color;
 	device_buffer d_I1(src_bytes), d_I2(src_bytes), d_disparity(dst_bytes);
+	cv::Mat disparity(height, width, dst_depth == 8 ? CV_8S : CV_16S), disparity_color;
 
 	const int invalid_disp = sgm.get_invalid_disparity();
 
 	for (int frame_no = start_number;; frame_no++) {
 
-		I1 = cv::imread(cv::format(image_format_L.c_str(), frame_no), -1);
-		I2 = cv::imread(cv::format(image_format_R.c_str(), frame_no), -1);
+		I1 = cv::imread(cv::format(image_format_L.c_str(), frame_no), cv::IMREAD_UNCHANGED);
+		I2 = cv::imread(cv::format(image_format_R.c_str(), frame_no), cv::IMREAD_UNCHANGED);
 		if (I1.empty() || I2.empty()) {
 			frame_no = start_number - 1;
 			continue;
@@ -98,6 +98,7 @@ int main(int argc, char* argv[])
 
 		cv::imshow("left image", I1);
 		cv::imshow("disparity", disparity_color);
+
 		const char c = cv::waitKey(1);
 		if (c == 27) // ESC
 			break;
