@@ -68,8 +68,8 @@ int main(int argc, char* argv[])
 	const int dst_bytes = dst_depth * width * height / 8;
 	const sgm::PathType path_type = num_paths == 8 ? sgm::PathType::SCAN_8PATH : sgm::PathType::SCAN_4PATH;
 
-	const sgm::StereoSGM::Parameters params(10, 120, 0.95f, subpixel, path_type);
-	sgm::StereoSGM sgm(width, height, disp_size, src_depth, dst_depth, sgm::EXECUTE_INOUT_CUDA2CUDA);
+	const sgm::StereoSGM::Parameters param(10, 120, 0.95f, subpixel, path_type);
+	sgm::StereoSGM sgm(width, height, disp_size, src_depth, dst_depth, sgm::EXECUTE_INOUT_CUDA2CUDA, param);
 
 	device_buffer d_I1(src_bytes), d_I2(src_bytes), d_disparity(dst_bytes);
 	cv::Mat disparity(height, width, dst_depth == 8 ? CV_8S : CV_16S);
