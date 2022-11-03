@@ -14,48 +14,36 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-#include <stdlib.h>
-#include <iostream>
-
-#include <opencv2/core/core.hpp>
-#include <opencv2/highgui/highgui.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
-
 #include <libsgm.h>
 
-#define ASSERT_MSG(expr, msg) \
-	if (!(expr)) { \
-		std::cerr << msg << std::endl; \
-		std::exit(EXIT_FAILURE); \
-	} \
+#include <opencv2/core.hpp>
+#include <opencv2/imgproc.hpp>
+#include <opencv2/highgui.hpp>
+
+#include "sample_common.h"
+
+static const std::string keys =
+"{@left_img   | <none> | path to input left image                                                            }"
+"{@right_img  | <none> | path to input right image                                                           }"
+"{disp_size   |     64 | maximum possible disparity value                                                    }"
+"{P1          |     10 | penalty on the disparity change by plus or minus 1 between nieghbor pixels          }"
+"{P2          |    120 | penalty on the disparity change by more than 1 between neighbor pixels              }"
+"{uniqueness  |   0.95 | margin in ratio by which the best cost function value should be at least second one }"
+"{num_paths   |      8 | number of scanlines used in cost aggregation                                        }"
+"{min_disp    |      0 | minimum disparity value                                                             }"
+"{LR_max_diff |      1 | maximum allowed difference between left and right disparity                         }"
+"{help h      |        | display this help and exit                                                          }";
 
 int main(int argc, char* argv[])
 {
-	cv::CommandLineParser parser(argc, argv,
-		"{@left_img   | <none> | path to input left image                                                            }"
-		"{@right_img  | <none> | path to input right image                                                           }"
-		"{disp_size   |     64 | maximum possible disparity value                                                    }"
-		"{P1          |     10 | penalty on the disparity change by plus or minus 1 between nieghbor pixels          }"
-		"{P2          |    120 | penalty on the disparity change by more than 1 between neighbor pixels              }"
-		"{uniqueness  |   0.95 | margin in ratio by which the best cost function value should be at least second one }"
-		"{num_paths   |      8 | number of scanlines used in cost aggregation                                        }"
-		"{min_disp    |      0 | minimum disparity value                                                             }"
-		"{LR_max_diff |      1 | maximum allowed difference between left and right disparity                         }"
-		"{help h      |        | display this help and exit                                                          }");
-
-	if (parser.has("help")) {
+	cv::CommandLineParser parser(argc, argv, keys);
+	if (argc < 3 || parser.has("help")) {
 		parser.printMessage();
 		return 0;
 	}
 
-	cv::Mat  left = cv::imread(parser.get<cv::String>("@left_img"), -1);
-	cv::Mat right = cv::imread(parser.get<cv::String>("@right_img"), -1);
-
-	if (!parser.check()) {
-		parser.printErrors();
-		parser.printMessage();
-		std::exit(EXIT_FAILURE);
-	}
+	cv::Mat I1 = cv::imread(parser.get<cv::String>("@left_img"), cv::IMREAD_UNCHANGED);
+	cv::Mat I2 = cv::imread(parser.get<cv::String>("@right_img"), cv::IMREAD_UNCHANGED);
 
 	const int disp_size = parser.get<int>("disp_size");
 	const int P1 = parser.get<int>("P1");
@@ -65,37 +53,37 @@ int main(int argc, char* argv[])
 	const int min_disp = parser.get<int>("min_disp");
 	const int LR_max_diff = parser.get<int>("LR_max_diff");
 
-	ASSERT_MSG(!left.empty() && !right.empty(), "imread failed.");
-	ASSERT_MSG(left.size() == right.size() && left.type() == right.type(), "input images must be same size and type.");
-	ASSERT_MSG(left.type() == CV_8U || left.type() == CV_16U, "input image format must be CV_8U or CV_16U.");
+	ASSERT_MSG(!I1.empty() && !I2.empty(), "imread failed.");
+	ASSERT_MSG(I1.size() == I2.size() && I1.type() == I2.type(), "input images must be same size and type.");
+	ASSERT_MSG(I1.type() == CV_8U || I1.type() == CV_16U, "input image format must be CV_8U or CV_16U.");
 	ASSERT_MSG(disp_size == 64 || disp_size == 128 || disp_size == 256, "disparity size must be 64, 128 or 256.");
 	ASSERT_MSG(num_paths == 4 || num_paths == 8, "number of scanlines must be 4 or 8.");
 
 	const sgm::PathType path_type = num_paths == 8 ? sgm::PathType::SCAN_8PATH : sgm::PathType::SCAN_4PATH;
-	const int input_depth = left.type() == CV_8U ? 8 : 16;
-	const int output_depth = 16;
+	const int src_depth = I1.type() == CV_8U ? 8 : 16;
+	const int dst_depth = 16;
 
 	const sgm::StereoSGM::Parameters param(P1, P2, uniqueness, false, path_type, min_disp, LR_max_diff);
-	sgm::StereoSGM ssgm(left.cols, left.rows, disp_size, input_depth, output_depth, sgm::EXECUTE_INOUT_HOST2HOST, param);
+	sgm::StereoSGM ssgm(I1.cols, I1.rows, disp_size, src_depth, dst_depth, sgm::EXECUTE_INOUT_HOST2HOST, param);
 
-	cv::Mat disparity(left.size(), CV_16S);
+	cv::Mat disparity(I1.size(), CV_16S);
 
-	ssgm.execute(left.data, right.data, disparity.data);
+	ssgm.execute(I1.data, I2.data, disparity.data);
 
 	// create mask for invalid disp
-	cv::Mat mask = disparity == ssgm.get_invalid_disparity();
+	const cv::Mat mask = disparity == ssgm.get_invalid_disparity();
 
 	// show image
 	cv::Mat disparity_8u, disparity_color;
 	disparity.convertTo(disparity_8u, CV_8U, 255. / disp_size);
-	cv::applyColorMap(disparity_8u, disparity_color, cv::COLORMAP_JET);
+	cv::applyColorMap(disparity_8u, disparity_color, cv::COLORMAP_TURBO);
 	disparity_8u.setTo(0, mask);
-	disparity_color.setTo(cv::Scalar(0, 0, 0), mask);
-	if (left.type() != CV_8U)
-		cv::normalize(left, left, 0, 255, cv::NORM_MINMAX, CV_8U);
+	disparity_color.setTo(cv::Scalar::all(0), mask);
+	if (I1.type() != CV_8U)
+		cv::normalize(I1, I1, 0, 255, cv::NORM_MINMAX, CV_8U);
 
-	std::vector<cv::Mat> images = { disparity_8u, disparity_color, left };
-	std::vector<std::string> titles = { "disparity", "disparity color", "input" };
+	const std::vector<cv::Mat> images = { disparity_8u, disparity_color, I1 };
+	const std::vector<std::string> titles = { "disparity", "disparity color", "input" };
 
 	std::cout << "Hot keys:" << std::endl;
 	std::cout << "\tESC - quit the program" << std::endl;
