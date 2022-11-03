@@ -92,36 +92,48 @@ __device__ inline void median_selection_network_9(T* buf)
 #undef MAX_OP
 }
 
+template <typename T, int V = 1>
+__device__ inline T median(T* buf)
+{
+	median_selection_network_9<T, V>(buf);
+	return buf[KSIZE_SQ / 2];
+}
+
 __global__ void median_kernel_3x3_8u(const uint8_t* src, uint8_t* dst, int w, int h, int p)
 {
 	const int x = blockIdx.x * blockDim.x + threadIdx.x;
 	const int y = blockIdx.y * blockDim.y + threadIdx.y;
-	if (x < RADIUS || x >= w - RADIUS || y < RADIUS || y >= h - RADIUS)
+
+	if (x >= w || y >= h)
 		return;
 
-	uint8_t buf[KSIZE_SQ];
-	for (int i = 0; i < KSIZE_SQ; i++)
-		buf[i] = src[(y - RADIUS + i / KSIZE) * p + (x - RADIUS + i % KSIZE)];
-
-	median_selection_network_9(buf);
-
-	dst[y * p + x] = buf[KSIZE_SQ / 2];
+	if (x >= RADIUS && x < w - RADIUS && y >= RADIUS && y < h - RADIUS) {
+		uint8_t buf[KSIZE_SQ];
+		for (int i = 0; i < KSIZE_SQ; i++)
+			buf[i] = src[(y - RADIUS + i / KSIZE) * p + (x - RADIUS + i % KSIZE)];
+		dst[y * p + x] = median(buf);
+	}
+	else {
+		dst[y * p + x] = 0;
+	}
 }
 
 __global__ void median_kernel_3x3_16u(const uint16_t* src, uint16_t* dst, int w, int h, int p)
 {
 	const int x = blockIdx.x * blockDim.x + threadIdx.x;
 	const int y = blockIdx.y * blockDim.y + threadIdx.y;
-	if (x < RADIUS || x >= w - RADIUS || y < RADIUS || y >= h - RADIUS)
+	if (x >= w || y >= h)
 		return;
 
-	uint16_t buf[KSIZE_SQ];
-	for (int i = 0; i < KSIZE_SQ; i++)
-		buf[i] = src[(y - RADIUS + i / KSIZE) * p + (x - RADIUS + i % KSIZE)];
-
-	median_selection_network_9(buf);
-
-	dst[y * p + x] = buf[KSIZE_SQ / 2];
+	if (x >= RADIUS && x < w - RADIUS && y >= RADIUS && y < h - RADIUS) {
+		uint16_t buf[KSIZE_SQ];
+		for (int i = 0; i < KSIZE_SQ; i++)
+			buf[i] = src[(y - RADIUS + i / KSIZE) * p + (x - RADIUS + i % KSIZE)];
+		dst[y * p + x] = median(buf);
+	}
+	else {
+		dst[y * p + x] = 0;
+	}
 }
 
 __global__ void median_kernel_3x3_8u_v4(const uint8_t* src, uint8_t* dst, int w, int h, int pitch)
@@ -129,8 +141,14 @@ __global__ void median_kernel_3x3_8u_v4(const uint8_t* src, uint8_t* dst, int w,
 	const int x_4 = 4 * (blockIdx.x * blockDim.x + threadIdx.x);
 	const int y = blockIdx.y * blockDim.y + threadIdx.y;
 
-	if (y < RADIUS || y >= h - RADIUS)
+	if (y >= h)
 		return;
+
+	if (y < RADIUS || y >= h - RADIUS) {
+		for (int x = x_4; x < min(x_4 + 4, w); x++)
+			dst[y * pitch + x] = 0;
+		return;
+	}
 
 	uint32_t buf[KSIZE_SQ];
 	if (x_4 >= 4 && x_4 + 7 < w)
@@ -156,34 +174,20 @@ __global__ void median_kernel_3x3_8u_v4(const uint8_t* src, uint8_t* dst, int w,
 		buf[6] = (buf[7] << 8) | (buf[6] >> 24);
 		buf[8] = (buf[7] >> 8) | (buf[8] << 24);
 
-		median_selection_network_9<uint32_t, 4>(buf);
-
-		*((uint32_t*)&dst[y * pitch + x_4]) = buf[KSIZE_SQ / 2];
+		*((uint32_t*)&dst[y * pitch + x_4]) = median<uint32_t, 4>(buf);
 	}
-	else if (x_4 == 0)
-	{
-		for (int x = RADIUS; x < 4; x++)
-		{
-			uint8_t* buf_u8 = (uint8_t*)buf;
-			for (int i = 0; i < KSIZE_SQ; i++)
-				buf_u8[i] = src[(y - RADIUS + i / KSIZE) * pitch + (x - RADIUS + i % KSIZE)];
+	else if (x_4 < w) {
 
-			median_selection_network_9(buf_u8);
-
-			dst[y * pitch + x] = buf_u8[KSIZE_SQ / 2];
-		}
-	}
-	else if (x_4 < w)
-	{
-		for (int x = x_4; x < min(x_4 + 4, w - RADIUS); x++)
-		{
-			uint8_t* buf_u8 = (uint8_t*)buf;
-			for (int i = 0; i < KSIZE_SQ; i++)
-				buf_u8[i] = src[(y - RADIUS + i / KSIZE) * pitch + (x - RADIUS + i % KSIZE)];
-
-			median_selection_network_9(buf_u8);
-
-			dst[y * pitch + x] = buf_u8[KSIZE_SQ / 2];
+		for (int x = x_4; x < min(x_4 + 4, w); x++) {
+			if (x >= RADIUS && x < w - RADIUS) {
+				uint8_t* buf_u8 = (uint8_t*)buf;
+				for (int i = 0; i < KSIZE_SQ; i++)
+					buf_u8[i] = src[(y - RADIUS + i / KSIZE) * pitch + (x - RADIUS + i % KSIZE)];
+				dst[y * pitch + x] = median(buf_u8);
+			}
+			else {
+				dst[y * pitch + x] = 0;
+			}
 		}
 	}
 }
@@ -193,8 +197,14 @@ __global__ void median_kernel_3x3_16u_v2(const uint16_t* src, uint16_t* dst, int
 	const int x_2 = 2 * (blockIdx.x * blockDim.x + threadIdx.x);
 	const int y = blockIdx.y * blockDim.y + threadIdx.y;
 
-	if (y < RADIUS || y >= h - RADIUS)
+	if (y >= h)
 		return;
+
+	if (y < RADIUS || y >= h - RADIUS) {
+		for (int x = x_2; x < min(x_2 + 2, w); x++)
+			dst[y * pitch + x] = 0;
+		return;
+	}
 
 	uint32_t buf[KSIZE_SQ];
 	if (x_2 >= 2 && x_2 + 3 < w)
@@ -220,34 +230,20 @@ __global__ void median_kernel_3x3_16u_v2(const uint16_t* src, uint16_t* dst, int
 		buf[6] = (buf[7] << 16) | (buf[6] >> 16);
 		buf[8] = (buf[7] >> 16) | (buf[8] << 16);
 
-		median_selection_network_9<uint32_t, 2>(buf);
-
-		*((uint32_t*)&dst[y * pitch + x_2]) = buf[KSIZE_SQ / 2];
+		*((uint32_t*)&dst[y * pitch + x_2]) = median<uint32_t, 2>(buf);
 	}
-	else if (x_2 == 0)
-	{
-		for (int x = RADIUS; x < 2; x++)
-		{
-			uint8_t* buf_u8 = (uint8_t*)buf;
-			for (int i = 0; i < KSIZE_SQ; i++)
-				buf_u8[i] = src[(y - RADIUS + i / KSIZE) * pitch + (x - RADIUS + i % KSIZE)];
+	else if (x_2 < w) {
 
-			median_selection_network_9(buf_u8);
-
-			dst[y * pitch + x] = buf_u8[KSIZE_SQ / 2];
-		}
-	}
-	else if (x_2 < w)
-	{
-		for (int x = x_2; x < min(x_2 + 2, w - RADIUS); x++)
-		{
-			uint8_t* buf_u8 = (uint8_t*)buf;
-			for (int i = 0; i < KSIZE_SQ; i++)
-				buf_u8[i] = src[(y - RADIUS + i / KSIZE) * pitch + (x - RADIUS + i % KSIZE)];
-
-			median_selection_network_9(buf_u8);
-
-			dst[y * pitch + x] = buf_u8[KSIZE_SQ / 2];
+		for (int x = x_2; x < min(x_2 + 2, w); x++) {
+			if (x >= RADIUS && x < w - RADIUS) {
+				uint16_t* buf_u16 = (uint16_t*)buf;
+				for (int i = 0; i < KSIZE_SQ; i++)
+					buf_u16[i] = src[(y - RADIUS + i / KSIZE) * pitch + (x - RADIUS + i % KSIZE)];
+				dst[y * pitch + x] = median(buf_u16);
+			}
+			else {
+				dst[y * pitch + x] = 0;
+			}
 		}
 	}
 }
