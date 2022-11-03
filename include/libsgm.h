@@ -50,7 +50,7 @@ namespace sgm
 * @enum DST_TYPE
 * Indicates input/output pointer type.
 */
-enum EXECUTE_INOUT
+enum ExecuteInOut
 {
 	EXECUTE_INOUT_HOST2HOST = (0 << 1) | 0,
 	EXECUTE_INOUT_HOST2CUDA = (1 << 1) | 0,
@@ -121,7 +121,7 @@ public:
 	* output_depth_bits must be set to 16 when subpixel is enabled.
 	*/
 	LIBSGM_API StereoSGM(int width, int height, int disparity_size, int input_depth_bits, int output_depth_bits, 
-		EXECUTE_INOUT inout_type, const Parameters& param = Parameters());
+		ExecuteInOut inout_type, const Parameters& param = Parameters());
 
 	/**
 	* @param width Processed image's width.
@@ -136,7 +136,7 @@ public:
 	* output_depth_bits must be set to 16 when subpixel is enabled.
 	*/
 	LIBSGM_API StereoSGM(int width, int height, int disparity_size, int input_depth_bits, int output_depth_bits, int src_pitch, int dst_pitch,
-		EXECUTE_INOUT inout_type, const Parameters& param = Parameters());
+		ExecuteInOut inout_type, const Parameters& param = Parameters());
 
 	LIBSGM_API virtual ~StereoSGM();
 

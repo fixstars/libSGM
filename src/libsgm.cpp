@@ -56,7 +56,7 @@ class StereoSGM::Impl
 public:
 
 	Impl(int width, int height, int disparity_size, int src_depth, int dst_depth, int src_pitch, int dst_pitch,
-		EXECUTE_INOUT inout_type, const Parameters& param) :
+		ExecuteInOut inout_type, const Parameters& param) :
 		width_(width),
 		height_(height),
 		disp_size_(disparity_size),
@@ -181,13 +181,13 @@ private:
 };
 
 StereoSGM::StereoSGM(int width, int height, int disparity_size, int src_depth, int dst_depth,
-	EXECUTE_INOUT inout_type, const Parameters& param)
+	ExecuteInOut inout_type, const Parameters& param)
 {
 	impl_ = new Impl(width, height, disparity_size, src_depth, dst_depth, width, width, inout_type, param);
 }
 
 StereoSGM::StereoSGM(int width, int height, int disparity_size, int src_depth, int dst_depth, int src_pitch, int dst_pitch,
-	EXECUTE_INOUT inout_type, const Parameters& param)
+	ExecuteInOut inout_type, const Parameters& param)
 {
 	impl_ = new Impl(width, height, disparity_size, src_depth, dst_depth, src_pitch, dst_pitch, inout_type, param);
 }

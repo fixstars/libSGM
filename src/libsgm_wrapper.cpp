@@ -44,7 +44,7 @@ struct LibSGMWrapper::Creator
 	int dst_pitch;
 	int input_depth_bits;
 	int output_depth_bits;
-	sgm::EXECUTE_INOUT inout_type;
+	sgm::ExecuteInOut inout_type;
 
 	bool operator==(const Creator& rhs) const
 	{
