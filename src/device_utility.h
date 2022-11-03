@@ -18,14 +18,12 @@ limitations under the License.
 #define __DEVICE_UTILITY_H__
 
 #include <cuda.h>
+
 #include "types.h"
+#include "constants.h"
 
 namespace sgm
 {
-
-static constexpr unsigned int WARP_SIZE = 32u;
-static constexpr output_type INVALID_DISP = static_cast<output_type>(-1);
-
 namespace detail
 {
 
