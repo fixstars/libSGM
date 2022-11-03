@@ -301,7 +301,7 @@ __global__ void aggregate_horizontal_path_kernel(
 
 	// initialize census buffer
 	{
-		const int x0 = (DIRECTION > 0 ? -1 : width) - (min_disp + dp_offset);
+		const int x0 = (DIRECTION > 0 ? -1 : width) - (min_disp + static_cast<int>(dp_offset));
 		for (int dy = 0; dy < DP_BLOCKS_PER_THREAD; ++dy)
 			for (int dx = 0; dx < DP_BLOCK_SIZE; ++dx)
 				right_buffer[dy][dx] = load_census_with_check(&right[dy * feature_step], x0 - dx, width);
