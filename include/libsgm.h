@@ -47,8 +47,7 @@ namespace sgm
 {
 
 /**
-* @enum DST_TYPE
-* Indicates input/output pointer type.
+* @brief Indicates input/output pointer type.
 */
 enum ExecuteInOut
 {
@@ -59,7 +58,7 @@ enum ExecuteInOut
 };
 
 /**
-* Indicates number of scanlines which will be used.
+* @brief Indicates number of scanlines which will be used.
 */
 enum class PathType
 {
