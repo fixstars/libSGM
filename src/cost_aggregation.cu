@@ -23,8 +23,15 @@ limitations under the License.
 
 namespace sgm
 {
+
+using COST_TYPE = cost_type;
+
 namespace cost_aggregation
 {
+
+template <typename T> __device__ inline int popcnt(T x) { return 0; }
+template <> __device__ inline int popcnt(uint32_t x) { return __popc(x); }
+template <> __device__ inline int popcnt(uint64_t x) { return __popcll(x); }
 
 template <unsigned int DP_BLOCK_SIZE, unsigned int SUBGROUP_SIZE>
 struct DynamicProgramming
@@ -100,11 +107,11 @@ namespace vertical
 static constexpr unsigned int DP_BLOCK_SIZE = 16u;
 static constexpr unsigned int BLOCK_SIZE = WARP_SIZE * 8u;
 
-template <int DIRECTION, unsigned int MAX_DISPARITY>
+template <typename CENSUS_TYPE, int DIRECTION, unsigned int MAX_DISPARITY>
 __global__ void aggregate_vertical_path_kernel(
 	uint8_t *dest,
-	const feature_type *left,
-	const feature_type *right,
+	const CENSUS_TYPE *left,
+	const CENSUS_TYPE *right,
 	int width,
 	int height,
 	unsigned int p1,
@@ -123,7 +130,7 @@ __global__ void aggregate_vertical_path_kernel(
 		return;
 	}
 
-	__shared__ feature_type right_buffer[2 * DP_BLOCK_SIZE][RIGHT_BUFFER_ROWS + 1];
+	__shared__ CENSUS_TYPE right_buffer[2 * DP_BLOCK_SIZE][RIGHT_BUFFER_ROWS + 1];
 	DynamicProgramming<DP_BLOCK_SIZE, SUBGROUP_SIZE> dp;
 
 	const unsigned int warp_id = threadIdx.x / WARP_SIZE;
@@ -147,7 +154,7 @@ __global__ void aggregate_vertical_path_kernel(
 	for (unsigned int iter = 0; iter < height; ++iter) {
 		const unsigned int y = (DIRECTION > 0 ? iter : height - 1 - iter);
 		// Load left to register
-		feature_type left_value;
+		CENSUS_TYPE left_value;
 		if (x < width) {
 			left_value = left[x + y * width];
 		}
@@ -156,7 +163,7 @@ __global__ void aggregate_vertical_path_kernel(
 			const unsigned int i = i0 + threadIdx.x;
 			if (i < RIGHT_BUFFER_SIZE) {
 				const int right_x = static_cast<int>(right_x0 + PATHS_PER_BLOCK - 1 - i - min_disp);
-				feature_type right_value = 0;
+				CENSUS_TYPE right_value = 0;
 				if (0 <= right_x && right_x < static_cast<int>(width)) {
 					right_value = right[right_x + y * width];
 				}
@@ -171,13 +178,13 @@ __global__ void aggregate_vertical_path_kernel(
 		__syncthreads();
 		// Compute
 		if (x < width) {
-			feature_type right_values[DP_BLOCK_SIZE];
+			CENSUS_TYPE right_values[DP_BLOCK_SIZE];
 			for (unsigned int j = 0; j < DP_BLOCK_SIZE; ++j) {
 				right_values[j] = right_buffer[right0_addr_lo + j][right0_addr_hi];
 			}
 			uint32_t local_costs[DP_BLOCK_SIZE];
 			for (unsigned int j = 0; j < DP_BLOCK_SIZE; ++j) {
-				local_costs[j] = __popc(left_value ^ right_values[j]);
+				local_costs[j] = popcnt(left_value ^ right_values[j]);
 			}
 			dp.update(local_costs, p1, p2, shfl_mask);
 			store_uint8_vector<DP_BLOCK_SIZE>(
@@ -188,11 +195,11 @@ __global__ void aggregate_vertical_path_kernel(
 	}
 }
 
-template <unsigned int MAX_DISPARITY>
+template <typename CENSUS_TYPE, unsigned int MAX_DISPARITY>
 void aggregate_up2down(
-	cost_type *dest,
-	const feature_type *left,
-	const feature_type *right,
+	COST_TYPE *dest,
+	const CENSUS_TYPE *left,
+	const CENSUS_TYPE *right,
 	int width,
 	int height,
 	unsigned int p1,
@@ -205,16 +212,16 @@ void aggregate_up2down(
 
 	const int gdim = (width + PATHS_PER_BLOCK - 1) / PATHS_PER_BLOCK;
 	const int bdim = BLOCK_SIZE;
-	aggregate_vertical_path_kernel<1, MAX_DISPARITY><<<gdim, bdim, 0, stream>>>(
+	aggregate_vertical_path_kernel<CENSUS_TYPE, 1, MAX_DISPARITY><<<gdim, bdim, 0, stream>>>(
 		dest, left, right, width, height, p1, p2, min_disp);
 	CUDA_CHECK(cudaGetLastError());
 }
 
-template <unsigned int MAX_DISPARITY>
+template <typename CENSUS_TYPE, unsigned int MAX_DISPARITY>
 void aggregate_down2up(
-	cost_type *dest,
-	const feature_type *left,
-	const feature_type *right,
+	COST_TYPE *dest,
+	const CENSUS_TYPE *left,
+	const CENSUS_TYPE *right,
 	int width,
 	int height,
 	unsigned int p1,
@@ -227,7 +234,7 @@ void aggregate_down2up(
 
 	const int gdim = (width + PATHS_PER_BLOCK - 1) / PATHS_PER_BLOCK;
 	const int bdim = BLOCK_SIZE;
-	aggregate_vertical_path_kernel<-1, MAX_DISPARITY><<<gdim, bdim, 0, stream>>>(
+	aggregate_vertical_path_kernel<CENSUS_TYPE, -1, MAX_DISPARITY><<<gdim, bdim, 0, stream>>>(
 		dest, left, right, width, height, p1, p2, min_disp);
 	CUDA_CHECK(cudaGetLastError());
 }
@@ -243,11 +250,11 @@ static constexpr unsigned int DP_BLOCKS_PER_THREAD = 1u;
 static constexpr unsigned int WARPS_PER_BLOCK = 4u;
 static constexpr unsigned int BLOCK_SIZE = WARP_SIZE * WARPS_PER_BLOCK;
 
-template <int DIRECTION, unsigned int MAX_DISPARITY>
+template <typename CENSUS_TYPE, int DIRECTION, unsigned int MAX_DISPARITY>
 __global__ void aggregate_horizontal_path_kernel(
 	uint8_t *dest,
-	const feature_type *left,
-	const feature_type *right,
+	const CENSUS_TYPE *left,
+	const CENSUS_TYPE *right,
 	int width,
 	int height,
 	unsigned int p1,
@@ -266,7 +273,7 @@ __global__ void aggregate_horizontal_path_kernel(
 		return;
 	}
 
-	feature_type right_buffer[DP_BLOCKS_PER_THREAD][DP_BLOCK_SIZE];
+	CENSUS_TYPE right_buffer[DP_BLOCKS_PER_THREAD][DP_BLOCK_SIZE];
 	DynamicProgramming<DP_BLOCK_SIZE, SUBGROUP_SIZE> dp[DP_BLOCKS_PER_THREAD];
 
 	const unsigned int warp_id = threadIdx.x / WARP_SIZE;
@@ -323,9 +330,9 @@ __global__ void aggregate_horizontal_path_kernel(
 				if (y >= height) {
 					continue;
 				}
-				const feature_type left_value = __ldg(&left[j * feature_step + x]);
+				const CENSUS_TYPE left_value = __ldg(&left[j * feature_step + x]);
 				if (DIRECTION > 0) {
-					const feature_type t = right_buffer[j][DP_BLOCK_SIZE - 1];
+					const CENSUS_TYPE t = right_buffer[j][DP_BLOCK_SIZE - 1];
 					for (unsigned int k = DP_BLOCK_SIZE - 1; k > 0; --k) {
 						right_buffer[j][k] = right_buffer[j][k - 1];
 					}
@@ -340,7 +347,7 @@ __global__ void aggregate_horizontal_path_kernel(
 					}
 				}
 				else {
-					const feature_type t = right_buffer[j][0];
+					const CENSUS_TYPE t = right_buffer[j][0];
 					for (unsigned int k = 1; k < DP_BLOCK_SIZE; ++k) {
 						right_buffer[j][k - 1] = right_buffer[j][k];
 					}
@@ -362,7 +369,7 @@ __global__ void aggregate_horizontal_path_kernel(
 				}
 				uint32_t local_costs[DP_BLOCK_SIZE];
 				for (unsigned int k = 0; k < DP_BLOCK_SIZE; ++k) {
-					local_costs[k] = __popc(left_value ^ right_buffer[j][k]);
+					local_costs[k] = popcnt(left_value ^ right_buffer[j][k]);
 				}
 				dp[j].update(local_costs, p1, p2, shfl_mask);
 				store_uint8_vector<DP_BLOCK_SIZE>(
@@ -375,11 +382,11 @@ __global__ void aggregate_horizontal_path_kernel(
 }
 
 
-template <unsigned int MAX_DISPARITY>
+template <typename CENSUS_TYPE, unsigned int MAX_DISPARITY>
 void aggregate_left2right(
-	cost_type *dest,
-	const feature_type *left,
-	const feature_type *right,
+	COST_TYPE *dest,
+	const CENSUS_TYPE *left,
+	const CENSUS_TYPE *right,
 	int width,
 	int height,
 	unsigned int p1,
@@ -393,16 +400,16 @@ void aggregate_left2right(
 
 	const int gdim = (height + PATHS_PER_BLOCK - 1) / PATHS_PER_BLOCK;
 	const int bdim = BLOCK_SIZE;
-	aggregate_horizontal_path_kernel<1, MAX_DISPARITY><<<gdim, bdim, 0, stream>>>(
+	aggregate_horizontal_path_kernel<CENSUS_TYPE, 1, MAX_DISPARITY><<<gdim, bdim, 0, stream>>>(
 		dest, left, right, width, height, p1, p2, min_disp);
 	CUDA_CHECK(cudaGetLastError());
 }
 
-template <unsigned int MAX_DISPARITY>
+template <typename CENSUS_TYPE, unsigned int MAX_DISPARITY>
 void aggregate_right2left(
-	cost_type *dest,
-	const feature_type *left,
-	const feature_type *right,
+	COST_TYPE *dest,
+	const CENSUS_TYPE *left,
+	const CENSUS_TYPE *right,
 	int width,
 	int height,
 	unsigned int p1,
@@ -416,7 +423,7 @@ void aggregate_right2left(
 
 	const int gdim = (height + PATHS_PER_BLOCK - 1) / PATHS_PER_BLOCK;
 	const int bdim = BLOCK_SIZE;
-	aggregate_horizontal_path_kernel<-1, MAX_DISPARITY><<<gdim, bdim, 0, stream>>>(
+	aggregate_horizontal_path_kernel<CENSUS_TYPE, -1, MAX_DISPARITY><<<gdim, bdim, 0, stream>>>(
 		dest, left, right, width, height, p1, p2, min_disp);
 	CUDA_CHECK(cudaGetLastError());
 }
@@ -429,11 +436,11 @@ namespace oblique
 static constexpr unsigned int DP_BLOCK_SIZE = 16u;
 static constexpr unsigned int BLOCK_SIZE = WARP_SIZE * 8u;
 
-template <int X_DIRECTION, int Y_DIRECTION, unsigned int MAX_DISPARITY>
+template <typename CENSUS_TYPE, int X_DIRECTION, int Y_DIRECTION, unsigned int MAX_DISPARITY>
 __global__ void aggregate_oblique_path_kernel(
 	uint8_t *dest,
-	const feature_type *left,
-	const feature_type *right,
+	const CENSUS_TYPE *left,
+	const CENSUS_TYPE *right,
 	int width,
 	int height,
 	unsigned int p1,
@@ -453,7 +460,7 @@ __global__ void aggregate_oblique_path_kernel(
 		return;
 	}
 
-	__shared__ feature_type right_buffer[2 * DP_BLOCK_SIZE][RIGHT_BUFFER_ROWS];
+	__shared__ CENSUS_TYPE right_buffer[2 * DP_BLOCK_SIZE][RIGHT_BUFFER_ROWS];
 	DynamicProgramming<DP_BLOCK_SIZE, SUBGROUP_SIZE> dp;
 
 	const unsigned int warp_id = threadIdx.x / WARP_SIZE;
@@ -486,7 +493,7 @@ __global__ void aggregate_oblique_path_kernel(
 			const unsigned int i = i0 + threadIdx.x;
 			if (i < RIGHT_BUFFER_SIZE) {
 				const int right_x = static_cast<int>(right_x0 + PATHS_PER_BLOCK - 1 - i - min_disp);
-				feature_type right_value = 0;
+				CENSUS_TYPE right_value = 0;
 				if (0 <= right_x && right_x < static_cast<int>(width)) {
 					right_value = right[right_x + y * width];
 				}
@@ -501,14 +508,14 @@ __global__ void aggregate_oblique_path_kernel(
 		__syncthreads();
 		// Compute
 		if (0 <= x && x < static_cast<int>(width)) {
-			const feature_type left_value = __ldg(&left[x + y * width]);
-			feature_type right_values[DP_BLOCK_SIZE];
+			const CENSUS_TYPE left_value = __ldg(&left[x + y * width]);
+			CENSUS_TYPE right_values[DP_BLOCK_SIZE];
 			for (unsigned int j = 0; j < DP_BLOCK_SIZE; ++j) {
 				right_values[j] = right_buffer[right0_addr_lo + j][right0_addr_hi];
 			}
 			uint32_t local_costs[DP_BLOCK_SIZE];
 			for (unsigned int j = 0; j < DP_BLOCK_SIZE; ++j) {
-				local_costs[j] = __popc(left_value ^ right_values[j]);
+				local_costs[j] = popcnt(left_value ^ right_values[j]);
 			}
 			dp.update(local_costs, p1, p2, shfl_mask);
 			store_uint8_vector<DP_BLOCK_SIZE>(
@@ -520,11 +527,11 @@ __global__ void aggregate_oblique_path_kernel(
 }
 
 
-template <unsigned int MAX_DISPARITY>
+template <typename CENSUS_TYPE, unsigned int MAX_DISPARITY>
 void aggregate_upleft2downright(
-	cost_type *dest,
-	const feature_type *left,
-	const feature_type *right,
+	COST_TYPE *dest,
+	const CENSUS_TYPE *left,
+	const CENSUS_TYPE *right,
 	int width,
 	int height,
 	unsigned int p1,
@@ -537,16 +544,16 @@ void aggregate_upleft2downright(
 
 	const int gdim = (width + height + PATHS_PER_BLOCK - 2) / PATHS_PER_BLOCK;
 	const int bdim = BLOCK_SIZE;
-	aggregate_oblique_path_kernel<1, 1, MAX_DISPARITY><<<gdim, bdim, 0, stream>>>(
+	aggregate_oblique_path_kernel<CENSUS_TYPE, 1, 1, MAX_DISPARITY><<<gdim, bdim, 0, stream>>>(
 		dest, left, right, width, height, p1, p2, min_disp);
 	CUDA_CHECK(cudaGetLastError());
 }
 
-template <unsigned int MAX_DISPARITY>
+template <typename CENSUS_TYPE, unsigned int MAX_DISPARITY>
 void aggregate_upright2downleft(
-	cost_type *dest,
-	const feature_type *left,
-	const feature_type *right,
+	COST_TYPE *dest,
+	const CENSUS_TYPE *left,
+	const CENSUS_TYPE *right,
 	int width,
 	int height,
 	unsigned int p1,
@@ -559,16 +566,16 @@ void aggregate_upright2downleft(
 
 	const int gdim = (width + height + PATHS_PER_BLOCK - 2) / PATHS_PER_BLOCK;
 	const int bdim = BLOCK_SIZE;
-	aggregate_oblique_path_kernel<-1, 1, MAX_DISPARITY><<<gdim, bdim, 0, stream>>>(
+	aggregate_oblique_path_kernel<CENSUS_TYPE, -1, 1, MAX_DISPARITY><<<gdim, bdim, 0, stream>>>(
 		dest, left, right, width, height, p1, p2, min_disp);
 	CUDA_CHECK(cudaGetLastError());
 }
 
-template <unsigned int MAX_DISPARITY>
+template <typename CENSUS_TYPE, unsigned int MAX_DISPARITY>
 void aggregate_downright2upleft(
-	cost_type *dest,
-	const feature_type *left,
-	const feature_type *right,
+	COST_TYPE *dest,
+	const CENSUS_TYPE *left,
+	const CENSUS_TYPE *right,
 	int width,
 	int height,
 	unsigned int p1,
@@ -581,16 +588,16 @@ void aggregate_downright2upleft(
 
 	const int gdim = (width + height + PATHS_PER_BLOCK - 2) / PATHS_PER_BLOCK;
 	const int bdim = BLOCK_SIZE;
-	aggregate_oblique_path_kernel<-1, -1, MAX_DISPARITY><<<gdim, bdim, 0, stream>>>(
+	aggregate_oblique_path_kernel<CENSUS_TYPE, -1, -1, MAX_DISPARITY><<<gdim, bdim, 0, stream>>>(
 		dest, left, right, width, height, p1, p2, min_disp);
 	CUDA_CHECK(cudaGetLastError());
 }
 
-template <unsigned int MAX_DISPARITY>
+template <typename CENSUS_TYPE, unsigned int MAX_DISPARITY>
 void aggregate_downleft2upright(
-	cost_type *dest,
-	const feature_type *left,
-	const feature_type *right,
+	COST_TYPE *dest,
+	const CENSUS_TYPE *left,
+	const CENSUS_TYPE *right,
 	int width,
 	int height,
 	unsigned int p1,
@@ -603,7 +610,7 @@ void aggregate_downleft2upright(
 
 	const int gdim = (width + height + PATHS_PER_BLOCK - 2) / PATHS_PER_BLOCK;
 	const int bdim = BLOCK_SIZE;
-	aggregate_oblique_path_kernel<1, -1, MAX_DISPARITY><<<gdim, bdim, 0, stream>>>(
+	aggregate_oblique_path_kernel<CENSUS_TYPE, 1, -1, MAX_DISPARITY><<<gdim, bdim, 0, stream>>>(
 		dest, left, right, width, height, p1, p2, min_disp);
 	CUDA_CHECK(cudaGetLastError());
 }
@@ -615,7 +622,7 @@ void aggregate_downleft2upright(
 namespace details
 {
 
-template <int MAX_DISPARITY>
+template <typename CENSUS_TYPE, int MAX_DISPARITY>
 void cost_aggregation_(const DeviceImage& srcL, const DeviceImage& srcR, DeviceImage& dst,
 	int P1, int P2, PathType path_type, int min_disp)
 {
@@ -625,31 +632,31 @@ void cost_aggregation_(const DeviceImage& srcL, const DeviceImage& srcR, DeviceI
 
 	dst.create(num_paths, height * width * MAX_DISPARITY, SGM_8U);
 
-	const feature_type* left = srcL.ptr<feature_type>();
-	const feature_type* right = srcR.ptr<feature_type>();
+	const CENSUS_TYPE* left = srcL.ptr<CENSUS_TYPE>();
+	const CENSUS_TYPE* right = srcR.ptr<CENSUS_TYPE>();
 
 	cudaStream_t streams[8];
 	for (int i = 0; i < num_paths; i++)
 		cudaStreamCreate(&streams[i]);
 
-	cost_aggregation::vertical::aggregate_up2down<MAX_DISPARITY>(
-		dst.ptr<cost_type>(0), left, right, width, height, P1, P2, min_disp, streams[0]);
-	cost_aggregation::vertical::aggregate_down2up<MAX_DISPARITY>(
-		dst.ptr<cost_type>(1), left, right, width, height, P1, P2, min_disp, streams[1]);
-	cost_aggregation::horizontal::aggregate_left2right<MAX_DISPARITY>(
-		dst.ptr<cost_type>(2), left, right, width, height, P1, P2, min_disp, streams[2]);
-	cost_aggregation::horizontal::aggregate_right2left<MAX_DISPARITY>(
-		dst.ptr<cost_type>(3), left, right, width, height, P1, P2, min_disp, streams[3]);
+	cost_aggregation::vertical::aggregate_up2down<CENSUS_TYPE, MAX_DISPARITY>(
+		dst.ptr<COST_TYPE>(0), left, right, width, height, P1, P2, min_disp, streams[0]);
+	cost_aggregation::vertical::aggregate_down2up<CENSUS_TYPE, MAX_DISPARITY>(
+		dst.ptr<COST_TYPE>(1), left, right, width, height, P1, P2, min_disp, streams[1]);
+	cost_aggregation::horizontal::aggregate_left2right<CENSUS_TYPE, MAX_DISPARITY>(
+		dst.ptr<COST_TYPE>(2), left, right, width, height, P1, P2, min_disp, streams[2]);
+	cost_aggregation::horizontal::aggregate_right2left<CENSUS_TYPE, MAX_DISPARITY>(
+		dst.ptr<COST_TYPE>(3), left, right, width, height, P1, P2, min_disp, streams[3]);
 
 	if (path_type == PathType::SCAN_8PATH) {
-		cost_aggregation::oblique::aggregate_upleft2downright<MAX_DISPARITY>(
-			dst.ptr<cost_type>(4), left, right, width, height, P1, P2, min_disp, streams[4]);
-		cost_aggregation::oblique::aggregate_upright2downleft<MAX_DISPARITY>(
-			dst.ptr<cost_type>(5), left, right, width, height, P1, P2, min_disp, streams[5]);
-		cost_aggregation::oblique::aggregate_downright2upleft<MAX_DISPARITY>(
-			dst.ptr<cost_type>(6), left, right, width, height, P1, P2, min_disp, streams[6]);
-		cost_aggregation::oblique::aggregate_downleft2upright<MAX_DISPARITY>(
-			dst.ptr<cost_type>(7), left, right, width, height, P1, P2, min_disp, streams[7]);
+		cost_aggregation::oblique::aggregate_upleft2downright<CENSUS_TYPE, MAX_DISPARITY>(
+			dst.ptr<COST_TYPE>(4), left, right, width, height, P1, P2, min_disp, streams[4]);
+		cost_aggregation::oblique::aggregate_upright2downleft<CENSUS_TYPE, MAX_DISPARITY>(
+			dst.ptr<COST_TYPE>(5), left, right, width, height, P1, P2, min_disp, streams[5]);
+		cost_aggregation::oblique::aggregate_downright2upleft<CENSUS_TYPE, MAX_DISPARITY>(
+			dst.ptr<COST_TYPE>(6), left, right, width, height, P1, P2, min_disp, streams[6]);
+		cost_aggregation::oblique::aggregate_downleft2upright<CENSUS_TYPE, MAX_DISPARITY>(
+			dst.ptr<COST_TYPE>(7), left, right, width, height, P1, P2, min_disp, streams[7]);
 	}
 
 	for (int i = 0; i < num_paths; i++)
@@ -661,14 +668,29 @@ void cost_aggregation_(const DeviceImage& srcL, const DeviceImage& srcR, DeviceI
 void cost_aggregation(const DeviceImage& srcL, const DeviceImage& srcR, DeviceImage& dst,
 	int disp_size, int P1, int P2, PathType path_type, int min_disp)
 {
-	if (disp_size == 64) {
-		cost_aggregation_<64>(srcL, srcR, dst, P1, P2, path_type, min_disp);
+	SGM_ASSERT(srcL.type == srcR.type, "left and right image type must be same.");
+
+	if (srcL.type == SGM_32U) {
+		if (disp_size == 64) {
+			cost_aggregation_<uint32_t, 64>(srcL, srcR, dst, P1, P2, path_type, min_disp);
+		}
+		else if (disp_size == 128) {
+			cost_aggregation_<uint32_t, 128>(srcL, srcR, dst, P1, P2, path_type, min_disp);
+		}
+		else if (disp_size == 256) {
+			cost_aggregation_<uint32_t, 256>(srcL, srcR, dst, P1, P2, path_type, min_disp);
+		}
 	}
-	else if (disp_size == 128) {
-		cost_aggregation_<128>(srcL, srcR, dst, P1, P2, path_type, min_disp);
-	}
-	else if (disp_size == 256) {
-		cost_aggregation_<256>(srcL, srcR, dst, P1, P2, path_type, min_disp);
+	else if (srcL.type == SGM_64U) {
+		if (disp_size == 64) {
+			cost_aggregation_<uint64_t, 64>(srcL, srcR, dst, P1, P2, path_type, min_disp);
+		}
+		else if (disp_size == 128) {
+			cost_aggregation_<uint64_t, 128>(srcL, srcR, dst, P1, P2, path_type, min_disp);
+		}
+		else if (disp_size == 256) {
+			cost_aggregation_<uint64_t, 256>(srcL, srcR, dst, P1, P2, path_type, min_disp);
+		}
 	}
 }
 

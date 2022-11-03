@@ -25,7 +25,7 @@ namespace sgm
 namespace details
 {
 
-void census_transform(const DeviceImage& src, DeviceImage& dst);
+void census_transform(const DeviceImage& src, DeviceImage& dst, CensusType type);
 
 void cost_aggregation(const DeviceImage& srcL, const DeviceImage& srcR, DeviceImage& dst,
 	int disp_size, int P1, int P2, PathType path_type, int min_disp);

@@ -82,8 +82,9 @@ public:
 			d_srcR_.create(height, width, src_type_, src_pitch);
 		}
 
-		d_censusL_.create(height, width, SGM_32U);
-		d_censusR_.create(height, width, SGM_32U);
+		const ImageType census_type = param.census_type == CensusType::CENSUS_9x7 ? SGM_64U : SGM_32U;
+		d_censusL_.create(height, width, census_type);
+		d_censusR_.create(height, width, census_type);
 		d_censusL_.fill_zero();
 		d_censusR_.fill_zero();
 
@@ -112,8 +113,8 @@ public:
 		}
 
 		// census transform
-		details::census_transform(d_srcL_, d_censusL_);
-		details::census_transform(d_srcR_, d_censusR_);
+		details::census_transform(d_srcL_, d_censusL_, param_.census_type);
+		details::census_transform(d_srcR_, d_censusR_, param_.census_type);
 
 		// cost aggregation
 		details::cost_aggregation(d_censusL_, d_censusR_, d_cost_, disp_size_,
@@ -179,6 +180,13 @@ private:
 	DeviceImage d_dispL_;
 	DeviceImage d_dispR_;
 };
+
+StereoSGM::Parameters::Parameters(int P1, int P2, float uniqueness, bool subpixel, PathType path_type,
+	int min_disp, int LR_max_diff, CensusType census_type)
+	: P1(P1), P2(P2), uniqueness(uniqueness), subpixel(subpixel), path_type(path_type),
+	min_disp(min_disp), LR_max_diff(LR_max_diff), census_type(census_type)
+{
+}
 
 StereoSGM::StereoSGM(int width, int height, int disparity_size, int src_depth, int dst_depth,
 	ExecuteInOut inout_type, const Parameters& param)

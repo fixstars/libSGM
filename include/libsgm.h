@@ -67,6 +67,15 @@ enum class PathType
 };
 
 /**
+* @brief Indicates census type which will be used.
+*/
+enum class CensusType
+{
+	CENSUS_9x7,
+	SYMMETRIC_CENSUS_9x7
+};
+
+/**
 * @brief StereoSGM class
 */
 class StereoSGM
@@ -88,6 +97,7 @@ public:
 		PathType path_type;
 		int min_disp;
 		int LR_max_diff;
+		CensusType census_type;
 
 		/**
 		* @param P1 Penalty on the disparity change by plus or minus 1 between nieghbor pixels.
@@ -98,15 +108,8 @@ public:
 		* @param min_disp Minimum possible disparity value.
 		* @param LR_max_diff Acceptable difference pixels which is used in LR check consistency. LR check consistency will be disabled if this value is set to negative.
 		*/
-		Parameters(int P1 = 10, int P2 = 120, float uniqueness = 0.95f, bool subpixel = false, PathType path_type = PathType::SCAN_8PATH, int min_disp = 0, int LR_max_diff = 1)
-			: P1(P1)
-			, P2(P2)
-			, uniqueness(uniqueness)
-			, subpixel(subpixel)
-			, path_type(path_type)
-			, min_disp(min_disp)
-			, LR_max_diff(LR_max_diff)
-		{ }
+		Parameters(int P1 = 10, int P2 = 120, float uniqueness = 0.95f, bool subpixel = false, PathType path_type = PathType::SCAN_8PATH,
+			int min_disp = 0, int LR_max_diff = 1, CensusType census_type = CensusType::SYMMETRIC_CENSUS_9x7);
 	};
 
 	/**

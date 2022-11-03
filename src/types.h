@@ -22,9 +22,7 @@ limitations under the License.
 namespace sgm
 {
 
-using feature_type = uint32_t;
 using cost_type = uint8_t;
-using cost_sum_type = uint16_t;
 using output_type = uint16_t;
 
 } // namespace sgm
