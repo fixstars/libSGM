@@ -25,24 +25,25 @@ namespace
 {
 
 template<typename SRC_T, typename DST_T>
-__global__ void check_consistency_kernel(DST_T* d_leftDisp, const DST_T* d_rightDisp, const SRC_T* d_left, int width, int height, int src_pitch, int dst_pitch, bool subpixel, int LR_max_diff)
+__global__ void check_consistency_kernel(DST_T* dispL, const DST_T* dispR, const SRC_T* srcL, int width, int height, int src_pitch, int dst_pitch, bool subpixel, int LR_max_diff)
 {
-
-	const int j = blockIdx.x * blockDim.x + threadIdx.x;
-	const int i = blockIdx.y * blockDim.y + threadIdx.y;
+	const int x = blockIdx.x * blockDim.x + threadIdx.x;
+	const int y = blockIdx.y * blockDim.y + threadIdx.y;
+	if (x >= width || y >= height)
+		return;
 
 	// left-right consistency check, only on leftDisp, but could be done for rightDisp too
 
-	SRC_T mask = d_left[i * src_pitch + j];
-	DST_T org = d_leftDisp[i * dst_pitch + j];
+	SRC_T mask = srcL[y * src_pitch + x];
+	DST_T org = dispL[y * dst_pitch + x];
 	int d = org;
 	if (subpixel) {
 		d >>= sgm::StereoSGM::SUBPIXEL_SHIFT;
 	}
-	int k = j - d;
-	if (mask == 0 || org == sgm::INVALID_DISP || (k >= 0 && k < width && LR_max_diff >= 0 && abs(d_rightDisp[i * dst_pitch + k] - d) > LR_max_diff)) {
+	const int k = x - d;
+	if (mask == 0 || org == sgm::INVALID_DISP || (k >= 0 && k < width && LR_max_diff >= 0 && abs(dispR[y * dst_pitch + k] - d) > LR_max_diff)) {
 		// masked or left-right inconsistent pixel -> invalid
-		d_leftDisp[i * dst_pitch + j] = static_cast<DST_T>(sgm::INVALID_DISP);
+		dispL[y * dst_pitch + x] = static_cast<DST_T>(sgm::INVALID_DISP);
 	}
 }
 
