@@ -100,6 +100,12 @@ __device__ unsigned int generate_mask()
 	return static_cast<unsigned int>((1ull << SIZE) - 1u);
 }
 
+template <typename CENSUS_T>
+__device__ inline CENSUS_T load_census_with_check(const CENSUS_T* ptr, int x, int w)
+{
+	return x >= 0 && x < w ? __ldg(ptr + x) : 0;
+}
+
 namespace vertical
 {
 
@@ -162,10 +168,7 @@ __global__ void aggregate_vertical_path_kernel(
 			const unsigned int i = i0 + threadIdx.x;
 			if (i < RIGHT_BUFFER_SIZE) {
 				const int right_x = static_cast<int>(right_x0 + PATHS_PER_BLOCK - 1 - i - min_disp);
-				CENSUS_TYPE right_value = 0;
-				if (0 <= right_x && right_x < static_cast<int>(width)) {
-					right_value = right[right_x + y * width];
-				}
+				const CENSUS_TYPE right_value = load_census_with_check(&right[y * width], right_x, width);
 				const unsigned int lo = i % DP_BLOCK_SIZE;
 				const unsigned int hi = i / DP_BLOCK_SIZE;
 				right_buffer[lo][hi] = right_value;
@@ -296,25 +299,12 @@ __global__ void aggregate_horizontal_path_kernel(
 		return;
 	}
 
-	if (DIRECTION > 0) {
-		for (unsigned int i = 0; i < DP_BLOCKS_PER_THREAD; ++i) {
-			for (unsigned int j = 0; j < DP_BLOCK_SIZE; ++j) {
-				right_buffer[i][j] = 0;
-			}
-		}
-	}
-	else {
-		for (unsigned int i = 0; i < DP_BLOCKS_PER_THREAD; ++i) {
-			for (unsigned int j = 0; j < DP_BLOCK_SIZE; ++j) {
-				const int x = static_cast<int>(width - (min_disp + j + dp_offset));
-				if (0 <= x && x < static_cast<int>(width)) {
-					right_buffer[i][j] = __ldg(&right[i * feature_step + x]);
-				}
-				else {
-					right_buffer[i][j] = 0;
-				}
-			}
-		}
+	// initialize census buffer
+	{
+		const int x0 = (DIRECTION > 0 ? -1 : width) - (min_disp + dp_offset);
+		for (int dy = 0; dy < DP_BLOCKS_PER_THREAD; ++dy)
+			for (int dx = 0; dx < DP_BLOCK_SIZE; ++dx)
+				right_buffer[dy][dx] = load_census_with_check(&right[dy * feature_step], x0 - dx, width);
 	}
 
 	int x0 = (DIRECTION > 0) ? 0 : static_cast<int>((width - 1) & ~(DP_BLOCK_SIZE - 1));
@@ -336,9 +326,8 @@ __global__ void aggregate_horizontal_path_kernel(
 						right_buffer[j][k] = right_buffer[j][k - 1];
 					}
 					right_buffer[j][0] = SHFL_UP(shfl_mask, t, 1, SUBGROUP_SIZE);
-					if (lane_id == 0 && x >= min_disp) {
-						right_buffer[j][0] =
-							__ldg(&right[j * feature_step + x - min_disp]);
+					if (lane_id == 0) {
+						right_buffer[j][0] = load_census_with_check(&right[j * feature_step], x - min_disp, width);
 					}
 				}
 				else {
@@ -348,13 +337,7 @@ __global__ void aggregate_horizontal_path_kernel(
 					}
 					right_buffer[j][DP_BLOCK_SIZE - 1] = SHFL_DOWN(shfl_mask, t, 1, SUBGROUP_SIZE);
 					if (lane_id + 1 == SUBGROUP_SIZE) {
-						if (x >= min_disp + dp_offset + DP_BLOCK_SIZE - 1) {
-							right_buffer[j][DP_BLOCK_SIZE - 1] =
-								__ldg(&right[j * feature_step + x - (min_disp + dp_offset + DP_BLOCK_SIZE - 1)]);
-						}
-						else {
-							right_buffer[j][DP_BLOCK_SIZE - 1] = 0;
-						}
+						right_buffer[j][DP_BLOCK_SIZE - 1] = load_census_with_check(&right[j * feature_step], x - (min_disp + dp_offset + DP_BLOCK_SIZE - 1), width);
 					}
 				}
 				uint32_t local_costs[DP_BLOCK_SIZE];
@@ -483,10 +466,7 @@ __global__ void aggregate_oblique_path_kernel(
 			const unsigned int i = i0 + threadIdx.x;
 			if (i < RIGHT_BUFFER_SIZE) {
 				const int right_x = static_cast<int>(right_x0 + PATHS_PER_BLOCK - 1 - i - min_disp);
-				CENSUS_TYPE right_value = 0;
-				if (0 <= right_x && right_x < static_cast<int>(width)) {
-					right_value = right[right_x + y * width];
-				}
+				const CENSUS_TYPE right_value = load_census_with_check(&right[y * width], right_x, width);
 				const unsigned int lo = i % DP_BLOCK_SIZE;
 				const unsigned int hi = i / DP_BLOCK_SIZE;
 				right_buffer[lo][hi] = right_value;
