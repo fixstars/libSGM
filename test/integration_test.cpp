@@ -7,7 +7,7 @@
 #include "constants.h"
 #include "reference.h"
 
-TEST(DISABLED_IntegrationTest, RandomU8)
+TEST(IntegrationTest, RandomU8)
 {
 	using namespace sgm;
 	using namespace details;
@@ -35,8 +35,8 @@ TEST(DISABLED_IntegrationTest, RandomU8)
 	HostImage h_censusL(h, w, ctype), h_censusR(h, w, ctype), h_costs;
 	DeviceImage d_censusL(h, w, ctype), d_censusR(h, w, ctype), d_costs;
 
-	HostImage h_tmpL(h, w, dtype), h_dispL(h, w, dtype), h_dispR(h, w, dtype);
-	DeviceImage d_tmpL(h, w, dtype), d_dispL(h, w, dtype), d_dispR(h, w, dtype);
+	HostImage h_tmpL(h, w, dtype), h_tmpR(h, w, dtype), h_dispL(h, w, dtype), h_dispR(h, w, dtype);
+	DeviceImage d_tmpL(h, w, dtype), d_tmpR(h, w, dtype), d_dispL(h, w, dtype), d_dispR(h, w, dtype);
 
 	random_fill(h_srcL);
 	random_fill(h_srcR);
@@ -63,15 +63,19 @@ TEST(DISABLED_IntegrationTest, RandomU8)
 	EXPECT_TRUE(equals(h_costs, d_costs));
 
 	// winner takes all
-	winner_takes_all(h_costs, h_tmpL, h_dispR, disp_size, uniqueness, subpixel, path_type);
-	winner_takes_all(d_costs, d_tmpL, d_dispR, disp_size, uniqueness, subpixel, path_type);
+	winner_takes_all(h_costs, h_tmpL, h_tmpR, disp_size, uniqueness, subpixel, path_type);
+	winner_takes_all(d_costs, d_tmpL, d_tmpR, disp_size, uniqueness, subpixel, path_type);
 	EXPECT_TRUE(equals(h_tmpL, d_tmpL));
-	EXPECT_TRUE(equals(h_dispR, d_dispR));
+	EXPECT_TRUE(equals(h_tmpR, d_tmpR));
 
 	// post filtering
 	median_filter(h_tmpL, h_dispL);
 	median_filter(d_tmpL, d_dispL);
 	EXPECT_TRUE(equals(h_dispL, d_dispL));
+
+	median_filter(h_tmpR, h_dispR);
+	median_filter(d_tmpR, d_dispR);
+	EXPECT_TRUE(equals(h_dispR, d_dispR));
 
 	// consistency check
 	check_consistency(h_dispL, h_dispR, h_srcL, subpixel, LR_max_diff);
