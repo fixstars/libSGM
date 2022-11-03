@@ -14,91 +14,68 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-#include <iostream>
-#include <iomanip>
-#include <chrono>
-
-#include <opencv2/core/core.hpp>
-#include <opencv2/highgui/highgui.hpp>
-#include <cuda_runtime.h>
-
 #include <libsgm.h>
 
-#define ASSERT_MSG(expr, msg) \
-	if (!(expr)) { \
-		std::cerr << msg << std::endl; \
-		std::exit(EXIT_FAILURE); \
-	} \
+#include <opencv2/core.hpp>
+#include <opencv2/imgproc.hpp>
+#include <opencv2/highgui.hpp>
 
-struct device_buffer
-{
-	device_buffer() : data(nullptr) {}
-	device_buffer(size_t count) { allocate(count); }
-	void allocate(size_t count) { cudaMalloc(&data, count); }
-	~device_buffer() { cudaFree(data); }
-	void* data;
-};
+#include <iomanip>
+
+#include "sample_common.h"
+
+static const std::string keys =
+"{@left_img  | <none> | path to input left image                       }"
+"{@right_img | <none> | path to input right image                      }"
+"{disp_size  |    128 | maximum possible disparity value               }"
+"{out_depth  |      8 | disparity image's bits per pixel               }"
+"{subpixel   |        | enable subpixel estimation                     }"
+"{num_paths  |      8 | number of scanlines used in cost aggregation   }"
+"{iterations |    100 | number of iterations for measuring performance }"
+"{help h     |        | display this help and exit                     }";
 
 int main(int argc, char* argv[])
 {
-	cv::CommandLineParser parser(argc, argv,
-		"{@left_img  | <none> | path to input left image                       }"
-		"{@right_img | <none> | path to input right image                      }"
-		"{disp_size  |    128 | maximum possible disparity value               }"
-		"{out_depth  |      8 | disparity image's bits per pixel               }"
-		"{subpixel   |        | enable subpixel estimation                     }"
-		"{num_paths  |      8 | number of scanlines used in cost aggregation   }"
-		"{iterations |    100 | number of iterations for measuring performance }"
-		"{help h     |        | display this help and exit                     }");
-
-	if (parser.has("help")) {
+	cv::CommandLineParser parser(argc, argv, keys);
+	if (argc < 3 || parser.has("help")) {
 		parser.printMessage();
 		return 0;
 	}
 
-	const cv::Mat I1 = cv::imread(parser.get<cv::String>( "@left_img"), -1);
-	const cv::Mat I2 = cv::imread(parser.get<cv::String>("@right_img"), -1);
-
-	if (!parser.check()) {
-		parser.printErrors();
-		parser.printMessage();
-		std::exit(EXIT_FAILURE);
-	}
-
-	ASSERT_MSG(!I1.empty() && !I2.empty(), "imread failed.");
-	ASSERT_MSG(I1.size() == I2.size() && I1.type() == I2.type(), "input images must be same size and type.");
-	ASSERT_MSG(I1.type() == CV_8U || I1.type() == CV_16U, "input image format must be CV_8U or CV_16U.");
+	cv::Mat I1 = cv::imread(parser.get<cv::String>("@left_img"), cv::IMREAD_UNCHANGED);
+	cv::Mat I2 = cv::imread(parser.get<cv::String>("@right_img"), cv::IMREAD_UNCHANGED);
 
 	const int disp_size = parser.get<int>("disp_size");
-	const int out_depth = parser.get<int>("out_depth");
+	const int dst_depth = parser.get<int>("out_depth");
 	const bool subpixel = parser.has("subpixel");
 	const int num_paths = parser.get<int>("num_paths");
 	const int iterations = parser.get<int>("iterations");
 
+	ASSERT_MSG(!I1.empty() && !I2.empty(), "imread failed.");
+	ASSERT_MSG(I1.size() == I2.size() && I1.type() == I2.type(), "input images must be same size and type.");
+	ASSERT_MSG(I1.type() == CV_8U || I1.type() == CV_16U, "input image format must be CV_8U or CV_16U.");
 	ASSERT_MSG(disp_size == 64 || disp_size == 128 || disp_size == 256, "disparity size must be 64, 128 or 256.");
-	if (subpixel) {
-		ASSERT_MSG(out_depth == 16, "output depth bits must be 16 if subpixel option is enabled.");
-	} else {
-		ASSERT_MSG(out_depth == 8 || out_depth == 16, "output depth bits must be 8 or 16");
-	}
-	ASSERT_MSG(num_paths == 4 || num_paths == 8, "number of scanlines must be 4 or 8");
+	ASSERT_MSG(num_paths == 4 || num_paths == 8, "number of scanlines must be 4 or 8.");
+	ASSERT_MSG(dst_depth == 8 || dst_depth == 16, "output depth bits must be 8 or 16");
+	if (subpixel)
+		ASSERT_MSG(dst_depth == 16, "output depth bits must be 16 if subpixel option is enabled.");
 
 	const int width = I1.cols;
 	const int height = I1.rows;
 
-	const int input_depth = I1.type() == CV_8U ? 8 : 16;
-	const int input_bytes = input_depth * width * height / 8;
-	const int output_bytes = out_depth * width * height / 8;
-
+	const int src_depth = I1.type() == CV_8U ? 8 : 16;
+	const int src_bytes = src_depth * width * height / 8;
+	const int dst_bytes = dst_depth * width * height / 8;
 	const sgm::PathType path_type = num_paths == 8 ? sgm::PathType::SCAN_8PATH : sgm::PathType::SCAN_4PATH;
 
-	const sgm::StereoSGM::Parameters params{10, 120, 0.95f, subpixel, path_type};
+	const sgm::StereoSGM::Parameters params(10, 120, 0.95f, subpixel, path_type);
+	sgm::StereoSGM sgm(width, height, disp_size, src_depth, dst_depth, sgm::EXECUTE_INOUT_CUDA2CUDA);
 
-	sgm::StereoSGM sgm(width, height, disp_size, input_depth, out_depth, sgm::EXECUTE_INOUT_CUDA2CUDA, params);
+	device_buffer d_I1(src_bytes), d_I2(src_bytes), d_disparity(dst_bytes);
+	cv::Mat disparity(height, width, dst_depth == 8 ? CV_8S : CV_16S);
 
-	device_buffer d_I1(input_bytes), d_I2(input_bytes), d_disparity(output_bytes);
-	cudaMemcpy(d_I1.data, I1.data, input_bytes, cudaMemcpyHostToDevice);
-	cudaMemcpy(d_I2.data, I2.data, input_bytes, cudaMemcpyHostToDevice);
+	d_I1.upload(I1.data);
+	d_I2.upload(I2.data);
 
 	cudaDeviceProp prop;
 	int version;
@@ -111,7 +88,7 @@ int main(int argc, char* argv[])
 	std::cout << "CUDA runtime version: " << version << std::endl;
 	std::cout << "image size          : " << I1.size() << std::endl;
 	std::cout << "disparity size      : " << disp_size << std::endl;
-	std::cout << "output depth        : " << out_depth << std::endl;
+	std::cout << "output depth        : " << dst_depth << std::endl;
 	std::cout << "subpixel option     : " << (subpixel ? "true" : "false") << std::endl;
 	std::cout << "sgm path            : " << num_paths << " path" << std::endl;
 	std::cout << "iterations          : " << iterations << std::endl;
@@ -142,9 +119,9 @@ int main(int argc, char* argv[])
 	std::cout << std::endl;
 
 	// save disparity image
-	cv::Mat disparity(height, width, out_depth == 8 ? CV_8U : CV_16U);
-	cudaMemcpy(disparity.data, d_disparity.data, output_bytes, cudaMemcpyDeviceToHost);
-	disparity *= 255. / disp_size;
+	d_disparity.download(disparity.data);
+	disparity.setTo(0, disparity < 0);
+	disparity.convertTo(disparity, CV_8U, 255. / disp_size);
 	cv::imwrite("disparity.png", disparity);
 
 	return 0;
