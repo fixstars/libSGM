@@ -22,7 +22,7 @@ static void random_fill_(T* dst, int n, T minv = min_of<T>(), T maxv = max_of<T>
 }
 
 template <>
-static void random_fill_(uint8_t* dst, int n, uint8_t minv, uint8_t maxv)
+void random_fill_(uint8_t* dst, int n, uint8_t minv, uint8_t maxv)
 {
 	std::uniform_int_distribution<uint32_t> dist(minv, maxv);
 	for (int i = 0; i < n; ++i)
