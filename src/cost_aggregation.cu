@@ -21,6 +21,14 @@ limitations under the License.
 #include "device_utility.h"
 #include "host_utility.h"
 
+#if CUDA_VERSION >= 9000
+#define SHFL_UP(mask, var, delta, w) __shfl_up_sync((mask), (var), (delta), (w))
+#define SHFL_DOWN(mask, var, delta, w) __shfl_down_sync((mask), (var), (delta), (w))
+#else
+#define SHFL_UP(mask, var, delta, width) __shfl_up((var), (delta), (width))
+#define SHFL_DOWN(mask, var, delta, width) __shfl_down((var), (delta), (width))
+#endif
+
 namespace sgm
 {
 
@@ -55,12 +63,7 @@ struct DynamicProgramming
 		uint32_t lazy_out = 0, local_min = 0;
 		{
 			const unsigned int k = 0;
-#if CUDA_VERSION >= 9000
-			const uint32_t prev =
-				__shfl_up_sync(mask, dp[DP_BLOCK_SIZE - 1], 1);
-#else
-			const uint32_t prev = __shfl_up(dp[DP_BLOCK_SIZE - 1], 1);
-#endif
+			const uint32_t prev = SHFL_UP(mask, dp[DP_BLOCK_SIZE - 1], 1, WARP_SIZE);
 			uint32_t out = min(dp[k] - last_min, p2);
 			if (lane_id != 0) { out = min(out, prev - last_min + p1); }
 			out = min(out, dp[k + 1] - last_min + p1);
@@ -76,11 +79,7 @@ struct DynamicProgramming
 		}
 		{
 			const unsigned int k = DP_BLOCK_SIZE - 1;
-#if CUDA_VERSION >= 9000
-			const uint32_t next = __shfl_down_sync(mask, dp0, 1);
-#else
-			const uint32_t next = __shfl_down(dp0, 1);
-#endif
+			const uint32_t next = SHFL_DOWN(mask, dp0, 1, WARP_SIZE);
 			uint32_t out = min(dp[k] - last_min, p2);
 			out = min(out, dp[k - 1] - last_min + p1);
 			if (lane_id + 1 != SUBGROUP_SIZE) {
@@ -336,11 +335,7 @@ __global__ void aggregate_horizontal_path_kernel(
 					for (unsigned int k = DP_BLOCK_SIZE - 1; k > 0; --k) {
 						right_buffer[j][k] = right_buffer[j][k - 1];
 					}
-#if CUDA_VERSION >= 9000
-					right_buffer[j][0] = __shfl_up_sync(shfl_mask, t, 1, SUBGROUP_SIZE);
-#else
-					right_buffer[j][0] = __shfl_up(t, 1, SUBGROUP_SIZE);
-#endif
+					right_buffer[j][0] = SHFL_UP(shfl_mask, t, 1, SUBGROUP_SIZE);
 					if (lane_id == 0 && x >= min_disp) {
 						right_buffer[j][0] =
 							__ldg(&right[j * feature_step + x - min_disp]);
@@ -351,12 +346,7 @@ __global__ void aggregate_horizontal_path_kernel(
 					for (unsigned int k = 1; k < DP_BLOCK_SIZE; ++k) {
 						right_buffer[j][k - 1] = right_buffer[j][k];
 					}
-#if CUDA_VERSION >= 9000
-					right_buffer[j][DP_BLOCK_SIZE - 1] =
-						__shfl_down_sync(shfl_mask, t, 1, SUBGROUP_SIZE);
-#else
-					right_buffer[j][DP_BLOCK_SIZE - 1] = __shfl_down(t, 1, SUBGROUP_SIZE);
-#endif
+					right_buffer[j][DP_BLOCK_SIZE - 1] = SHFL_DOWN(shfl_mask, t, 1, SUBGROUP_SIZE);
 					if (lane_id + 1 == SUBGROUP_SIZE) {
 						if (x >= min_disp + dp_offset + DP_BLOCK_SIZE - 1) {
 							right_buffer[j][DP_BLOCK_SIZE - 1] =
