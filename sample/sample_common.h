@@ -17,15 +17,14 @@ limitations under the License.
 #ifndef __SAMPLE_COMMON_H__
 #define __SAMPLE_COMMON_H__
 
-#include <iostream>
 #include <opencv2/core.hpp>
 #include <cuda_runtime.h>
 
 #define ASSERT_MSG(expr, msg) \
-	if (!(expr)) { \
-		std::cerr << msg << std::endl; \
-		std::exit(EXIT_FAILURE); \
-	} \
+if (!(expr)) { \
+	std::cerr << msg << std::endl; \
+	std::exit(EXIT_FAILURE); \
+} \
 
 struct device_buffer
 {
