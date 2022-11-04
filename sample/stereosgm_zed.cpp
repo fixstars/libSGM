@@ -28,9 +28,9 @@ limitations under the License.
 #include "sample_common.h"
 
 static const std::string keys =
-"{disp_size           |    128 | maximum possible disparity value                  }"
-"{camera_resolution   |      3 | camera resolution (0:HD2K 1:HD1080 2:HD720 3:VGA) }"
-"{help h              |        | display this help and exit                        }";
+"{ disp_size           |    128 | maximum possible disparity value                  }"
+"{ camera_resolution   |      3 | camera resolution (0:HD2K 1:HD1080 2:HD720 3:VGA) }"
+"{ help h              |        | display this help and exit                        }";
 
 int main(int argc, char* argv[])
 {

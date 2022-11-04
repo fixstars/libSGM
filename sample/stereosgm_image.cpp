@@ -25,16 +25,16 @@ limitations under the License.
 #include "sample_common.h"
 
 static const std::string keys =
-"{@left_img   | <none> | path to input left image                                                            }"
-"{@right_img  | <none> | path to input right image                                                           }"
-"{disp_size   |     64 | maximum possible disparity value                                                    }"
-"{P1          |     10 | penalty on the disparity change by plus or minus 1 between nieghbor pixels          }"
-"{P2          |    120 | penalty on the disparity change by more than 1 between neighbor pixels              }"
-"{uniqueness  |   0.95 | margin in ratio by which the best cost function value should be at least second one }"
-"{num_paths   |      8 | number of scanlines used in cost aggregation                                        }"
-"{min_disp    |      0 | minimum disparity value                                                             }"
-"{LR_max_diff |      1 | maximum allowed difference between left and right disparity                         }"
-"{help h      |        | display this help and exit                                                          }";
+"{ @left_img   | <none> | path to input left image                                                            }"
+"{ @right_img  | <none> | path to input right image                                                           }"
+"{ disp_size   |     64 | maximum possible disparity value                                                    }"
+"{ P1          |     10 | penalty on the disparity change by plus or minus 1 between nieghbor pixels          }"
+"{ P2          |    120 | penalty on the disparity change by more than 1 between neighbor pixels              }"
+"{ uniqueness  |   0.95 | margin in ratio by which the best cost function value should be at least second one }"
+"{ num_paths   |      8 | number of scanlines used in cost aggregation                                        }"
+"{ min_disp    |      0 | minimum disparity value                                                             }"
+"{ LR_max_diff |      1 | maximum allowed difference between left and right disparity                         }"
+"{ help h      |        | display this help and exit                                                          }";
 
 int main(int argc, char* argv[])
 {

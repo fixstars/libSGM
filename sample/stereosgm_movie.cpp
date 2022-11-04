@@ -26,11 +26,11 @@ limitations under the License.
 #include "sample_common.h"
 
 static const std::string keys =
-"{@left-image-format  | <none> | format string for path to input left image  }"
-"{@right-image-format | <none> | format string for path to input right image }"
-"{disp_size           |    128 | maximum possible disparity value            }"
-"{start_number        |      0 | index to start reading                      }"
-"{help h              |        | display this help and exit                  }";
+"{ @left-image-format  | <none> | format string for path to input left image  }"
+"{ @right-image-format | <none> | format string for path to input right image }"
+"{ disp_size           |    128 | maximum possible disparity value            }"
+"{ start_number        |      0 | index to start reading                      }"
+"{ help h              |        | display this help and exit                  }";
 
 int main(int argc, char* argv[])
 {

@@ -27,14 +27,14 @@ limitations under the License.
 #include "sample_common.h"
 
 static const std::string keys =
-"{@left_img  | <none> | path to input left image                       }"
-"{@right_img | <none> | path to input right image                      }"
-"{disp_size  |    128 | maximum possible disparity value               }"
-"{out_depth  |      8 | disparity image's bits per pixel               }"
-"{subpixel   |        | enable subpixel estimation                     }"
-"{num_paths  |      8 | number of scanlines used in cost aggregation   }"
-"{iterations |    100 | number of iterations for measuring performance }"
-"{help h     |        | display this help and exit                     }";
+"{ @left_img  | <none> | path to input left image                       }"
+"{ @right_img | <none> | path to input right image                      }"
+"{ disp_size  |    128 | maximum possible disparity value               }"
+"{ out_depth  |      8 | disparity image's bits per pixel               }"
+"{ subpixel   |        | enable subpixel estimation                     }"
+"{ num_paths  |      8 | number of scanlines used in cost aggregation   }"
+"{ iterations |    100 | number of iterations for measuring performance }"
+"{ help h     |        | display this help and exit                     }";
 
 int main(int argc, char* argv[])
 {
