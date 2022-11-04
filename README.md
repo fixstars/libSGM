@@ -30,10 +30,13 @@ The libSGM performance obtained from benchmark sample
 |Xavier(MAXN)|10.2|9.0|110.7|
 
 ## Requirements
-libSGM needs CUDA (compute capabilities >= 3.5) to be installed.  
-Moreover, to build the sample, we need the following libraries:
-- OpenCV 3.0 or later
-- CMake 3.1 or later
+|Package Name|Minimum Requirements|Note
+---|---|---
+|CMake|version >= 3.18||
+|CUDA Toolkit|compute capability >= 3.5|
+|OpenCV|version >= 3.4.8|for samples|
+|OpenCV CUDA module|version >= 3.4.8|for OpenCV wrapper|
+|ZED SDK|version >= 3.0|for ZED sample|
 
 ## Build Instructions
 ```
@@ -53,8 +56,8 @@ $ pwd
 $ cd build
 $ cmake .. -DENABLE_SAMPLES=on
 $ make
-$ cd sample/movie/
-$ ./stereo_movie <left image path format> <right image path format> <disparity_size>
+$ cd sample
+$ ./stereosgm_movie <left image path format> <right image path format> <disparity_size>
 left image path format: the format used for the file paths to the left input images
 right image path format: the format used for the file paths to the right input images
 disparity_size: the maximum number of disparities (optional)
@@ -78,7 +81,7 @@ right_image_0003.pgm
 ```
 
 ```
-$ ./stereo_movie left_image_%04d.pgm right_image_%04d.pgm
+$ ./stereosgm_movie left_image_%04d.pgm right_image_%04d.pgm
 ```
 
 The sample images available at [Daimler Urban Scene Segmentation Benchmark Dataset 2014](http://www.6d-vision.com/scene-labeling) are used to test the software.
@@ -100,7 +103,7 @@ $ pwd
 .../libSGM
 $ cd build
 $ cd test
-$ ./sgm-test
+$ ./sgm_test
 ```
 
 Test code compares our implementation of each functions to naive implementation.
