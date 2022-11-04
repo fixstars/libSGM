@@ -103,7 +103,7 @@ $ pwd
 .../libSGM
 $ cd build
 $ cd test
-$ ./sgm_test
+$ ./sgm-test
 ```
 
 Test code compares our implementation of each functions to naive implementation.

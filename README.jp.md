@@ -103,7 +103,7 @@ $ pwd
 .../libSGM
 $ cd build
 $ cd test
-$ ./sgm_test
+$ ./sgm-test
 ```
 
 テストコードではナイーブな実装との比較を行っています。
