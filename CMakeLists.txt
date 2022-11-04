@@ -22,7 +22,7 @@ else()
   set(ZED_SDK_INCLUDE_DIR "/usr/local/zed/include" CACHE STRING "ZED SDK include path.")
 endif()
 
-project(libSGM VERSION 2.7.0)
+project(libSGM VERSION 2.8.0)
 
 if(BUILD_OPENCV_WRAPPER)
 	find_package(OpenCV REQUIRED core)
