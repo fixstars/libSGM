@@ -1,9 +1,10 @@
 cmake_minimum_required(VERSION 3.18)
 
-set(PROJECT_NAME sgm)
-set(LIBSGM_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../include)
+set(LIBSGM_ROOT_DIR ${PROJECT_SOURCE_DIR})
+set(LIBSGM_INCLUDE_DIR ${LIBSGM_ROOT_DIR}/include)
 
 # create project
+set(PROJECT_NAME sgm)
 project(${PROJECT_NAME} LANGUAGES CXX CUDA)
 
 # dependent packages
@@ -50,6 +51,6 @@ install(
 )
 
 install(
-	FILES ${PROJECT_SOURCE_DIR}/FindLibSGM.cmake
+	FILES ${LIBSGM_ROOT_DIR}/FindLibSGM.cmake
 	DESTINATION ${CMAKE_INSTALL_PREFIX}
 )
