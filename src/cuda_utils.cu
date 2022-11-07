@@ -25,14 +25,16 @@ namespace
 
 __global__ void cast_16bit_8bit_array_kernel(const uint16_t* arr16bits, uint8_t* arr8bits, int num_elements)
 {
-	int i = blockIdx.x * blockDim.x + threadIdx.x;
-	arr8bits[i] = (uint8_t)arr16bits[i];
+	const int i = blockIdx.x * blockDim.x + threadIdx.x;
+	if (i < num_elements)
+		arr8bits[i] = static_cast<uint8_t>(arr16bits[i]);
 }
 
 __global__ void cast_8bit_16bit_array_kernel(const uint8_t* arr8bits, uint16_t* arr16bits, int num_elements)
 {
-	int i = blockIdx.x * blockDim.x + threadIdx.x;
-	arr16bits[i] = (uint16_t)arr8bits[i];
+	const int i = blockIdx.x * blockDim.x + threadIdx.x;
+	if (i < num_elements)
+		arr16bits[i] = static_cast<uint16_t>(arr8bits[i]);
 }
 
 } // namespace
