@@ -15,6 +15,8 @@ void winner_takes_all(const HostImage& src, HostImage& dstL, HostImage& dstR,
 void median_filter(const HostImage& src, HostImage& dst);
 void check_consistency(HostImage& dispL, const HostImage& dispR, const HostImage& srcL, bool subpixel, int LR_max_diff);
 void correct_disparity_range(HostImage& disp, bool subpixel, int min_disp);
+void cast_16bit_to_8bit(const HostImage& src, HostImage& dst);
+void cast_8bit_to_16bit(const HostImage& src, HostImage& dst);
 
 } // namespace sgm
 
