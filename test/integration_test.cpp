@@ -20,7 +20,7 @@ TEST(IntegrationTest, RandomU8)
 	const int P2 = 120;
 	const float uniqueness = 0.95f;
 	const auto path_type = PathType::SCAN_4PATH;
-	const int min_disp = 0;
+	const int min_disp = -5;
 	const bool subpixel = true;
 	const int LR_max_diff = 5;
 	const auto censusType = CensusType::SYMMETRIC_CENSUS_9x7;
@@ -80,5 +80,10 @@ TEST(IntegrationTest, RandomU8)
 	// consistency check
 	check_consistency(h_dispL, h_dispR, h_srcL, subpixel, LR_max_diff);
 	check_consistency(d_dispL, d_dispR, d_srcL, subpixel, LR_max_diff);
+	EXPECT_TRUE(equals(h_dispL, d_dispL));
+
+	// correct disparity range
+	correct_disparity_range(h_dispL, subpixel, min_disp);
+	correct_disparity_range(d_dispL, subpixel, min_disp);
 	EXPECT_TRUE(equals(h_dispL, d_dispL));
 }
