@@ -14,6 +14,7 @@ void winner_takes_all(const HostImage& src, HostImage& dstL, HostImage& dstR,
 	int disp_size, float uniqueness, bool subpixel, PathType path_type);
 void median_filter(const HostImage& src, HostImage& dst);
 void check_consistency(HostImage& dispL, const HostImage& dispR, const HostImage& srcL, bool subpixel, int LR_max_diff);
+void correct_disparity_range(HostImage& disp, bool subpixel, int min_disp);
 
 } // namespace sgm
 
