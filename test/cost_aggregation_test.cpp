@@ -25,22 +25,22 @@ struct CostAggregationParam
 };
 
 static CostAggregationParam params[] = {
-	{ sgm::SGM_32U,  64, 10, 120, +0 },
+	{ sgm::SGM_32U,  64, 10, 120,  +0 },
 	{ sgm::SGM_32U,  64, 10, 120, +16 },
 	{ sgm::SGM_32U,  64, 10, 120, -16 },
-	{ sgm::SGM_32U, 128, 10, 120, +0 },
+	{ sgm::SGM_32U, 128, 10, 120,  +0 },
 	{ sgm::SGM_32U, 128, 10, 120, +16 },
 	{ sgm::SGM_32U, 128, 10, 120, -16 },
-	{ sgm::SGM_32U, 256, 10, 120, +0 },
+	{ sgm::SGM_32U, 256, 10, 120,  +0 },
 	{ sgm::SGM_32U, 256, 10, 120, +16 },
 	{ sgm::SGM_32U, 256, 10, 120, -16 },
-	{ sgm::SGM_64U,  64, 10, 120, +0 },
+	{ sgm::SGM_64U,  64, 10, 120,  +0 },
 	{ sgm::SGM_64U,  64, 10, 120, +16 },
 	{ sgm::SGM_64U,  64, 10, 120, -16 },
-	{ sgm::SGM_64U, 128, 10, 120, +0 },
+	{ sgm::SGM_64U, 128, 10, 120,  +0 },
 	{ sgm::SGM_64U, 128, 10, 120, +16 },
 	{ sgm::SGM_64U, 128, 10, 120, -16 },
-	{ sgm::SGM_64U, 256, 10, 120, +0 },
+	{ sgm::SGM_64U, 256, 10, 120,  +0 },
 	{ sgm::SGM_64U, 256, 10, 120, +16 },
 	{ sgm::SGM_64U, 256, 10, 120, -16 },
 };
@@ -139,10 +139,10 @@ void cost_aggregation(const HostImage& srcL, const HostImage& srcR, HostImage& d
 
 } // namespace sgm
 
-class CostAggregationTestP : public ::testing::TestWithParam<CostAggregationParam> {};
-INSTANTIATE_TEST_CASE_P(TestDataIntRange, CostAggregationTestP, ::testing::ValuesIn(params));
+class CostAggregationTest : public ::testing::TestWithParam<CostAggregationParam> {};
+INSTANTIATE_TEST_CASE_P(TestWithParams, CostAggregationTest, ::testing::ValuesIn(params));
 
-TEST_P(CostAggregationTestP, RangeTest)
+TEST_P(CostAggregationTest, AllPathsTest)
 {
 	using namespace sgm;
 	using namespace details;
