@@ -108,7 +108,7 @@ public:
 		* @param min_disp Minimum possible disparity value.
 		* @param LR_max_diff Acceptable difference pixels which is used in LR check consistency. LR check consistency will be disabled if this value is set to negative.
 		*/
-		Parameters(int P1 = 10, int P2 = 120, float uniqueness = 0.95f, bool subpixel = false, PathType path_type = PathType::SCAN_8PATH,
+		LIBSGM_API Parameters(int P1 = 10, int P2 = 120, float uniqueness = 0.95f, bool subpixel = false, PathType path_type = PathType::SCAN_8PATH,
 			int min_disp = 0, int LR_max_diff = 1, CensusType census_type = CensusType::SYMMETRIC_CENSUS_9x7);
 	};
 
