@@ -42,8 +42,8 @@ struct CoordinateTransform
 {
 	CoordinateTransform(const CameraParameters& camera) : camera(camera)
 	{
-		sinTilt = (sinf(camera.tilt));
-		cosTilt = (cosf(camera.tilt));
+		sinTilt = sinf(camera.tilt);
+		cosTilt = cosf(camera.tilt);
 		bf = camera.baseline * camera.fu;
 		invfu = 1.f / camera.fu;
 		invfv = 1.f / camera.fv;
