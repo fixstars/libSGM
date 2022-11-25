@@ -35,7 +35,7 @@ static const std::string keys =
 int main(int argc, char* argv[])
 {
 	cv::CommandLineParser parser(argc, argv, keys);
-	if (argc < 3 || parser.has("help")) {
+	if (parser.has("help")) {
 		parser.printMessage();
 		return 0;
 	}
@@ -44,6 +44,12 @@ int main(int argc, char* argv[])
 	const std::string image_format_R = parser.get<cv::String>("@right-image-format");
 	const int disp_size = parser.get<int>("disp_size");
 	const int start_number = parser.get<int>("start_number");
+
+	if (!parser.check()) {
+		parser.printErrors();
+		parser.printMessage();
+		std::exit(EXIT_FAILURE);
+	}
 
 	cv::Mat I1 = cv::imread(cv::format(image_format_L.c_str(), start_number), cv::IMREAD_UNCHANGED);
 	cv::Mat I2 = cv::imread(cv::format(image_format_R.c_str(), start_number), cv::IMREAD_UNCHANGED);

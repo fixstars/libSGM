@@ -39,7 +39,7 @@ static const std::string keys =
 int main(int argc, char* argv[])
 {
 	cv::CommandLineParser parser(argc, argv, keys);
-	if (argc < 3 || parser.has("help")) {
+	if (parser.has("help")) {
 		parser.printMessage();
 		return 0;
 	}
@@ -52,6 +52,12 @@ int main(int argc, char* argv[])
 	const bool subpixel = parser.has("subpixel");
 	const int num_paths = parser.get<int>("num_paths");
 	const int iterations = parser.get<int>("iterations");
+
+	if (!parser.check()) {
+		parser.printErrors();
+		parser.printMessage();
+		std::exit(EXIT_FAILURE);
+	}
 
 	ASSERT_MSG(!I1.empty() && !I2.empty(), "imread failed.");
 	ASSERT_MSG(I1.size() == I2.size() && I1.type() == I2.type(), "input images must be same size and type.");
