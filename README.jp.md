@@ -31,7 +31,7 @@ benchmarkサンプルで計測した処理時間を示します
 
 ## Requirements
 |Package Name|Minimum Requirements|Note
----|---|---
+|---|---|---|
 |CMake|version >= 3.18||
 |CUDA Toolkit|compute capability >= 3.5|
 |OpenCV|version >= 3.4.8|for samples|
