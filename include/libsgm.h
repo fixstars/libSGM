@@ -122,7 +122,7 @@ public:
 	* @attention
 	* output_depth_bits must be set to 16 when subpixel is enabled.
 	*/
-	LIBSGM_API StereoSGM(int width, int height, int disparity_size, int input_depth_bits, int output_depth_bits, 
+	LIBSGM_API StereoSGM(int width, int height, int disparity_size, int input_depth_bits, int output_depth_bits,
 		ExecuteInOut inout_type, const Parameters& param = Parameters());
 
 	/**
