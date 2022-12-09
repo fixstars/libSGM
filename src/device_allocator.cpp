@@ -27,6 +27,16 @@ DeviceAllocator::DeviceAllocator() : data_(nullptr), refCount_(nullptr), capacit
 {
 }
 
+DeviceAllocator::DeviceAllocator(const DeviceAllocator& other)
+{
+	copy_construct_from(other);
+}
+
+DeviceAllocator::DeviceAllocator(DeviceAllocator&& right)
+{
+	move_construct_from(std::move(right));
+}
+
 DeviceAllocator::~DeviceAllocator()
 {
 	release();
@@ -63,15 +73,38 @@ void DeviceAllocator::release()
 	capacity_ = 0;
 }
 
-DeviceAllocator& DeviceAllocator::operator=(const DeviceAllocator& rhs)
+DeviceAllocator& DeviceAllocator::operator=(const DeviceAllocator& other)
 {
 	release();
-	data_ = rhs.data_;
-	refCount_ = rhs.refCount_;
-	capacity_ = rhs.capacity_;
+	copy_construct_from(other);
+	return *this;
+}
+
+DeviceAllocator& DeviceAllocator::operator=(DeviceAllocator&& right)
+{
+	release();
+	move_construct_from(std::move(right));
+	return *this;
+}
+
+void DeviceAllocator::copy_construct_from(const DeviceAllocator& other)
+{
+	data_ = other.data_;
+	refCount_ = other.refCount_;
+	capacity_ = other.capacity_;
+
 	if (refCount_)
 		(*refCount_)++;
-	return *this;
+}
+
+void DeviceAllocator::move_construct_from(DeviceAllocator&& right)
+{
+	data_ = right.data_;
+	refCount_ = right.refCount_;
+	capacity_ = right.capacity_;
+
+	right.data_ = right.refCount_ = nullptr;
+	right.capacity_ = 0;
 }
 
 } // namespace sgm
