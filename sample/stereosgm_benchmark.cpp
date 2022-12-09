@@ -27,14 +27,15 @@ limitations under the License.
 #include "sample_common.h"
 
 static const std::string keys =
-"{ @left_img  | <none> | path to input left image                       }"
-"{ @right_img | <none> | path to input right image                      }"
-"{ disp_size  |    128 | maximum possible disparity value               }"
-"{ out_depth  |      8 | disparity image's bits per pixel               }"
-"{ subpixel   |        | enable subpixel estimation                     }"
-"{ num_paths  |      8 | number of scanlines used in cost aggregation   }"
-"{ iterations |    100 | number of iterations for measuring performance }"
-"{ help h     |        | display this help and exit                     }";
+"{ @left_img   | <none> | path to input left image                                       }"
+"{ @right_img  | <none> | path to input right image                                      }"
+"{ disp_size   |    128 | maximum possible disparity value                               }"
+"{ out_depth   |      8 | disparity image's bits per pixel                               }"
+"{ subpixel    |        | enable subpixel estimation                                     }"
+"{ num_paths   |      8 | number of scanlines used in cost aggregation                   }"
+"{ census_type |      1 | type of census transform (0:CENSUS_9x7 1:SYMMETRIC_CENSUS_9x7) }"
+"{ iterations  |    100 | number of iterations for measuring performance                 }"
+"{ help h      |        | display this help and exit                                     }";
 
 int main(int argc, char* argv[])
 {
@@ -51,6 +52,7 @@ int main(int argc, char* argv[])
 	const int dst_depth = parser.get<int>("out_depth");
 	const bool subpixel = parser.has("subpixel");
 	const int num_paths = parser.get<int>("num_paths");
+	const sgm::CensusType census_type = parser.get<sgm::CensusType>("census_type");
 	const int iterations = parser.get<int>("iterations");
 
 	if (!parser.check()) {
@@ -64,6 +66,7 @@ int main(int argc, char* argv[])
 	ASSERT_MSG(I1.type() == CV_8U || I1.type() == CV_16U, "input image format must be CV_8U or CV_16U.");
 	ASSERT_MSG(disp_size == 64 || disp_size == 128 || disp_size == 256, "disparity size must be 64, 128 or 256.");
 	ASSERT_MSG(num_paths == 4 || num_paths == 8, "number of scanlines must be 4 or 8.");
+	ASSERT_MSG(census_type == sgm::CensusType::CENSUS_9x7 || census_type == sgm::CensusType::SYMMETRIC_CENSUS_9x7, "census type must be 0 or 1.");
 	ASSERT_MSG(dst_depth == 8 || dst_depth == 16, "output depth bits must be 8 or 16");
 	if (subpixel)
 		ASSERT_MSG(dst_depth == 16, "output depth bits must be 16 if subpixel option is enabled.");
@@ -76,7 +79,7 @@ int main(int argc, char* argv[])
 	const int dst_bytes = dst_depth * width * height / 8;
 	const sgm::PathType path_type = num_paths == 8 ? sgm::PathType::SCAN_8PATH : sgm::PathType::SCAN_4PATH;
 
-	const sgm::StereoSGM::Parameters param(10, 120, 0.95f, subpixel, path_type);
+	const sgm::StereoSGM::Parameters param(10, 120, 0.95f, subpixel, path_type, 0, 1, census_type);
 	sgm::StereoSGM sgm(width, height, disp_size, src_depth, dst_depth, sgm::EXECUTE_INOUT_CUDA2CUDA, param);
 
 	device_buffer d_I1(src_bytes), d_I2(src_bytes), d_disparity(dst_bytes);
@@ -99,6 +102,7 @@ int main(int argc, char* argv[])
 	std::cout << "output depth        : " << dst_depth << std::endl;
 	std::cout << "subpixel option     : " << (subpixel ? "true" : "false") << std::endl;
 	std::cout << "sgm path            : " << num_paths << " path" << std::endl;
+	std::cout << "census type         : " << (census_type == sgm::CensusType::CENSUS_9x7 ? "CENSUS_9x7" : "SYMMETRIC_CENSUS_9x7") << std::endl;
 	std::cout << "iterations          : " << iterations << std::endl;
 	std::cout << std::endl;
 

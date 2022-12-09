@@ -34,6 +34,7 @@ static const std::string keys =
 "{ num_paths   |      8 | number of scanlines used in cost aggregation                                        }"
 "{ min_disp    |      0 | minimum disparity value                                                             }"
 "{ LR_max_diff |      1 | maximum allowed difference between left and right disparity                         }"
+"{ census_type |      1 | type of census transform (0:CENSUS_9x7 1:SYMMETRIC_CENSUS_9x7)                      }"
 "{ help h      |        | display this help and exit                                                          }";
 
 int main(int argc, char* argv[])
@@ -54,6 +55,7 @@ int main(int argc, char* argv[])
 	const int num_paths = parser.get<int>("num_paths");
 	const int min_disp = parser.get<int>("min_disp");
 	const int LR_max_diff = parser.get<int>("LR_max_diff");
+	const sgm::CensusType census_type = parser.get<sgm::CensusType>("census_type");
 
 	if (!parser.check()) {
 		parser.printErrors();
@@ -66,9 +68,10 @@ int main(int argc, char* argv[])
 	ASSERT_MSG(I1.type() == CV_8U || I1.type() == CV_16U, "input image format must be CV_8U or CV_16U.");
 	ASSERT_MSG(disp_size == 64 || disp_size == 128 || disp_size == 256, "disparity size must be 64, 128 or 256.");
 	ASSERT_MSG(num_paths == 4 || num_paths == 8, "number of scanlines must be 4 or 8.");
+	ASSERT_MSG(census_type == sgm::CensusType::CENSUS_9x7 || census_type == sgm::CensusType::SYMMETRIC_CENSUS_9x7, "census type must be 0 or 1.");
 
 	const sgm::PathType path_type = num_paths == 8 ? sgm::PathType::SCAN_8PATH : sgm::PathType::SCAN_4PATH;
-	sgm::LibSGMWrapper sgm(disp_size, P1, P2, uniqueness, false, path_type, min_disp, LR_max_diff);
+	sgm::LibSGMWrapper sgm(disp_size, P1, P2, uniqueness, false, path_type, min_disp, LR_max_diff, census_type);
 	cv::Mat disparity;
 
 	try {
