@@ -55,7 +55,7 @@ int main(int argc, char* argv[])
 	const int num_paths = parser.get<int>("num_paths");
 	const int min_disp = parser.get<int>("min_disp");
 	const int LR_max_diff = parser.get<int>("LR_max_diff");
-	const sgm::CensusType census_type = parser.get<sgm::CensusType>("census_type");
+	const auto census_type = static_cast<sgm::CensusType>(parser.get<int>("census_type"));
 
 	if (!parser.check()) {
 		parser.printErrors();

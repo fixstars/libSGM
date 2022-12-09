@@ -52,7 +52,7 @@ int main(int argc, char* argv[])
 	const int dst_depth = parser.get<int>("out_depth");
 	const bool subpixel = parser.has("subpixel");
 	const int num_paths = parser.get<int>("num_paths");
-	const sgm::CensusType census_type = parser.get<sgm::CensusType>("census_type");
+	const auto census_type = static_cast<sgm::CensusType>(parser.get<int>("census_type"));
 	const int iterations = parser.get<int>("iterations");
 
 	if (!parser.check()) {
