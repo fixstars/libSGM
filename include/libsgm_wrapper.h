@@ -27,9 +27,10 @@ public:
 	* @param pathType Number of scanlines used in cost aggregation.
 	* @param minDisparity Minimum possible disparity value.
 	* @param lrMaxDiff Acceptable difference pixels which is used in LR check consistency. LR check consistency will be disabled if this value is set to negative.
+	* @param censusType Type of census transform.
 	*/
 	LIBSGM_API LibSGMWrapper(int numDisparity = 128, int P1 = 10, int P2 = 120, float uniquenessRatio = 0.95f,
-		bool subpixel = false, PathType pathType = PathType::SCAN_8PATH, int minDisparity = 0, int lrMaxDiff = 1);
+		bool subpixel = false, PathType pathType = PathType::SCAN_8PATH, int minDisparity = 0, int lrMaxDiff = 1, CensusType censusType = CensusType::SYMMETRIC_CENSUS_9x7);
 	LIBSGM_API ~LibSGMWrapper();
 
 	LIBSGM_API int getNumDisparities() const;
@@ -40,6 +41,7 @@ public:
 	LIBSGM_API PathType getPathType() const;
 	LIBSGM_API int getMinDisparity() const;
 	LIBSGM_API int getLrMaxDiff() const;
+	LIBSGM_API CensusType getCensusType() const;
 	LIBSGM_API int getInvalidDisparity() const;
 
 #ifdef BUILD_OPENCV_WRAPPER
