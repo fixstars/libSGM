@@ -131,9 +131,9 @@ int main(int argc, char* argv[])
 	std::cout << std::endl;
 
 	// save disparity image
+	const int disp_scale = subpixel ? sgm::StereoSGM::SUBPIXEL_SCALE : 1;
 	d_disparity.download(disparity.data);
-	disparity.setTo(0, disparity < 0);
-	disparity.convertTo(disparity, CV_8U, 255. / disp_size);
+	colorize_disparity(disparity, disparity, disp_scale * disp_size, disparity == sgm.get_invalid_disparity());
 	cv::imwrite("disparity.png", disparity);
 
 	return 0;
