@@ -43,7 +43,7 @@ private:
 	void move_construct_from(DeviceAllocator&& right);
 
 	void* data_;
-	int* refCount_;
+	int* ref_count_;
 	size_t capacity_;
 };
 

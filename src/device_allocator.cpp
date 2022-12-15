@@ -23,7 +23,7 @@ limitations under the License.
 namespace sgm
 {
 
-DeviceAllocator::DeviceAllocator() : data_(nullptr), refCount_(nullptr), capacity_(0)
+DeviceAllocator::DeviceAllocator() : data_(nullptr), ref_count_(nullptr), capacity_(0)
 {
 }
 
@@ -48,7 +48,7 @@ void* DeviceAllocator::allocate(size_t size)
 	{
 		release();
 		CUDA_CHECK(cudaMalloc(&data_, size));
-		refCount_ = new int(1);
+		ref_count_ = new int(1);
 		capacity_ = size;
 	}
 	return data_;
@@ -63,13 +63,13 @@ void DeviceAllocator::assign(void* data, size_t size)
 
 void DeviceAllocator::release()
 {
-	if (refCount_ && --(*refCount_) == 0)
+	if (ref_count_ && --(*ref_count_) == 0)
 	{
 		CUDA_CHECK(cudaFree(data_));
-		delete refCount_;
+		delete ref_count_;
 	}
 
-	data_ = refCount_ = nullptr;
+	data_ = ref_count_ = nullptr;
 	capacity_ = 0;
 }
 
@@ -90,20 +90,20 @@ DeviceAllocator& DeviceAllocator::operator=(DeviceAllocator&& right)
 void DeviceAllocator::copy_construct_from(const DeviceAllocator& other)
 {
 	data_ = other.data_;
-	refCount_ = other.refCount_;
+	ref_count_ = other.ref_count_;
 	capacity_ = other.capacity_;
 
-	if (refCount_)
-		(*refCount_)++;
+	if (ref_count_)
+		(*ref_count_)++;
 }
 
 void DeviceAllocator::move_construct_from(DeviceAllocator&& right)
 {
 	data_ = right.data_;
-	refCount_ = right.refCount_;
+	ref_count_ = right.ref_count_;
 	capacity_ = right.capacity_;
 
-	right.data_ = right.refCount_ = nullptr;
+	right.data_ = right.ref_count_ = nullptr;
 	right.capacity_ = 0;
 }
 
