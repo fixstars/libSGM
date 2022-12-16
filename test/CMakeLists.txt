@@ -1,7 +1,12 @@
-cmake_minimum_required(VERSION 3.1)
-project(sgm-test)
+cmake_minimum_required(VERSION 3.18)
 
-find_package(CUDA REQUIRED)
+project(sgm-test LANGUAGES CXX CUDA)
+
+set(LIBSGM_SOURCE_DIR ${CMAKE_SOURCE_DIR}/src)
+
+# required packages
+find_package(CUDAToolkit REQUIRED)
+find_package(OpenCV REQUIRED)
 
 if (MSVC)
 	option(gtest_force_shared_crt "Force Gmock to use standard compiler flags" ON)
@@ -9,18 +14,17 @@ endif()
 
 add_subdirectory(googletest)
 
-include_directories(${gtest_SOURCE_DIR}/include)
-include_directories(../include)
-include_directories(../src)
+file(GLOB SRCS ./*.cpp ./*.cu ./*.h*)
+add_executable(sgm-test ${SRCS})
 
-file(GLOB TEST_SOURCES "*.cpp" "*.cu")
+target_compile_features(sgm-test PRIVATE cxx_std_17)
+target_include_directories(sgm-test PRIVATE ${LIBSGM_SOURCE_DIR} ${gtest_SOURCE_DIR}/include ${OpenCV_INCLUDE_DIRS})
+target_link_libraries(sgm-test sgm gtest ${OpenCV_LIBS})
 
-if (CMAKE_COMPILER_IS_GNUCXX)
-	set(CMAKE_CXX_FLAGS "-O3 -Wall")
-	set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -std=c++11")
-endif()
-
-SET(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} ${CUDA_ARCH} -lineinfo")
-
-cuda_add_executable(sgm-test ${TEST_SOURCES})
-target_link_libraries(sgm-test sgm gtest)
+target_compile_options(
+	sgm-test PRIVATE
+	$<$<CXX_COMPILER_ID:GCC>:-O3 -Wall>
+	$<$<CXX_COMPILER_ID:Clang>:-O3 -Wall>
+	$<$<CXX_COMPILER_ID:MSVC>:/wd4819>
+	$<$<COMPILE_LANGUAGE:CUDA>:${CUDA_ARCH} -lineinfo>
+)

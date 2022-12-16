@@ -14,63 +14,69 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-#include <libsgm.h>
 #include "internal.h"
-#include "utility.hpp"
 
-namespace {
-	template<typename SRC_T, typename DST_T>
-	__global__ void check_consistency_kernel(DST_T* d_leftDisp, const DST_T* d_rightDisp, const SRC_T* d_left, int width, int height, int src_pitch, int dst_pitch, bool subpixel, int LR_max_diff) {
+#include <cuda_runtime.h>
 
-		const int j = blockIdx.x * blockDim.x + threadIdx.x;
-		const int i = blockIdx.y * blockDim.y + threadIdx.y;
+#include "constants.h"
+#include "host_utility.h"
 
-		// left-right consistency check, only on leftDisp, but could be done for rightDisp too
+namespace
+{
 
-		SRC_T mask = d_left[i * src_pitch + j];
-		DST_T org = d_leftDisp[i * dst_pitch + j];
-		int d = org;
-		if (subpixel) {
-			d >>= sgm::StereoSGM::SUBPIXEL_SHIFT;
-		}
-		int k = j - d;
-		if (mask == 0 || org == sgm::INVALID_DISP || (k >= 0 && k < width && LR_max_diff >= 0 && abs(d_rightDisp[i * dst_pitch + k] - d) > LR_max_diff)) {
-			// masked or left-right inconsistent pixel -> invalid
-			d_leftDisp[i * dst_pitch + j] = static_cast<DST_T>(sgm::INVALID_DISP);
-		}
+template<typename SRC_T, typename DST_T>
+__global__ void check_consistency_kernel(DST_T* dispL, const DST_T* dispR, const SRC_T* srcL, int width, int height, int src_pitch, int dst_pitch, bool subpixel, int LR_max_diff)
+{
+	const int x = blockIdx.x * blockDim.x + threadIdx.x;
+	const int y = blockIdx.y * blockDim.y + threadIdx.y;
+	if (x >= width || y >= height)
+		return;
+
+	// left-right consistency check, only on leftDisp, but could be done for rightDisp too
+
+	SRC_T mask = srcL[y * src_pitch + x];
+	DST_T org = dispL[y * dst_pitch + x];
+	int d = org;
+	if (subpixel) {
+		d >>= sgm::StereoSGM::SUBPIXEL_SHIFT;
+	}
+	const int k = x - d;
+	if (mask == 0 || org == sgm::INVALID_DISP || (k >= 0 && k < width && LR_max_diff >= 0 && abs(dispR[y * dst_pitch + k] - d) > LR_max_diff)) {
+		// masked or left-right inconsistent pixel -> invalid
+		dispL[y * dst_pitch + x] = static_cast<DST_T>(sgm::INVALID_DISP);
 	}
 }
 
-namespace sgm {
-	namespace details {
+} // namespace
 
-		void check_consistency(uint8_t* d_left_disp, const uint8_t* d_right_disp, const void* d_src_left, int width, int height, int depth_bits, int src_pitch, int dst_pitch, bool subpixel, int LR_max_diff) {
+namespace sgm
+{
+namespace details
+{
 
-			const dim3 blocks(width / 16, height / 16);
-			const dim3 threads(16, 16);
-			if (depth_bits == 16) {
-				check_consistency_kernel<uint16_t><<<blocks, threads>>>(d_left_disp, d_right_disp, (uint16_t*)d_src_left, width, height, src_pitch, dst_pitch, subpixel, LR_max_diff);
-			}
-			else if (depth_bits == 8) {
-				check_consistency_kernel<uint8_t><<<blocks, threads>>>(d_left_disp, d_right_disp, (uint8_t*)d_src_left, width, height, src_pitch, dst_pitch, subpixel, LR_max_diff);
-			}
+void check_consistency(DeviceImage& dispL, const DeviceImage& dispR, const DeviceImage& srcL, bool subpixel, int LR_max_diff)
+{
+	SGM_ASSERT(dispL.type == SGM_16U && dispR.type == SGM_16U, "");
 
-			CudaKernelCheck();
-		}
+	const int w = srcL.cols;
+	const int h = srcL.rows;
 
-		void check_consistency(uint16_t* d_left_disp, const uint16_t* d_right_disp, const void* d_src_left, int width, int height, int depth_bits, int src_pitch, int dst_pitch, bool subpixel, int LR_max_diff) {
+	const dim3 block(16, 16);
+	const dim3 grid(divUp(w, block.x), divUp(h, block.y));
 
-			const dim3 blocks(width / 16, height / 16);
-			const dim3 threads(16, 16);
-			if (depth_bits == 16) {
-				check_consistency_kernel<uint16_t><<<blocks, threads>>>(d_left_disp, d_right_disp, (uint16_t*)d_src_left, width, height, src_pitch, dst_pitch, subpixel, LR_max_diff);
-			}
-			else if (depth_bits == 8) {
-				check_consistency_kernel<uint8_t><<<blocks, threads>>>(d_left_disp, d_right_disp, (uint8_t*)d_src_left, width, height, src_pitch, dst_pitch, subpixel, LR_max_diff);
-			}
-			
-			CudaKernelCheck();	
-		}
-
+	if (srcL.type == SGM_8U) {
+		using SRC_T = uint8_t;
+		check_consistency_kernel<SRC_T><<<grid, block>>>(dispL.ptr<uint16_t>(), dispR.ptr<uint16_t>(),
+			srcL.ptr<SRC_T>(), w, h, srcL.step, dispL.step, subpixel, LR_max_diff);
 	}
+	else {
+		using SRC_T = uint16_t;
+		check_consistency_kernel<SRC_T><<<grid, block>>>(dispL.ptr<uint16_t>(), dispR.ptr<uint16_t>(),
+			srcL.ptr<SRC_T>(), w, h, srcL.step, dispL.step, subpixel, LR_max_diff);
+	}
+
+	CUDA_CHECK(cudaGetLastError());
 }
+
+} // namespace details
+} // namespace sgm

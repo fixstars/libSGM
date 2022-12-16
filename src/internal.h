@@ -14,43 +14,35 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-#pragma once
+#ifndef __INTERNAL_H__
+#define __INTERNAL_H__
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <assert.h>
+#include "libsgm.h"
+#include "device_image.h"
 
-#include <stdexcept>
+namespace sgm
+{
+namespace details
+{
 
-#include <cuda_runtime.h>
-#include <cuda_runtime_api.h>
+void census_transform(const DeviceImage& src, DeviceImage& dst, CensusType type);
 
-#define CudaSafeCall(error) sgm::details::cuda_safe_call(error, __FILE__, __LINE__)
+void cost_aggregation(const DeviceImage& srcL, const DeviceImage& srcR, DeviceImage& dst,
+	int disp_size, int P1, int P2, PathType path_type, int min_disp);
 
-#define CudaKernelCheck() CudaSafeCall(cudaGetLastError())
+void winner_takes_all(const DeviceImage& src, DeviceImage& dstL, DeviceImage& dstR,
+	int disp_size, float uniqueness, bool subpixel, PathType path_type);
 
-namespace sgm {
-	namespace details {
+void median_filter(const DeviceImage& src, DeviceImage& dst);
 
-		void median_filter(const uint8_t* d_src, uint8_t* d_dst, int width, int height, int pitch);
-		void median_filter(const uint16_t* d_src, uint16_t* d_dst, int width, int height, int pitch);
+void check_consistency(DeviceImage& dispL, const DeviceImage& dispR, const DeviceImage& srcL, bool subpixel, int LR_max_diff);
 
-		void check_consistency(uint8_t* d_left_disp, const uint8_t* d_right_disp, const void* d_src_left, int width, int height, int depth_bits, int src_pitch, int dst_pitch, bool subpixel, int LR_max_diff);
-		void check_consistency(uint16_t* d_left_disp, const uint16_t* d_right_disp, const void* d_src_left, int width, int height, int depth_bits, int src_pitch, int dst_pitch, bool subpixel, int LR_max_diff);
+void correct_disparity_range(DeviceImage& disp, bool subpixel, int min_disp);
 
-		void correct_disparity_range(uint16_t* d_disp, int width, int height, int pitch, bool subpixel, int min_disp);
+void cast_16bit_to_8bit(const DeviceImage& src, DeviceImage& dst);
+void cast_8bit_to_16bit(const DeviceImage& src, DeviceImage& dst);
 
-		void cast_16bit_8bit_array(const uint16_t* arr16bits, uint8_t* arr8bits, int num_elements);
-		void cast_8bit_16bit_array(const uint8_t* arr8bits, uint16_t* arr16bits, int num_elements);
+} // namespace details
+} // namespace sgm
 
-		inline void cuda_safe_call(cudaError error, const char *file, const int line)
-		{
-			if (error != cudaSuccess) {
-				fprintf(stderr, "cuda error %s : %d %s\n", file, line, cudaGetErrorString(error));
-				exit(-1);
-			}
-		}
-
-	}
-}
+#endif // !__INTERNAL_H__
