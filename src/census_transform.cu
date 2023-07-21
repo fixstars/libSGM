@@ -191,14 +191,18 @@ void census_transform(const DeviceImage& src, DeviceImage& dst, CensusType type)
 	if (type == CensusType::CENSUS_9x7) {
 		if (src.type == SGM_8U)
 			census_transform_kernel<<<gdim, bdim>>>(dst.ptr<uint64_t>(), src.ptr<uint8_t>(), w, h, src.step);
-		else
+		else if (src.type == SGM_16U)
 			census_transform_kernel<<<gdim, bdim>>>(dst.ptr<uint64_t>(), src.ptr<uint16_t>(), w, h, src.step);
+		else
+			census_transform_kernel<<<gdim, bdim>>>(dst.ptr<uint64_t>(), src.ptr<uint32_t>(), w, h, src.step);
 	}
 	else if (type == CensusType::SYMMETRIC_CENSUS_9x7) {
 		if (src.type == SGM_8U)
 			symmetric_census_kernel<<<gdim, bdim>>>(dst.ptr<uint32_t>(), src.ptr<uint8_t>(), w, h, src.step);
-		else
+		else if (src.type == SGM_16U)
 			symmetric_census_kernel<<<gdim, bdim>>>(dst.ptr<uint32_t>(), src.ptr<uint16_t>(), w, h, src.step);
+		else
+			symmetric_census_kernel<<<gdim, bdim>>>(dst.ptr<uint32_t>(), src.ptr<uint32_t>(), w, h, src.step);
 	}
 
 	CUDA_CHECK(cudaGetLastError());

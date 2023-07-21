@@ -65,13 +65,13 @@ public:
 		param_(param)
 	{
 		// check values
-		SGM_ASSERT(src_depth == 8 || src_depth == 16, "src depth bits must be 8 or 16");
+		SGM_ASSERT(src_depth == 8 || src_depth == 16 || src_depth == 32, "src depth bits must be 8 or 16 or 32");
 		SGM_ASSERT(dst_depth == 8 || dst_depth == 16, "dst depth bits must be 8 or 16");
 		SGM_ASSERT(disparity_size == 64 || disparity_size == 128 || disparity_size == 256, "disparity size must be 64 or 128 or 256");
 		SGM_ASSERT(has_enough_depth(dst_depth, disparity_size, param_.min_disp, param_.subpixel),
 			"output depth bits must be sufficient for representing output value");
 
-		src_type_ = src_depth == 8 ? SGM_8U : SGM_16U;
+		src_type_ = src_depth == 8 ? SGM_8U : src_depth == 16 ? SGM_16U : SGM_32U;
 		dst_type_ = dst_depth == 8 ? SGM_8U : SGM_16U;
 
 		is_src_devptr_ = (inout_type & 0x01) > 0;

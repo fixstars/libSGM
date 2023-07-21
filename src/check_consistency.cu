@@ -69,8 +69,13 @@ void check_consistency(DeviceImage& dispL, const DeviceImage& dispR, const Devic
 		check_consistency_kernel<SRC_T><<<grid, block>>>(dispL.ptr<uint16_t>(), dispR.ptr<uint16_t>(),
 			srcL.ptr<SRC_T>(), w, h, srcL.step, dispL.step, subpixel, LR_max_diff);
 	}
-	else {
+	else if (srcL.type == SGM_16U) {
 		using SRC_T = uint16_t;
+		check_consistency_kernel<SRC_T><<<grid, block>>>(dispL.ptr<uint16_t>(), dispR.ptr<uint16_t>(),
+			srcL.ptr<SRC_T>(), w, h, srcL.step, dispL.step, subpixel, LR_max_diff);
+	}
+	else {
+		using SRC_T = uint32_t;
 		check_consistency_kernel<SRC_T><<<grid, block>>>(dispL.ptr<uint16_t>(), dispR.ptr<uint16_t>(),
 			srcL.ptr<SRC_T>(), w, h, srcL.step, dispL.step, subpixel, LR_max_diff);
 	}
