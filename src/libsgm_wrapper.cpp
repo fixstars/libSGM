@@ -74,7 +74,7 @@ struct LibSGMWrapper::Creator
 	Creator(const cv::cuda::GpuMat& src, const cv::cuda::GpuMat& dst)
 	{
 		const int depth = src.depth();
-		CV_Assert(depth == CV_8U || depth == CV_16U);
+		CV_Assert(depth == CV_8U || depth == CV_16U || depth == CV_32S);
 		width = src.cols;
 		height = src.rows;
 		src_pitch = static_cast<int>(src.step1());
@@ -87,7 +87,7 @@ struct LibSGMWrapper::Creator
 	Creator(const cv::Mat& src, const cv::Mat& dst)
 	{
 		const int depth = src.depth();
-		CV_Assert(depth == CV_8U || depth == CV_16U);
+		CV_Assert(depth == CV_8U || depth == CV_16U || depth == CV_32S);
 		width = src.cols;
 		height = src.rows;
 		src_pitch = static_cast<int>(src.step1());
@@ -108,7 +108,7 @@ void LibSGMWrapper::execute(const cv::cuda::GpuMat& I1, const cv::cuda::GpuMat& 
 	CV_Assert(size == I2.size());
 	CV_Assert(I1.type() == I2.type());
 	const int depth = I1.depth();
-	CV_Assert(depth == CV_8U || depth == CV_16U);
+	CV_Assert(depth == CV_8U || depth == CV_16U || depth == CV_32S);
 	if (disparity.size() != size || disparity.depth() != CV_16S) {
 		disparity.create(size, CV_16S);
 	}
@@ -127,7 +127,7 @@ void LibSGMWrapper::execute(const cv::Mat& I1, const cv::Mat& I2, cv::Mat& dispa
 	CV_Assert(size == I2.size());
 	CV_Assert(I1.type() == I2.type());
 	const int depth = I1.depth();
-	CV_Assert(depth == CV_8U || depth == CV_16U);
+	CV_Assert(depth == CV_8U || depth == CV_16U || depth == CV_32S);
 	if (disparity.size() != size || disparity.depth() != CV_16S) {
 		disparity.create(size, CV_16S);
 	}

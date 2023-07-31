@@ -48,7 +48,7 @@ public:
 
 	/**
 	* Execute stereo semi global matching via wrapper class.
-	* @param I1        Input left image.  Image's type is must be CV_8U or CV_16U
+	* @param I1        Input left image.  Image's type is must be CV_8U, CV_16U or CV_32S
 	* @param I2        Input right image.  Image's size and type must be same with I1.
 	* @param disparity Output image.  Its memory will be allocated automatically dependent on input image size.
 	* @attention
@@ -59,7 +59,7 @@ public:
 
 	/**
 	* Execute stereo semi global matching via wrapper class.
-	* @param I1        Input left image.  Image's type is must be CV_8U or CV_16U.
+	* @param I1        Input left image.  Image's type is must be CV_8U, CV_16U or CV_32S.
 	* @param I2        Input right image.  Image's size and type must be same with I1.
 	* @param disparity Output image.  Its memory will be allocated automatically dependent on input image size.
 	* @attention
