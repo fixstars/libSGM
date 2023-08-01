@@ -64,6 +64,8 @@ void census_transform(const HostImage& src, HostImage& dst, CensusType type)
 			census_transform_9x7_<uint8_t>(src, dst);
 		if (src.type == SGM_16U)
 			census_transform_9x7_<uint16_t>(src, dst);
+		if (src.type == SGM_32U)
+			census_transform_9x7_<uint32_t>(src, dst);
 	}
 	if (type == CensusType::SYMMETRIC_CENSUS_9x7) {
 		dst.create(src.rows, src.cols, SGM_32U);
@@ -71,6 +73,8 @@ void census_transform(const HostImage& src, HostImage& dst, CensusType type)
 			symmetric_census_9x7_<uint8_t>(src, dst);
 		if (src.type == SGM_16U)
 			symmetric_census_9x7_<uint16_t>(src, dst);
+		if (src.type == SGM_32U)
+			symmetric_census_9x7_<uint32_t>(src, dst);
 	}
 }
 
@@ -126,6 +130,31 @@ TEST(CensusTransformTest, RandomU16)
 	EXPECT_TRUE(equals(h_dst, d_dst));
 }
 
+TEST(CensusTransformTest, RandomU32)
+{
+	using namespace sgm;
+	using namespace details;
+
+	const int w = 631;
+	const int h = 479;
+	const int pitch = 640;
+	const ImageType stype = SGM_32U;
+	const ImageType dtype = SGM_64U;
+	const CensusType censusType = CensusType::CENSUS_9x7;
+
+	HostImage h_src(h, w, stype, pitch), h_dst(h, w, dtype);
+	DeviceImage d_src(h, w, stype, pitch), d_dst(h, w, dtype);
+
+	random_fill(h_src);
+	d_src.upload(h_src.data);
+	d_dst.fill_zero();
+
+	census_transform(h_src, h_dst, censusType);
+	census_transform(d_src, d_dst, censusType);
+
+	EXPECT_TRUE(equals(h_dst, d_dst));
+}
+
 TEST(SymmetricCensusTest, RandomU8)
 {
 	using namespace sgm;
@@ -160,6 +189,31 @@ TEST(SymmetricCensusTest, Random16U)
 	const int h = 479;
 	const int pitch = 640;
 	const ImageType stype = SGM_16U;
+	const ImageType dtype = SGM_32U;
+	const CensusType censusType = CensusType::SYMMETRIC_CENSUS_9x7;
+
+	HostImage h_src(h, w, stype, pitch), h_dst(h, w, dtype);
+	DeviceImage d_src(h, w, stype, pitch), d_dst(h, w, dtype);
+
+	random_fill(h_src);
+	d_src.upload(h_src.data);
+	d_dst.fill_zero();
+
+	census_transform(h_src, h_dst, censusType);
+	census_transform(d_src, d_dst, censusType);
+
+	EXPECT_TRUE(equals(h_dst, d_dst));
+}
+
+TEST(SymmetricCensusTest, Random32U)
+{
+	using namespace sgm;
+	using namespace details;
+
+	const int w = 631;
+	const int h = 479;
+	const int pitch = 640;
+	const ImageType stype = SGM_32U;
 	const ImageType dtype = SGM_32U;
 	const CensusType censusType = CensusType::SYMMETRIC_CENSUS_9x7;
 
