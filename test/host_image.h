@@ -94,8 +94,8 @@ public:
 		memcpy(rhs.data, data, elemSize(type) * rows * step);
 	}
 
-	template <typename T> T* ptr(int y = 0) { return (T*)data + y * step; }
-	template <typename T> const T* ptr(int y = 0) const { return (T*)data + y * step; }
+	template <typename T> T* ptr(int y = 0) { return (T*)data + y * (size_t)step; }
+	template <typename T> const T* ptr(int y = 0) const { return (T*)data + y * (size_t)step; }
 
 	void* data;
 	int rows, cols, step;
