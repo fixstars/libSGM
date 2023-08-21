@@ -91,7 +91,7 @@ __global__ void winner_takes_all_kernel(
 			? REDUCTION_PER_THREAD
 			: ACCUMULATION_INTERVAL;
 
-	const unsigned int cost_step = MAX_DISPARITY * width * height;
+	const size_t cost_step = static_cast<size_t>(MAX_DISPARITY) * width * height;
 	const unsigned int warp_id = threadIdx.x / WARP_SIZE;
 	const unsigned int lane_id = threadIdx.x % WARP_SIZE;
 

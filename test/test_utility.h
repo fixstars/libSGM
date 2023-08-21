@@ -14,25 +14,25 @@ template <typename T> constexpr T max_of() { return std::numeric_limits<T>::max(
 template <> constexpr uint8_t max_of() { return 255; }
 
 template <typename T>
-static void random_fill_(T* dst, int n, T minv = min_of<T>(), T maxv = max_of<T>())
+static void random_fill_(T* dst, size_t n, T minv = min_of<T>(), T maxv = max_of<T>())
 {
 	std::uniform_int_distribution<T> dist(minv, maxv);
-	for (int i = 0; i < n; ++i)
+	for (size_t i = 0; i < n; ++i)
 		dst[i] = dist(g_engine);
 }
 
 template <>
-void random_fill_(uint8_t* dst, int n, uint8_t minv, uint8_t maxv)
+void random_fill_(uint8_t* dst, size_t n, uint8_t minv, uint8_t maxv)
 {
 	std::uniform_int_distribution<uint32_t> dist(minv, maxv);
-	for (int i = 0; i < n; ++i)
+	for (size_t i = 0; i < n; ++i)
 		dst[i] = static_cast<uint8_t>(dist(g_engine));
 }
 
 template <typename T>
 static void random_fill_(sgm::HostImage& image, T minv = min_of<T>(), T maxv = max_of<T>())
 {
-	random_fill_(image.ptr<T>(), image.rows * image.step, minv, maxv);
+	random_fill_(image.ptr<T>(), image.rows * (size_t)image.step, minv, maxv);
 }
 
 static void random_fill(sgm::HostImage& image)
