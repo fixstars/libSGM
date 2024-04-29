@@ -232,21 +232,32 @@ void winner_takes_all_(const DeviceImage& src, DeviceImage& dstL, DeviceImage& d
 	output_type* dispL = dstL.ptr<output_type>();
 	output_type* dispR = dstR.ptr<output_type>();
 
-	if (subpixel && path_type == PathType::SCAN_8PATH) {
-		winner_takes_all_kernel<MAX_DISPARITY, 8, compute_disparity_subpixel<MAX_DISPARITY>><<<gdim, bdim>>>(
-			dispL, dispR, cost, width, height, pitch, uniqueness);
-	}
-	else if (subpixel && path_type == PathType::SCAN_4PATH) {
-		winner_takes_all_kernel<MAX_DISPARITY, 4, compute_disparity_subpixel<MAX_DISPARITY>><<<gdim, bdim>>>(
-			dispL, dispR, cost, width, height, pitch, uniqueness);
-	}
-	else if (!subpixel && path_type == PathType::SCAN_8PATH) {
-		winner_takes_all_kernel<MAX_DISPARITY, 8, compute_disparity_normal><<<gdim, bdim>>>(
-			dispL, dispR, cost, width, height, pitch, uniqueness);
-	}
-	else /* if (!subpixel && path_type == PathType::SCAN_4PATH) */ {
-		winner_takes_all_kernel<MAX_DISPARITY, 4, compute_disparity_normal><<<gdim, bdim>>>(
-			dispL, dispR, cost, width, height, pitch, uniqueness);
+	switch (path_type) {
+		case PathType::SCAN_4PATH: if (subpixel) {
+			winner_takes_all_kernel<MAX_DISPARITY, 4, compute_disparity_subpixel<MAX_DISPARITY>><<<gdim, bdim>>>(
+				dispL, dispR, cost, width, height, pitch, uniqueness);
+		} else {
+			winner_takes_all_kernel<MAX_DISPARITY, 4, compute_disparity_normal><<<gdim, bdim>>>(
+				dispL, dispR, cost, width, height, pitch, uniqueness);
+		} break;
+
+		case PathType::SCAN_8PATH: if (subpixel) {
+			winner_takes_all_kernel<MAX_DISPARITY, 8, compute_disparity_subpixel<MAX_DISPARITY>><<<gdim, bdim>>>(
+				dispL, dispR, cost, width, height, pitch, uniqueness);
+		} else {
+			winner_takes_all_kernel<MAX_DISPARITY, 8, compute_disparity_normal><<<gdim, bdim>>>(
+				dispL, dispR, cost, width, height, pitch, uniqueness);
+		} break;
+
+		case PathType::SCAN_16PATH: if (subpixel) {
+			winner_takes_all_kernel<MAX_DISPARITY, 16, compute_disparity_subpixel<MAX_DISPARITY>><<<gdim, bdim>>>(
+				dispL, dispR, cost, width, height, pitch, uniqueness);
+		} else {
+			winner_takes_all_kernel<MAX_DISPARITY, 16, compute_disparity_normal><<<gdim, bdim>>>(
+				dispL, dispR, cost, width, height, pitch, uniqueness);
+		} break;
+
+		default: assert(("unimplemented", false));
 	}
 
 	CUDA_CHECK(cudaGetLastError());

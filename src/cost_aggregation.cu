@@ -427,8 +427,9 @@ __global__ void aggregate_oblique_path_kernel(
 	static const unsigned int RIGHT_BUFFER_SIZE = MAX_DISPARITY + PATHS_PER_BLOCK;
 	static const unsigned int RIGHT_BUFFER_ROWS = RIGHT_BUFFER_SIZE / DP_BLOCK_SIZE;
 
-	static_assert(X_DIRECTION == 1 || X_DIRECTION == -1, "");
-	static_assert(Y_DIRECTION == 1 || Y_DIRECTION == -1, "");
+	static_assert(X_DIRECTION == 1 || X_DIRECTION == -1 || X_DIRECTION == 2 || X_DIRECTION == -2, "");
+	static_assert(Y_DIRECTION == 1 || Y_DIRECTION == -1 || Y_DIRECTION == 2 || Y_DIRECTION == -2, "");
+
 	if (width == 0 || height == 0) {
 		return;
 	}
@@ -585,6 +586,185 @@ void aggregate_downleft2upright(
 	CUDA_CHECK(cudaGetLastError());
 }
 
+/******* 16_PATH ********/
+
+template <typename CENSUS_TYPE, unsigned int MAX_DISPARITY>
+void aggregate_upupleft2downdownright(
+	COST_TYPE *dest,
+	const CENSUS_TYPE *left,
+	const CENSUS_TYPE *right,
+	int width,
+	int height,
+	unsigned int p1,
+	unsigned int p2,
+	int min_disp,
+	cudaStream_t stream)
+{
+	static const unsigned int SUBGROUP_SIZE = MAX_DISPARITY / DP_BLOCK_SIZE;
+	static const unsigned int PATHS_PER_BLOCK = BLOCK_SIZE / SUBGROUP_SIZE;
+
+	const int gdim = (width + height + PATHS_PER_BLOCK - 2) / PATHS_PER_BLOCK;
+	const int bdim = BLOCK_SIZE;
+	aggregate_oblique_path_kernel<CENSUS_TYPE, 1, 2, MAX_DISPARITY><<<gdim, bdim, 0, stream>>>(
+		dest, left, right, width, height, p1, p2, min_disp);
+	CUDA_CHECK(cudaGetLastError());
+}
+
+template <typename CENSUS_TYPE, unsigned int MAX_DISPARITY>
+void aggregate_downdownrigh2upupleft(
+	COST_TYPE *dest,
+	const CENSUS_TYPE *left,
+	const CENSUS_TYPE *right,
+	int width,
+	int height,
+	unsigned int p1,
+	unsigned int p2,
+	int min_disp,
+	cudaStream_t stream)
+{
+	static const unsigned int SUBGROUP_SIZE = MAX_DISPARITY / DP_BLOCK_SIZE;
+	static const unsigned int PATHS_PER_BLOCK = BLOCK_SIZE / SUBGROUP_SIZE;
+
+	const int gdim = (width + height + PATHS_PER_BLOCK - 2) / PATHS_PER_BLOCK;
+	const int bdim = BLOCK_SIZE;
+	aggregate_oblique_path_kernel<CENSUS_TYPE, -1, -2, MAX_DISPARITY><<<gdim, bdim, 0, stream>>>(
+		dest, left, right, width, height, p1, p2, min_disp);
+	CUDA_CHECK(cudaGetLastError());
+}
+
+template <typename CENSUS_TYPE, unsigned int MAX_DISPARITY>
+void aggregate_upupright2downdownleft(
+	COST_TYPE *dest,
+	const CENSUS_TYPE *left,
+	const CENSUS_TYPE *right,
+	int width,
+	int height,
+	unsigned int p1,
+	unsigned int p2,
+	int min_disp,
+	cudaStream_t stream)
+{
+	static const unsigned int SUBGROUP_SIZE = MAX_DISPARITY / DP_BLOCK_SIZE;
+	static const unsigned int PATHS_PER_BLOCK = BLOCK_SIZE / SUBGROUP_SIZE;
+
+	const int gdim = (width + height + PATHS_PER_BLOCK - 2) / PATHS_PER_BLOCK;
+	const int bdim = BLOCK_SIZE;
+	aggregate_oblique_path_kernel<CENSUS_TYPE, -1, 2, MAX_DISPARITY><<<gdim, bdim, 0, stream>>>(
+		dest, left, right, width, height, p1, p2, min_disp);
+	CUDA_CHECK(cudaGetLastError());
+}
+
+template <typename CENSUS_TYPE, unsigned int MAX_DISPARITY>
+void aggregate_downdownleft2upupright(
+	COST_TYPE *dest,
+	const CENSUS_TYPE *left,
+	const CENSUS_TYPE *right,
+	int width,
+	int height,
+	unsigned int p1,
+	unsigned int p2,
+	int min_disp,
+	cudaStream_t stream)
+{
+	static const unsigned int SUBGROUP_SIZE = MAX_DISPARITY / DP_BLOCK_SIZE;
+	static const unsigned int PATHS_PER_BLOCK = BLOCK_SIZE / SUBGROUP_SIZE;
+
+	const int gdim = (width + height + PATHS_PER_BLOCK - 2) / PATHS_PER_BLOCK;
+	const int bdim = BLOCK_SIZE;
+	aggregate_oblique_path_kernel<CENSUS_TYPE, 1, -2, MAX_DISPARITY><<<gdim, bdim, 0, stream>>>(
+		dest, left, right, width, height, p1, p2, min_disp);
+	CUDA_CHECK(cudaGetLastError());
+}
+
+template <typename CENSUS_TYPE, unsigned int MAX_DISPARITY>
+void aggregate_upleftleft2downrightright(
+	COST_TYPE *dest,
+	const CENSUS_TYPE *left,
+	const CENSUS_TYPE *right,
+	int width,
+	int height,
+	unsigned int p1,
+	unsigned int p2,
+	int min_disp,
+	cudaStream_t stream)
+{
+	static const unsigned int SUBGROUP_SIZE = MAX_DISPARITY / DP_BLOCK_SIZE;
+	static const unsigned int PATHS_PER_BLOCK = BLOCK_SIZE / SUBGROUP_SIZE;
+
+	const int gdim = (width + height + PATHS_PER_BLOCK - 2) / PATHS_PER_BLOCK;
+	const int bdim = BLOCK_SIZE;
+	aggregate_oblique_path_kernel<CENSUS_TYPE, 2, -1, MAX_DISPARITY><<<gdim, bdim, 0, stream>>>(
+		dest, left, right, width, height, p1, p2, min_disp);
+	CUDA_CHECK(cudaGetLastError());
+}
+
+template <typename CENSUS_TYPE, unsigned int MAX_DISPARITY>
+void aggregate_downrightright2upleftleft(
+	COST_TYPE *dest,
+	const CENSUS_TYPE *left,
+	const CENSUS_TYPE *right,
+	int width,
+	int height,
+	unsigned int p1,
+	unsigned int p2,
+	int min_disp,
+	cudaStream_t stream)
+{
+	static const unsigned int SUBGROUP_SIZE = MAX_DISPARITY / DP_BLOCK_SIZE;
+	static const unsigned int PATHS_PER_BLOCK = BLOCK_SIZE / SUBGROUP_SIZE;
+
+	const int gdim = (width + height + PATHS_PER_BLOCK - 2) / PATHS_PER_BLOCK;
+	const int bdim = BLOCK_SIZE;
+	aggregate_oblique_path_kernel<CENSUS_TYPE, -2, 1, MAX_DISPARITY><<<gdim, bdim, 0, stream>>>(
+		dest, left, right, width, height, p1, p2, min_disp);
+	CUDA_CHECK(cudaGetLastError());
+}
+
+template <typename CENSUS_TYPE, unsigned int MAX_DISPARITY>
+void aggregate_uprightright2downleftleft(
+	COST_TYPE *dest,
+	const CENSUS_TYPE *left,
+	const CENSUS_TYPE *right,
+	int width,
+	int height,
+	unsigned int p1,
+	unsigned int p2,
+	int min_disp,
+	cudaStream_t stream)
+{
+	static const unsigned int SUBGROUP_SIZE = MAX_DISPARITY / DP_BLOCK_SIZE;
+	static const unsigned int PATHS_PER_BLOCK = BLOCK_SIZE / SUBGROUP_SIZE;
+
+	const int gdim = (width + height + PATHS_PER_BLOCK - 2) / PATHS_PER_BLOCK;
+	const int bdim = BLOCK_SIZE;
+	aggregate_oblique_path_kernel<CENSUS_TYPE, -2, -1, MAX_DISPARITY><<<gdim, bdim, 0, stream>>>(
+		dest, left, right, width, height, p1, p2, min_disp);
+	CUDA_CHECK(cudaGetLastError());
+}
+
+template <typename CENSUS_TYPE, unsigned int MAX_DISPARITY>
+void aggregate_downleftleft2uprightright(
+	COST_TYPE *dest,
+	const CENSUS_TYPE *left,
+	const CENSUS_TYPE *right,
+	int width,
+	int height,
+	unsigned int p1,
+	unsigned int p2,
+	int min_disp,
+	cudaStream_t stream)
+{
+	static const unsigned int SUBGROUP_SIZE = MAX_DISPARITY / DP_BLOCK_SIZE;
+	static const unsigned int PATHS_PER_BLOCK = BLOCK_SIZE / SUBGROUP_SIZE;
+
+	const int gdim = (width + height + PATHS_PER_BLOCK - 2) / PATHS_PER_BLOCK;
+	const int bdim = BLOCK_SIZE;
+	aggregate_oblique_path_kernel<CENSUS_TYPE, 2, 1, MAX_DISPARITY><<<gdim, bdim, 0, stream>>>(
+		dest, left, right, width, height, p1, p2, min_disp);
+	CUDA_CHECK(cudaGetLastError());
+}
+
+
 } // namespace oblique
 
 } // namespace cost_aggregation
@@ -598,14 +778,14 @@ void cost_aggregation_(const DeviceImage& srcL, const DeviceImage& srcR, DeviceI
 {
 	const int width = srcL.cols;
 	const int height = srcL.rows;
-	const int num_paths = path_type == PathType::SCAN_4PATH ? 4 : 8;
+	const int num_paths = path_type == PathType::SCAN_4PATH ? 4 : path_type == PathType::SCAN_8PATH ? 8 : 16;
 
 	dst.create(num_paths, height * width * MAX_DISPARITY, SGM_8U);
 
 	const CENSUS_TYPE* left = srcL.ptr<CENSUS_TYPE>();
 	const CENSUS_TYPE* right = srcR.ptr<CENSUS_TYPE>();
 
-	cudaStream_t streams[8];
+	cudaStream_t streams[16];
 	for (int i = 0; i < num_paths; i++)
 		cudaStreamCreate(&streams[i]);
 
@@ -618,7 +798,7 @@ void cost_aggregation_(const DeviceImage& srcL, const DeviceImage& srcR, DeviceI
 	cost_aggregation::horizontal::aggregate_right2left<CENSUS_TYPE, MAX_DISPARITY>(
 		dst.ptr<COST_TYPE>(3), left, right, width, height, P1, P2, min_disp, streams[3]);
 
-	if (path_type == PathType::SCAN_8PATH) {
+	if (path_type == PathType::SCAN_8PATH || path_type == PathType::SCAN_16PATH) {
 		cost_aggregation::oblique::aggregate_upleft2downright<CENSUS_TYPE, MAX_DISPARITY>(
 			dst.ptr<COST_TYPE>(4), left, right, width, height, P1, P2, min_disp, streams[4]);
 		cost_aggregation::oblique::aggregate_upright2downleft<CENSUS_TYPE, MAX_DISPARITY>(
@@ -627,6 +807,25 @@ void cost_aggregation_(const DeviceImage& srcL, const DeviceImage& srcR, DeviceI
 			dst.ptr<COST_TYPE>(6), left, right, width, height, P1, P2, min_disp, streams[6]);
 		cost_aggregation::oblique::aggregate_downleft2upright<CENSUS_TYPE, MAX_DISPARITY>(
 			dst.ptr<COST_TYPE>(7), left, right, width, height, P1, P2, min_disp, streams[7]);
+	}
+
+	if (path_type == PathType::SCAN_16PATH) {
+		cost_aggregation::oblique::aggregate_upupleft2downdownright<CENSUS_TYPE, MAX_DISPARITY>(
+			dst.ptr<COST_TYPE>(8), left, right, width, height, P1, P2, min_disp, streams[8]);
+		cost_aggregation::oblique::aggregate_upupright2downdownleft<CENSUS_TYPE, MAX_DISPARITY>(
+			dst.ptr<COST_TYPE>(9), left, right, width, height, P1, P2, min_disp, streams[9]);
+		cost_aggregation::oblique::aggregate_upleftleft2downrightright<CENSUS_TYPE, MAX_DISPARITY>(
+			dst.ptr<COST_TYPE>(10), left, right, width, height, P1, P2, min_disp, streams[10]);
+		cost_aggregation::oblique::aggregate_uprightright2downleftleft<CENSUS_TYPE, MAX_DISPARITY>(
+			dst.ptr<COST_TYPE>(11), left, right, width, height, P1, P2, min_disp, streams[11]);
+		cost_aggregation::oblique::aggregate_downdownleft2upupright<CENSUS_TYPE, MAX_DISPARITY>(
+			dst.ptr<COST_TYPE>(12), left, right, width, height, P1, P2, min_disp, streams[12]);
+		cost_aggregation::oblique::aggregate_downdownrigh2upupleft<CENSUS_TYPE, MAX_DISPARITY>(
+			dst.ptr<COST_TYPE>(13), left, right, width, height, P1, P2, min_disp, streams[13]);
+		cost_aggregation::oblique::aggregate_downleftleft2uprightright<CENSUS_TYPE, MAX_DISPARITY>(
+			dst.ptr<COST_TYPE>(14), left, right, width, height, P1, P2, min_disp, streams[14]);
+		cost_aggregation::oblique::aggregate_downrightright2upleftleft<CENSUS_TYPE, MAX_DISPARITY>(
+			dst.ptr<COST_TYPE>(15), left, right, width, height, P1, P2, min_disp, streams[15]);
 	}
 
 	for (int i = 0; i < num_paths; i++)

@@ -63,7 +63,8 @@ enum ExecuteInOut
 enum class PathType
 {
 	SCAN_4PATH, //>! Horizontal and vertical paths.
-	SCAN_8PATH  //>! Horizontal, vertical and oblique paths.
+	SCAN_8PATH,  //>! Horizontal, vertical and oblique paths.
+	SCAN_16PATH
 };
 
 /**
