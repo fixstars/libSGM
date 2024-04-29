@@ -126,7 +126,7 @@ void cost_aggregation(const HostImage& srcL, const HostImage& srcR, HostImage& d
 
 	const int w = srcL.cols;
 	const int h = srcL.rows;
-	const int num_paths = path_type == PathType::SCAN_4PATH ? 4 : 8;
+	const int num_paths = path_type == PathType::SCAN_4PATH ? 4 : path_type == PathType::SCAN_8PATH ? 8 : 16;
 
 	dst.create(num_paths, h * w * disp_size, SGM_8U);
 
@@ -155,7 +155,7 @@ TEST_P(CostAggregationTest, AllPathsTest)
 	const int h = 240;
 	const int disp_size = param.disp_size;
 	const auto path_type = PathType::SCAN_8PATH;
-	const int num_paths = path_type == PathType::SCAN_4PATH ? 4 : 8;
+	const int num_paths = path_type == PathType::SCAN_4PATH ? 4 : path_type == PathType::SCAN_8PATH ? 8 : 16;
 	const int P1 = param.P1;
 	const int P2 = param.P2;
 	const int min_disp = param.min_disp;
