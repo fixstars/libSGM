@@ -65,7 +65,7 @@ int main(int argc, char* argv[])
 	ASSERT_MSG(I1.size() == I2.size() && I1.type() == I2.type(), "input images must be same size and type.");
 	ASSERT_MSG(I1.type() == CV_8U || I1.type() == CV_16U, "input image format must be CV_8U or CV_16U.");
 	ASSERT_MSG(disp_size == 64 || disp_size == 128 || disp_size == 256, "disparity size must be 64, 128 or 256.");
-	ASSERT_MSG(num_paths == 4 || num_paths == 8, "number of scanlines must be 4 or 8.");
+	ASSERT_MSG(num_paths == 4 || num_paths == 8 || num_paths == 16, "number of scanlines must be 4, 8 or 16.");
 	ASSERT_MSG(census_type == sgm::CensusType::CENSUS_9x7 || census_type == sgm::CensusType::SYMMETRIC_CENSUS_9x7, "census type must be 0 or 1.");
 	ASSERT_MSG(dst_depth == 8 || dst_depth == 16, "output depth bits must be 8 or 16");
 	if (subpixel)
@@ -77,7 +77,7 @@ int main(int argc, char* argv[])
 	const int src_depth = I1.type() == CV_8U ? 8 : 16;
 	const int src_bytes = src_depth * width * height / 8;
 	const int dst_bytes = dst_depth * width * height / 8;
-	const sgm::PathType path_type = num_paths == 8 ? sgm::PathType::SCAN_8PATH : sgm::PathType::SCAN_4PATH;
+	const sgm::PathType path_type = num_paths == 8 ? sgm::PathType::SCAN_8PATH : num_paths == 4 ? sgm::PathType::SCAN_4PATH  : sgm::PathType::SCAN_16PATH;
 
 	const sgm::StereoSGM::Parameters param(10, 120, 0.95f, subpixel, path_type, 0, 1, census_type);
 	sgm::StereoSGM sgm(width, height, disp_size, src_depth, dst_depth, sgm::EXECUTE_INOUT_CUDA2CUDA, param);
