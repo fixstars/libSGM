@@ -26,5 +26,5 @@ target_compile_options(
 	$<$<CXX_COMPILER_ID:GCC>:-O3 -Wall>
 	$<$<CXX_COMPILER_ID:Clang>:-O3 -Wall>
 	$<$<CXX_COMPILER_ID:MSVC>:/wd4819>
-	$<$<COMPILE_LANGUAGE:CUDA>:${CUDA_ARCH} -lineinfo>
+	$<$<COMPILE_LANGUAGE:CUDA>:-lineinfo>
 )

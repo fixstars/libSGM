@@ -5,7 +5,10 @@ option(ENABLE_SAMPLES       "Build samples" OFF)
 option(ENABLE_TESTS         "Test library" OFF)
 option(LIBSGM_SHARED        "Build a shared library" OFF)
 option(BUILD_OPENCV_WRAPPER "Make library compatible with cv::Mat and cv::cuda::GpuMat of OpenCV" OFF)
-set(CUDA_ARCHS "52;61;72;75;86" CACHE STRING "List of architectures to generate device code for")
+
+if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
+    set(CMAKE_CUDA_ARCHITECTURES "52;61;72;75;86")
+endif()
 
 project(libSGM VERSION 3.1.0)
 
