@@ -1,4 +1,4 @@
-image: adaskit/libsgm:0.1
+image: adaskit/libsgm:0.3-opencv4
 
 variables:
   GIT_SUBMODULE_STRATEGY: recursive
@@ -41,14 +41,6 @@ build:samples_off:static:
   variables:
     build_samples: "OFF"
     build_shared: "OFF"
-    build_tests: "OFF"
-  <<: *build_definition
-
-build:with_opencv4:
-  image: adaskit/libsgm:0.3-opencv4
-  variables:
-    build_samples: "ON"
-    build_shared: "ON"
     build_tests: "OFF"
   <<: *build_definition
 
