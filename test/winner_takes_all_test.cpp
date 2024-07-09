@@ -21,14 +21,20 @@ static WinnerTakesAllParam params[] = {
 	{  64, 0.95f, sgm::PathType::SCAN_4PATH, true },
 	{  64, 0.95f, sgm::PathType::SCAN_8PATH, false },
 	{  64, 0.95f, sgm::PathType::SCAN_8PATH, true },
+	{  64, 0.95f, sgm::PathType::SCAN_16PATH, false },
+	{  64, 0.95f, sgm::PathType::SCAN_16PATH, true },
 	{ 128, 0.95f, sgm::PathType::SCAN_4PATH, false },
 	{ 128, 0.95f, sgm::PathType::SCAN_4PATH, true },
 	{ 128, 0.95f, sgm::PathType::SCAN_8PATH, false },
 	{ 128, 0.95f, sgm::PathType::SCAN_8PATH, true },
+	{ 128, 0.95f, sgm::PathType::SCAN_16PATH, false },
+	{ 128, 0.95f, sgm::PathType::SCAN_16PATH, true },
 	{ 256, 0.95f, sgm::PathType::SCAN_4PATH, false },
 	{ 256, 0.95f, sgm::PathType::SCAN_4PATH, true },
 	{ 256, 0.95f, sgm::PathType::SCAN_8PATH, false },
 	{ 256, 0.95f, sgm::PathType::SCAN_8PATH, true },
+	{ 256, 0.95f, sgm::PathType::SCAN_16PATH, false },
+	{ 256, 0.95f, sgm::PathType::SCAN_16PATH, true },
 };
 
 namespace sgm
@@ -39,7 +45,7 @@ void winner_takes_all(const HostImage& L, HostImage& D1, HostImage& D2,
 {
 	const int w = D1.cols;
 	const int h = D1.rows;
-	const int num_paths = path_type == PathType::SCAN_4PATH ? 4 : 8;
+	const int num_paths = path_type == PathType::SCAN_4PATH ? 4 : path_type == PathType::SCAN_8PATH ? 8 : 16;
 
 	using COST_TYPE = uint8_t;
 	using DISP_TYPE = uint16_t;
@@ -138,7 +144,7 @@ TEST_P(WinnerTakesAllTestP, RangeTest)
 	const int h = 239;
 	const int pitch = 320;
 	const int disp_size = param.disp_size;
-	const int num_paths = param.path_type == PathType::SCAN_4PATH ? 4 : 8;
+	const int num_paths = param.path_type == PathType::SCAN_4PATH ? 4 : param.path_type == PathType::SCAN_8PATH ? 8 : 16;
 	const auto cost_type = SGM_8U;
 	const auto disp_type = SGM_16U;
 
