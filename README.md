@@ -37,6 +37,7 @@ The libSGM performance obtained from benchmark sample
 |OpenCV|version >= 3.4.8|for samples|
 |OpenCV CUDA module|version >= 3.4.8|for OpenCV wrapper|
 |ZED SDK|version >= 3.0|for ZED sample|
+|Pybind11|latest|for python bindings|
 
 ## Build Instructions
 ```

@@ -1,2 +1,4 @@
 include/libsgm_config.h
 build/
+.cache
+dist

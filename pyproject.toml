@@ -1,0 +1,26 @@
+[build-system]
+requires = ["scikit-build-core", "pybind11"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "pysgm"
+authors = [
+	{name = "Oleksandr Slovak"},
+	{name = "Christoph Liebender", email = "christoph.liebender@uni-wuerzburg.de"}
+]
+license = {file = "LICENSE"}
+readme  = "README.md"
+version = "3.1.0"
+
+[project.urls]
+Repository = "https://github.com/fixstars/libSGM.git"
+
+[tool.scikit-build]
+cmake.args = [
+	"-DLIBSGM_SHARED=ON",
+	"-DBUILD_PYTHON_WRAPPER=ON"
+]
+wheel.exclude = [
+	"**/*.h",
+	"**/*.cmake"
+]
