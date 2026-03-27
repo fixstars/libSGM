@@ -83,7 +83,7 @@ __global__ void census_transform_kernel(uint64_t* dest, const T* src, int width,
 				feature_type f = 0;
 				for (int dy = -half_kh; dy <= half_kh; ++dy) {
 					for (int dx = -half_kw; dx <= half_kw; ++dx) {
-						if (dx != 0 && dy != 0) {
+						if (dx != 0 || dy != 0) {
 							const int smem_y1 = (smem_y + dy + SMEM_BUFFER_SIZE) % SMEM_BUFFER_SIZE;
 							const int smem_x1 = smem_x + dx;
 							const auto b = smem_lines[smem_y1][smem_x1];
