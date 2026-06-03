@@ -6,7 +6,6 @@ set(LIBSGM_SOURCE_DIR ${CMAKE_SOURCE_DIR}/src)
 
 # required packages
 find_package(CUDAToolkit REQUIRED)
-find_package(OpenCV REQUIRED)
 
 if (MSVC)
 	option(gtest_force_shared_crt "Force Gmock to use standard compiler flags" ON)
@@ -18,8 +17,8 @@ file(GLOB SRCS ./*.cpp ./*.cu ./*.h*)
 add_executable(sgm-test ${SRCS})
 
 target_compile_features(sgm-test PRIVATE cxx_std_17)
-target_include_directories(sgm-test PRIVATE ${LIBSGM_SOURCE_DIR} ${gtest_SOURCE_DIR}/include ${OpenCV_INCLUDE_DIRS})
-target_link_libraries(sgm-test sgm gtest ${OpenCV_LIBS})
+target_include_directories(sgm-test PRIVATE ${LIBSGM_SOURCE_DIR} ${gtest_SOURCE_DIR}/include)
+target_link_libraries(sgm-test sgm gtest)
 
 target_compile_options(
 	sgm-test PRIVATE
