@@ -1,2 +1,4 @@
 include/libsgm_config.h
 build/
+# build directories (any arch/platform)
+build*/

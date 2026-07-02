@@ -16,7 +16,7 @@ limitations under the License.
 
 #include "internal.h"
 
-#include <cuda_runtime.h>
+#include "cuda_to_hip.h"
 
 #include "host_utility.h"
 

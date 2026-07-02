@@ -16,7 +16,7 @@ limitations under the License.
 
 #include "device_allocator.h"
 
-#include <cuda_runtime.h>
+#include "cuda_to_hip.h"
 
 #include "host_utility.h"
 

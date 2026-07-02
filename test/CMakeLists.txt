@@ -1,11 +1,19 @@
 cmake_minimum_required(VERSION 3.18)
 
-project(sgm-test LANGUAGES CXX CUDA)
+if(USE_HIP)
+	project(sgm-test LANGUAGES CXX)
+else()
+	project(sgm-test LANGUAGES CXX CUDA)
+endif()
 
 set(LIBSGM_SOURCE_DIR ${CMAKE_SOURCE_DIR}/src)
 
 # required packages
-find_package(CUDAToolkit REQUIRED)
+if(USE_HIP)
+	find_package(hip REQUIRED)
+else()
+	find_package(CUDAToolkit REQUIRED)
+endif()
 find_package(OpenCV REQUIRED)
 
 if (MSVC)

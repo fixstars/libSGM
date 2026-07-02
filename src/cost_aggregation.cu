@@ -16,7 +16,7 @@ limitations under the License.
 
 #include "internal.h"
 
-#include <cuda_runtime.h>
+#include "cuda_to_hip.h"
 
 #include "device_utility.h"
 #include "host_utility.h"
@@ -110,7 +110,8 @@ namespace vertical
 {
 
 static constexpr unsigned int DP_BLOCK_SIZE = 16u;
-static constexpr unsigned int BLOCK_SIZE = WARP_SIZE * 8u;
+static constexpr unsigned int WARPS_PER_BLOCK = 8u;
+static constexpr unsigned int BLOCK_SIZE = WARP_SIZE * WARPS_PER_BLOCK;
 
 template <typename CENSUS_TYPE, int DIRECTION, unsigned int MAX_DISPARITY>
 __global__ void aggregate_vertical_path_kernel(
@@ -210,10 +211,11 @@ void aggregate_up2down(
 	cudaStream_t stream)
 {
 	static const unsigned int SUBGROUP_SIZE = MAX_DISPARITY / DP_BLOCK_SIZE;
-	static const unsigned int PATHS_PER_BLOCK = BLOCK_SIZE / SUBGROUP_SIZE;
+	const unsigned int block_size = device_warp_size() * WARPS_PER_BLOCK;
+	const unsigned int paths_per_block = block_size / SUBGROUP_SIZE;
 
-	const int gdim = (width + PATHS_PER_BLOCK - 1) / PATHS_PER_BLOCK;
-	const int bdim = BLOCK_SIZE;
+	const int gdim = (width + paths_per_block - 1) / paths_per_block;
+	const int bdim = block_size;
 	aggregate_vertical_path_kernel<CENSUS_TYPE, 1, MAX_DISPARITY><<<gdim, bdim, 0, stream>>>(
 		dest, left, right, width, height, p1, p2, min_disp);
 	CUDA_CHECK(cudaGetLastError());
@@ -232,10 +234,11 @@ void aggregate_down2up(
 	cudaStream_t stream)
 {
 	static const unsigned int SUBGROUP_SIZE = MAX_DISPARITY / DP_BLOCK_SIZE;
-	static const unsigned int PATHS_PER_BLOCK = BLOCK_SIZE / SUBGROUP_SIZE;
+	const unsigned int block_size = device_warp_size() * WARPS_PER_BLOCK;
+	const unsigned int paths_per_block = block_size / SUBGROUP_SIZE;
 
-	const int gdim = (width + PATHS_PER_BLOCK - 1) / PATHS_PER_BLOCK;
-	const int bdim = BLOCK_SIZE;
+	const int gdim = (width + paths_per_block - 1) / paths_per_block;
+	const int bdim = block_size;
 	aggregate_vertical_path_kernel<CENSUS_TYPE, -1, MAX_DISPARITY><<<gdim, bdim, 0, stream>>>(
 		dest, left, right, width, height, p1, p2, min_disp);
 	CUDA_CHECK(cudaGetLastError());
@@ -368,11 +371,11 @@ void aggregate_left2right(
 	cudaStream_t stream)
 {
 	static const unsigned int SUBGROUP_SIZE = MAX_DISPARITY / DP_BLOCK_SIZE;
-	static const unsigned int PATHS_PER_BLOCK =
-		BLOCK_SIZE * DP_BLOCKS_PER_THREAD / SUBGROUP_SIZE;
+	const unsigned int block_size = device_warp_size() * WARPS_PER_BLOCK;
+	const unsigned int paths_per_block = block_size * DP_BLOCKS_PER_THREAD / SUBGROUP_SIZE;
 
-	const int gdim = (height + PATHS_PER_BLOCK - 1) / PATHS_PER_BLOCK;
-	const int bdim = BLOCK_SIZE;
+	const int gdim = (height + paths_per_block - 1) / paths_per_block;
+	const int bdim = block_size;
 	aggregate_horizontal_path_kernel<CENSUS_TYPE, 1, MAX_DISPARITY><<<gdim, bdim, 0, stream>>>(
 		dest, left, right, width, height, p1, p2, min_disp);
 	CUDA_CHECK(cudaGetLastError());
@@ -391,11 +394,11 @@ void aggregate_right2left(
 	cudaStream_t stream)
 {
 	static const unsigned int SUBGROUP_SIZE = MAX_DISPARITY / DP_BLOCK_SIZE;
-	static const unsigned int PATHS_PER_BLOCK =
-		BLOCK_SIZE * DP_BLOCKS_PER_THREAD / SUBGROUP_SIZE;
+	const unsigned int block_size = device_warp_size() * WARPS_PER_BLOCK;
+	const unsigned int paths_per_block = block_size * DP_BLOCKS_PER_THREAD / SUBGROUP_SIZE;
 
-	const int gdim = (height + PATHS_PER_BLOCK - 1) / PATHS_PER_BLOCK;
-	const int bdim = BLOCK_SIZE;
+	const int gdim = (height + paths_per_block - 1) / paths_per_block;
+	const int bdim = block_size;
 	aggregate_horizontal_path_kernel<CENSUS_TYPE, -1, MAX_DISPARITY><<<gdim, bdim, 0, stream>>>(
 		dest, left, right, width, height, p1, p2, min_disp);
 	CUDA_CHECK(cudaGetLastError());
@@ -407,7 +410,8 @@ namespace oblique
 {
 
 static constexpr unsigned int DP_BLOCK_SIZE = 16u;
-static constexpr unsigned int BLOCK_SIZE = WARP_SIZE * 8u;
+static constexpr unsigned int WARPS_PER_BLOCK = 8u;
+static constexpr unsigned int BLOCK_SIZE = WARP_SIZE * WARPS_PER_BLOCK;
 
 template <typename CENSUS_TYPE, int X_DIRECTION, int Y_DIRECTION, unsigned int MAX_DISPARITY>
 __global__ void aggregate_oblique_path_kernel(
@@ -510,10 +514,11 @@ void aggregate_upleft2downright(
 	cudaStream_t stream)
 {
 	static const unsigned int SUBGROUP_SIZE = MAX_DISPARITY / DP_BLOCK_SIZE;
-	static const unsigned int PATHS_PER_BLOCK = BLOCK_SIZE / SUBGROUP_SIZE;
+	const unsigned int block_size = device_warp_size() * WARPS_PER_BLOCK;
+	const unsigned int paths_per_block = block_size / SUBGROUP_SIZE;
 
-	const int gdim = (width + height + PATHS_PER_BLOCK - 2) / PATHS_PER_BLOCK;
-	const int bdim = BLOCK_SIZE;
+	const int gdim = (width + height + paths_per_block - 2) / paths_per_block;
+	const int bdim = block_size;
 	aggregate_oblique_path_kernel<CENSUS_TYPE, 1, 1, MAX_DISPARITY><<<gdim, bdim, 0, stream>>>(
 		dest, left, right, width, height, p1, p2, min_disp);
 	CUDA_CHECK(cudaGetLastError());
@@ -532,10 +537,11 @@ void aggregate_upright2downleft(
 	cudaStream_t stream)
 {
 	static const unsigned int SUBGROUP_SIZE = MAX_DISPARITY / DP_BLOCK_SIZE;
-	static const unsigned int PATHS_PER_BLOCK = BLOCK_SIZE / SUBGROUP_SIZE;
+	const unsigned int block_size = device_warp_size() * WARPS_PER_BLOCK;
+	const unsigned int paths_per_block = block_size / SUBGROUP_SIZE;
 
-	const int gdim = (width + height + PATHS_PER_BLOCK - 2) / PATHS_PER_BLOCK;
-	const int bdim = BLOCK_SIZE;
+	const int gdim = (width + height + paths_per_block - 2) / paths_per_block;
+	const int bdim = block_size;
 	aggregate_oblique_path_kernel<CENSUS_TYPE, -1, 1, MAX_DISPARITY><<<gdim, bdim, 0, stream>>>(
 		dest, left, right, width, height, p1, p2, min_disp);
 	CUDA_CHECK(cudaGetLastError());
@@ -554,10 +560,11 @@ void aggregate_downright2upleft(
 	cudaStream_t stream)
 {
 	static const unsigned int SUBGROUP_SIZE = MAX_DISPARITY / DP_BLOCK_SIZE;
-	static const unsigned int PATHS_PER_BLOCK = BLOCK_SIZE / SUBGROUP_SIZE;
+	const unsigned int block_size = device_warp_size() * WARPS_PER_BLOCK;
+	const unsigned int paths_per_block = block_size / SUBGROUP_SIZE;
 
-	const int gdim = (width + height + PATHS_PER_BLOCK - 2) / PATHS_PER_BLOCK;
-	const int bdim = BLOCK_SIZE;
+	const int gdim = (width + height + paths_per_block - 2) / paths_per_block;
+	const int bdim = block_size;
 	aggregate_oblique_path_kernel<CENSUS_TYPE, -1, -1, MAX_DISPARITY><<<gdim, bdim, 0, stream>>>(
 		dest, left, right, width, height, p1, p2, min_disp);
 	CUDA_CHECK(cudaGetLastError());
@@ -576,10 +583,11 @@ void aggregate_downleft2upright(
 	cudaStream_t stream)
 {
 	static const unsigned int SUBGROUP_SIZE = MAX_DISPARITY / DP_BLOCK_SIZE;
-	static const unsigned int PATHS_PER_BLOCK = BLOCK_SIZE / SUBGROUP_SIZE;
+	const unsigned int block_size = device_warp_size() * WARPS_PER_BLOCK;
+	const unsigned int paths_per_block = block_size / SUBGROUP_SIZE;
 
-	const int gdim = (width + height + PATHS_PER_BLOCK - 2) / PATHS_PER_BLOCK;
-	const int bdim = BLOCK_SIZE;
+	const int gdim = (width + height + paths_per_block - 2) / paths_per_block;
+	const int bdim = block_size;
 	aggregate_oblique_path_kernel<CENSUS_TYPE, 1, -1, MAX_DISPARITY><<<gdim, bdim, 0, stream>>>(
 		dest, left, right, width, height, p1, p2, min_disp);
 	CUDA_CHECK(cudaGetLastError());

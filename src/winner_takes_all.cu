@@ -16,7 +16,7 @@ limitations under the License.
 
 #include "internal.h"
 
-#include <cuda_runtime.h>
+#include "cuda_to_hip.h"
 
 #include "device_utility.h"
 #include "host_utility.h"
@@ -27,7 +27,6 @@ namespace
 {
 
 static constexpr unsigned int WARPS_PER_BLOCK = 8u;
-static constexpr unsigned int BLOCK_SIZE = WARPS_PER_BLOCK * WARP_SIZE;
 
 __device__ inline uint32_t pack_cost_index(uint32_t cost, uint32_t index)
 {
@@ -136,7 +135,12 @@ __global__ void winner_takes_all_kernel(
 					store_uint16_vector<ACCUMULATION_PER_THREAD>(
 						&smem_cost_sum[warp_id][k_hi][k_lo], sum);
 				}
-#if CUDA_VERSION >= 9000
+#if CUDA_VERSION >= 9000 || defined(USE_HIP)
+				// HIP leaves CUDA_VERSION undefined, which would route to the
+				// weaker __threadfence_block() fallback. On wave64 the lanes of
+				// one warp write smem_cost_sum and then read each other's
+				// writes, so a warp-wide execution barrier (__syncwarp) is
+				// required, not just a memory fence. HIP provides __syncwarp().
 				__syncwarp();
 #else
 				__threadfence_block();
@@ -226,7 +230,7 @@ void winner_takes_all_(const DeviceImage& src, DeviceImage& dstL, DeviceImage& d
 	const int pitch = dstL.step;
 
 	const int gdim = divUp(height, WARPS_PER_BLOCK);
-	const int bdim = BLOCK_SIZE;
+	const int bdim = WARPS_PER_BLOCK * device_warp_size();
 
 	const cost_type* cost = src.ptr<cost_type>();
 	output_type* dispL = dstL.ptr<output_type>();

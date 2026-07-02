@@ -16,12 +16,86 @@ limitations under the License.
 
 #include "internal.h"
 
-#include <cuda_runtime.h>
+#include "cuda_to_hip.h"
 
 #include "host_utility.h"
 
 namespace
 {
+
+#if defined(USE_HIP)
+// ROCm 7.x HIP does not provide the CUDA SIMD-in-a-word video intrinsics that
+// the vectorized 2x/4x median path uses. Emulate them per packed lane with the
+// exact CUDA semantics: __v*u2 operate on two unsigned 16-bit halfwords,
+// __v*u4 on four unsigned 8-bit bytes; the compare intrinsics yield an all-ones
+// mask (0xFFFF / 0xFF) per lane where a > b, else all-zeros. Bit-identical to
+// nvcc so the median selection network result matches the scalar reference.
+__device__ inline uint32_t __vcmpgtu2(uint32_t a, uint32_t b)
+{
+	uint32_t r = 0;
+	for (int s = 0; s < 32; s += 16) {
+		const uint32_t la = (a >> s) & 0xffffu;
+		const uint32_t lb = (b >> s) & 0xffffu;
+		r |= (la > lb ? 0xffffu : 0u) << s;
+	}
+	return r;
+}
+
+__device__ inline uint32_t __vcmpgtu4(uint32_t a, uint32_t b)
+{
+	uint32_t r = 0;
+	for (int s = 0; s < 32; s += 8) {
+		const uint32_t la = (a >> s) & 0xffu;
+		const uint32_t lb = (b >> s) & 0xffu;
+		r |= (la > lb ? 0xffu : 0u) << s;
+	}
+	return r;
+}
+
+__device__ inline uint32_t __vminu2(uint32_t a, uint32_t b)
+{
+	uint32_t r = 0;
+	for (int s = 0; s < 32; s += 16) {
+		const uint32_t la = (a >> s) & 0xffffu;
+		const uint32_t lb = (b >> s) & 0xffffu;
+		r |= (la < lb ? la : lb) << s;
+	}
+	return r;
+}
+
+__device__ inline uint32_t __vmaxu2(uint32_t a, uint32_t b)
+{
+	uint32_t r = 0;
+	for (int s = 0; s < 32; s += 16) {
+		const uint32_t la = (a >> s) & 0xffffu;
+		const uint32_t lb = (b >> s) & 0xffffu;
+		r |= (la > lb ? la : lb) << s;
+	}
+	return r;
+}
+
+__device__ inline uint32_t __vminu4(uint32_t a, uint32_t b)
+{
+	uint32_t r = 0;
+	for (int s = 0; s < 32; s += 8) {
+		const uint32_t la = (a >> s) & 0xffu;
+		const uint32_t lb = (b >> s) & 0xffu;
+		r |= (la < lb ? la : lb) << s;
+	}
+	return r;
+}
+
+__device__ inline uint32_t __vmaxu4(uint32_t a, uint32_t b)
+{
+	uint32_t r = 0;
+	for (int s = 0; s < 32; s += 8) {
+		const uint32_t la = (a >> s) & 0xffu;
+		const uint32_t lb = (b >> s) & 0xffu;
+		r |= (la > lb ? la : lb) << s;
+	}
+	return r;
+}
+#endif // USE_HIP
 
 const int BLOCK_X = 16;
 const int BLOCK_Y = 16;

@@ -17,7 +17,7 @@ limitations under the License.
 #ifndef __DEVICE_UTILITY_H__
 #define __DEVICE_UTILITY_H__
 
-#include <cuda.h>
+#include "cuda_to_hip.h"
 
 #include "types.h"
 #include "constants.h"
